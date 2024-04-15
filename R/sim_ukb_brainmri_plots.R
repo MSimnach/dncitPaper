@@ -1,4 +1,14 @@
-create_test_plot <- function(folder_path, dncits, sample_sizes=NULL, betas=NULL){
+#' Title: Plotting functions for rejection rates of CITs
+#'
+#' @param folder_path path to folder with rejection rates of all settings and all CITs
+#' @param dncits vector of all DNCITs
+#' @param settings data frame with all settings, columns should consist of settings$confounder, fct_relation, embedding_map, noise_x
+#' @param sample_sizes vector of all sample sizes (either sample_sizes or betas has to be specified)
+#' @param betas vector of all betas (either betas or sample_sizes has to be specified)
+#'
+#' @return returns a plot with all rejection rates of all settings and all CITs
+#' @export
+create_test_plot <- function(folder_path, dncits, settings, sample_sizes=NULL, betas=NULL){
   # List all files in the folder
   all_files <- list.files(folder_path, full.names = TRUE)
 
@@ -21,11 +31,35 @@ create_test_plot <- function(folder_path, dncits, sample_sizes=NULL, betas=NULL)
   list_result_tabs_full <- create_reject_tabs(dncits, settings_files, all_files, list_result_tabs)
 
   results_plots <- list()
-
-  for(dncit in tail(dncits, 1)){
-    results_plots[[dncit]] <- plot_dncit_col(dncit)
+  for(dncit in dncits){
+    if(which(dncits == dncit) == 1){
+      results_plots[[dncit]] <- plot_left_dncit_col(dncit, list_result_tabs_full[[dncit]])
+    }else if(which(dncits == dncit) == length(dncits)){
+      results_plots[[dncit]] <- plot_right_dncit_col(dncit, list_result_tabs_full[[dncit]])
+    }else{
+      results_plots[[dncit]] <- plot_mid_dncit_col(dncit, list_result_tabs_full[[dncit]])
+    }
   }
 
+  y_axis <- create_y_axis(settings)
+
+  # Combine plots
+  p1 <- cowplot::plot_grid(y_axis, plot_rcot, plot_kpc_graph_1_1, plot_kpc_graph_1_10,
+                           plot_kpc_graph_2_1, plot_kpc_graph_2_10, plot_kpc_graph_3_1,
+                           plot_kpc_graph_3_20,
+                           #  plot_kpc_graph_4_1,plot_kpc_graph_5_1,
+                           plot_pcit, plot_fcit,
+                           ncol = 10,  rel_widths = c(2, rep(0.5,8), 1), axis= "bt")
+
+  #y.grob <- textGrob("Setting",
+  #                   gp=gpar(fontface="bold", col="black", fontsize=15), rot=90)
+
+  x.grob <- grid::textGrob(expression(paste("Sample size n=30,100,300,1000,3000,10000")),
+                           gp=gpar(fontface="bold", col="black", fontsize=15))
+
+  x.grob <- gridExtra::grid.arrange(arrangeGrob(p1,# left = y.grob,
+                                      bottom = x.grob))
+  return(x.grob)
 }
 
 create_empty_result_tab <- function(settings_files,sample_sizes=NULL, betas=NULL){
@@ -87,210 +121,75 @@ create_reject_tabs <- function(dncits, settings_files, all_files, list_result_ta
   return(list_result_tabs)
 }
 
-plot_
-
-plot_right_dncit_col <- function(dncit){
-  dncit_long <- reshape2::melt(fcit, id.vars = "setting")
+create_long_tab <- function(dncit, result_tab_dncit){
+  dncit_long <- reshape2::melt(result_tab_dncit, id.vars = "setting")
   dncit_long$setting <- factor(dncit_long$setting, levels=rev(unique(dncit_long$setting)))
   colnames(dncit_long)[3] <- 'rejection_rate'
   dncit_long$rejection_rate <- as.numeric(dncit_long$rejection_rate)
-  plot_fcit <- ggplot(dncit_long, aes(x = variable, y = setting, fill = rejection_rate)) +
+  return(dncit_long)
+}
+
+plot_left_dncit_col <- function (dncit, result_tab_dncit){
+  dncit_tab_long <- create_long_tab(dncit, result_tab_dncit)
+  plot_dncit <- ggplot(dncit_tab_long, aes(x = variable, y = setting, fill = rejection_rate)) +
+    geom_tile()+
+    scale_fill_gradientn(colors = c('green', 'darkgreen', 'yellow1','orange', 'red'), values=c(0,0.05,0.1,0.15,1), limits=c(0,1)) +  # Adjust the color gradient as needed
+    labs(x = "Sample size", y = "", title = dncit) +  # No need to repeat y-axis label
+    theme(axis.text= element_blank(),  # Remove y-axis text
+          axis.title= element_blank())  +
+    theme(legend.position = "none")
+  return(plot_dncit)
+}
+
+plot_mid_dncit_col <- function(dncit, result_tab_dncit){
+  dncit_tab_long <- create_long_tab(dncit, result_tab_dncit)
+  plot_dncit <- ggplot(dncit_tab_long, aes(x = variable, y = setting, fill = rejection_rate)) +
+    geom_tile()+
+    scale_fill_gradientn(colors = c('green', 'darkgreen', 'yellow1','orange', 'red'), values=c(0,0.05,0.1,0.15,1), limits=c(0,1)) +  # Adjust the color gradient as needed
+    labs(x = "Sample size", y = "", title = dncit) +  # No need to repeat y-axis label
+    theme(axis.text= element_blank(),  # Remove y-axis text
+          axis.title= element_blank()) +
+    theme(legend.position = "none")
+  return(plot_dncit)
+}
+
+plot_right_dncit_col <- function(dncit, result_tab_dncit){
+  dncit_tab_long <- create_long_tab(dncit, result_tab_dncit)
+  plot_dncit_long <- ggplot(dncit_tab_long, aes(x = variable, y = setting, fill = rejection_rate)) +
     geom_tile() +
     scale_fill_gradientn(colors = c('green', 'darkgreen', 'yellow1','orange', 'red'), values=c(0,0.05,0.1,0.15,1), limits=c(0,1)) +  # Adjust the color gradient as needed
     labs(x = "Sample size", y = "Setting", title = dncit) +
     theme(axis.text= element_blank(),  # Remove y-axis text
           axis.title= element_blank())
+  return(plot_dncit)
+}
+
+## y-axis as tree diagram
+create_y_axis <- function(settings){
+  settings$pathString <- paste(" ",
+                               settings$confounder,
+                               settings$fct_relation,
+                               settings$embedding_map,
+                               settings$noise_x,
+                               sep = "/")
+  settings.tree <- data.tree::as.Node(settings)
+  settings.phylo <- ape::as.phylo(settings.tree)
+  #reorder matching rows of plots
+  #ggtree::ggtree(settings.phylo) +
+  #  geom_text(aes(label=node), hjust=-.3)
+  settings.phylo <- ape::rotate(settings.phylo,node=25, polytom=c(26,39))
+  y_axis <-ggtree::ggtree(settings.phylo, layout='rectangular') +
+    #geom_nodepoint()+
+    #geom_tippoint() +
+    geom_label(aes(x=branch,label=label)) +
+    labs(title=' ')
+  #y_axis_b <- ggplot2::ggplot_build(y_axis)
+  return(y_axis)
 }
 
 
 
 
-fcit_long <- reshape2::melt(fcit, id.vars = "setting")
-fcit_long$setting <- factor(fcit_long$setting, levels=rev(unique(fcit_long$setting)))
-colnames(fcit_long)[3] <- 'rejection_rate'
-fcit_long$rejection_rate <- as.numeric(fcit_long$rejection_rate)
-plot_fcit <- ggplot(fcit_long, aes(x = variable, y = setting, fill = rejection_rate)) +
-  geom_tile() +
-  scale_fill_gradientn(colors = c('green', 'darkgreen', 'yellow1','orange', 'red'), values=c(0,0.05,0.1,0.15,1), limits=c(0,1)) +  # Adjust the color gradient as needed
-  labs(x = "Sample size", y = "Setting", title = "fcit") +
-  theme(axis.text= element_blank(),  # Remove y-axis text
-        axis.title= element_blank())
-
-kpc_graph_1_1_long <- reshape2::melt(kpc_graph_1_1, id.vars = "setting")
-kpc_graph_1_1_long$setting <- factor(kpc_graph_1_1_long$setting, levels=rev(unique(kpc_graph_1_1_long$setting)))
-colnames(kpc_graph_1_1_long)[3] <- 'rejection_rate'
-kpc_graph_1_1_long$rejection_rate <- as.numeric(kpc_graph_1_1_long$rejection_rate)
-plot_kpc_graph_1_1 <- ggplot(kpc_graph_1_1_long, aes(x = variable, y = setting, fill = rejection_rate)) +
-  geom_tile()+
-  scale_fill_gradientn(colors = c('green', 'darkgreen', 'yellow1','orange', 'red'), values=c(0,0.05,0.1,0.15,1), limits=c(0,1)) +  # Adjust the color gradient as needed
-  labs(x = "Sample size", y = "", title = "kpc_1_1") +  # No need to repeat y-axis label
-  theme(axis.text= element_blank(),  # Remove y-axis text
-        axis.title= element_blank()) +
-  theme(legend.position = "none")
-
-kpc_graph_1_10_long <- reshape2::melt(kpc_graph_1_10, id.vars = "setting")
-kpc_graph_1_10_long$setting <- factor(kpc_graph_1_10_long$setting, levels=rev(unique(kpc_graph_1_10_long$setting)))
-colnames(kpc_graph_1_10_long)[3] <- 'rejection_rate'
-kpc_graph_1_10_long$rejection_rate <- as.numeric(kpc_graph_1_10_long$rejection_rate)
-plot_kpc_graph_1_10 <- ggplot(kpc_graph_1_10_long, aes(x = variable, y = setting, fill = rejection_rate)) +
-  geom_tile() +
-  scale_fill_gradientn(colors = c('green', 'darkgreen', 'yellow1','orange', 'red'), values=c(0,0.05,0.1,0.15,1), limits=c(0,1)) +  # Adjust the color gradient as needed
-  labs(x = "Sample size", y = "", title = "kpc_1_10") +  # No need to repeat y-axis label
-  theme(axis.text= element_blank(),  # Remove y-axis text
-        axis.title= element_blank()) +
-  theme(legend.position = "none")
-
-kpc_graph_2_1_long <- reshape2::melt(kpc_graph_2_1, id.vars = "setting")
-kpc_graph_2_1_long$setting <- factor(kpc_graph_2_1_long$setting, levels=rev(unique(kpc_graph_2_1_long$setting)))
-colnames(kpc_graph_2_1_long)[3] <- 'rejection_rate'
-kpc_graph_2_1_long$rejection_rate <- as.numeric(kpc_graph_2_1_long$rejection_rate)
-plot_kpc_graph_2_1 <- ggplot(kpc_graph_2_1_long, aes(x = variable, y = setting, fill = rejection_rate)) +
-  geom_tile()+
-  scale_fill_gradientn(colors = c('green', 'darkgreen', 'yellow1','orange', 'red'), values=c(0,0.05,0.1,0.15,1), limits=c(0,1)) +  # Adjust the color gradient as needed
-  labs(x = "Sample size", y = "", title = "kpc_2_1") +  # No need to repeat y-axis label
-  theme(axis.text= element_blank(),  # Remove y-axis text
-        axis.title= element_blank()) +
-  theme(legend.position = "none")
-
-kpc_graph_2_10_long <- reshape2::melt(kpc_graph_2_10, id.vars = "setting")
-kpc_graph_2_10_long$setting <- factor(kpc_graph_2_10_long$setting, levels=rev(unique(kpc_graph_2_10_long$setting)))
-colnames(kpc_graph_2_10_long)[3] <- 'rejection_rate'
-kpc_graph_2_10_long$rejection_rate <- as.numeric(kpc_graph_2_10_long$rejection_rate)
-plot_kpc_graph_2_10 <- ggplot(kpc_graph_2_10_long, aes(x = variable, y = setting, fill = rejection_rate)) +
-  geom_tile() +
-  scale_fill_gradientn(colors = c('green', 'darkgreen', 'yellow1','orange', 'red'), values=c(0,0.05,0.1,0.15,1), limits=c(0,1)) +  # Adjust the color gradient as needed
-  labs(x = "Sample size", y = "", title = "kpc_2_10") +  # No need to repeat y-axis label
-  theme(axis.text= element_blank(),  # Remove y-axis text
-        axis.title= element_blank()) +
-  theme(legend.position = "none")
-
-kpc_graph_3_1_long <- reshape2::melt(kpc_graph_3_1, id.vars = "setting")
-kpc_graph_3_1_long$setting <- factor(kpc_graph_3_1_long$setting, levels=rev(unique(kpc_graph_3_1_long$setting)))
-colnames(kpc_graph_3_1_long)[3] <- 'rejection_rate'
-kpc_graph_3_1_long$rejection_rate <- as.numeric(kpc_graph_3_1_long$rejection_rate)
-plot_kpc_graph_3_1 <- ggplot(kpc_graph_3_1_long, aes(x = variable, y = setting, fill = rejection_rate)) +
-  geom_tile() +
-  scale_fill_gradientn(colors = c('green', 'darkgreen', 'yellow1','orange', 'red'), values=c(0,0.05,0.1,0.15,1), limits=c(0,1)) +  # Adjust the color gradient as needed
-  labs(x = "Sample size", y = "", title = "kpc_3_1") +  # No need to repeat y-axis label
-  theme(axis.text= element_blank(),  # Remove y-axis text
-        axis.title= element_blank())  +
-  theme(legend.position = "none")
-
-# kpc_graph_3_10_long <- reshape2::melt(kpc_graph_3_10, id.vars = "setting")
-# colnames(kpc_graph_3_10_long)[3] <- 'rejection_rate'
-# kpc_graph_3_10_long$rejection_rate <- as.numeric(kpc_graph_3_10_long$rejection_rate)
-# plot_kpc_graph_3_10 <- ggplot(kpc_graph_3_10_long, aes(x = variable, y = setting, fill = rejection_rate)) +
-#   geom_tile() +
-#   scale_fill_gradientn(colors = c('green', 'darkgreen', 'yellow1','orange', 'red'), values=c(0,0.05,0.1,0.15,1), limits=c(0,1)) +  # Adjust the color gradient as needed
-#   labs(x = "Sample size", y = "", title = "kpc_3_10") +  # No need to repeat y-axis label
-#   theme(axis.text= element_blank(),  # Remove y-axis text
-#         axis.title= element_blank(),  # Remove y-axis label
-#         axis.ticks.y = element_blank())  +
-#   theme(legend.position = "none")
-
-kpc_graph_3_20_long <- reshape2::melt(kpc_graph_3_20, id.vars = "setting")
-kpc_graph_3_20_long$setting <- factor(kpc_graph_3_20_long$setting, levels=rev(unique(kpc_graph_3_20_long$setting)))
-colnames(kpc_graph_3_20_long)[3] <- 'rejection_rate'
-kpc_graph_3_20_long$rejection_rate <- as.numeric(kpc_graph_3_20_long$rejection_rate)
-plot_kpc_graph_3_20 <- ggplot(kpc_graph_3_20_long, aes(x = variable, y = setting, fill = rejection_rate)) +
-  geom_tile() +
-  scale_fill_gradientn(colors = c('green', 'darkgreen', 'yellow1','orange', 'red'), values=c(0,0.05,0.1,0.15,1), limits=c(0,1)) +  # Adjust the color gradient as needed
-  labs(x = "Sample size", y = "", title = "kpc_3_20") +  # No need to repeat y-axis label
-  theme(axis.text= element_blank(),  # Remove y-axis text
-        axis.title= element_blank())  +
-  theme(legend.position = "none")
-
-# kpc_graph_4_1_long <- reshape2::melt(kpc_graph_4_1, id.vars = "setting")
-# colnames(kpc_graph_4_1_long)[3] <- 'rejection_rate'
-# kpc_graph_4_1_long$rejection_rate <- as.numeric(kpc_graph_4_1_long$rejection_rate)
-# plot_kpc_graph_4_1 <- ggplot(kpc_graph_4_1_long, aes(x = variable, y = setting, fill = rejection_rate)) +
-#   geom_tile()+
-#   scale_fill_gradientn(colors = c('green', 'darkgreen', 'yellow1','orange', 'red'), values=c(0,0.05,0.1,0.15,1), limits=c(0,1)) +  # Adjust the color gradient as needed
-#   labs(x = "Sample size", y = "", title = "kpc_4_1") +  # No need to repeat y-axis label
-#   theme(axis.text= element_blank(),  # Remove y-axis text
-#         axis.title= element_blank(),  # Remove y-axis label
-#         axis.ticks.y = element_blank())  +
-#   theme(legend.position = "none")
-#
-#
-# kpc_graph_5_1_long <- reshape2::melt(kpc_graph_5_1, id.vars = "setting")
-# colnames(kpc_graph_5_1_long)[3] <- 'rejection_rate'
-# kpc_graph_5_1_long$rejection_rate <- as.numeric(kpc_graph_5_1_long$rejection_rate)
-# plot_kpc_graph_5_1 <- ggplot(kpc_graph_5_1_long, aes(x = variable, y = setting, fill = rejection_rate)) +
-#   geom_tile() +
-#   scale_fill_gradientn(colors = c('green', 'darkgreen', 'yellow1','orange', 'red'), values=c(0,0.05,0.1,0.15,1), limits=c(0,1)) +  # Adjust the color gradient as needed
-#   labs(x = "Sample size", y = "", title = "kpc_5_1") +  # No need to repeat y-axis label
-#   theme(axis.text= element_blank(),  # Remove y-axis text
-#         axis.title= element_blank(),  # Remove y-axis label
-#         axis.ticks.y = element_blank())  +
-#   theme(legend.position = "none")
-
-pcit_long <- reshape2::melt(pcit, id.vars = "setting")
-pcit_long$setting <- factor(pcit_long$setting, levels=rev(unique(pcit_long$setting)))
-colnames(pcit_long)[3] <- 'rejection_rate'
-pcit_long$rejection_rate <- as.numeric(pcit_long$rejection_rate)
-plot_pcit <- ggplot(pcit_long, aes(x = variable, y = setting, fill = rejection_rate)) +
-  geom_tile() +
-  scale_fill_gradientn(colors = c('green', 'darkgreen', 'yellow1','orange', 'red'), values=c(0,0.05,0.1,0.15,1), limits=c(0,1)) +  # Adjust the color gradient as needed
-  labs(x = "Sample size", y = "", title = "pcit") +  # No need to repeat y-axis label
-  theme(axis.text= element_blank(),  # Remove y-axis text
-        axis.title= element_blank())  +
-  theme(legend.position = "none")
-
-rcot_long <- reshape2::melt(rcot, id.vars = "setting")
-rcot_long$setting <- factor(rcot_long$setting, levels=rev(unique(rcot_long$setting)))
-colnames(rcot_long)[3] <- 'rejection_rate'
-rcot_long$rejection_rate <- as.numeric(rcot_long$rejection_rate)
-plot_rcot <- ggplot(rcot_long, aes(x = variable, y = setting, fill = rejection_rate)) +
-  geom_tile()+
-  scale_fill_gradientn(colors = c('green', 'darkgreen', 'yellow1','orange', 'red'), values=c(0,0.05,0.1,0.15,1), limits=c(0,1)) +  # Adjust the color gradient as needed
-  labs(x = "Sample size", y = "", title = "rcot") +  # No need to repeat y-axis label
-  theme(axis.text= element_blank(),  # Remove y-axis text
-        axis.title= element_blank())  +
-  theme(legend.position = "none")
-
-## y-axis as tree diagram
-settings <- data.frame(
-  confounder = rep(c("age, sex", paste("age, sex, 10 PCs")), each=12),
-  fct_relation = rep(rep(c("1", "2", "3"), each=4), 2),
-  embedding_map = rep(c("same", "noisy", "noisy", "different"), 6),
-  noise_x = rep(c(0, 50,500, 0), 6)
-)
-settings$pathString <- paste(" ",
-                             settings$confounder,
-                             settings$fct_relation,
-                             settings$embedding_map,
-                             settings$noise_x,
-                             sep = "/")
-settings.tree <- data.tree::as.Node(settings)
-settings.phylo <- ape::as.phylo(settings.tree)
-#reorder matching rows of plots
-ggtree::ggtree(settings.phylo) +
-  geom_text(aes(label=node), hjust=-.3)
-settings.phylo <- rotate(settings.phylo,node=25, polytom=c(26,39))
-y_axis <-ggtree::ggtree(settings.phylo, layout='rectangular') +
-  #geom_nodepoint()+
-  #geom_tippoint() +
-  geom_label(aes(x=branch,label=label)) +
-  labs(title=' ')
-y_axis_b <- ggplot2::ggplot_build(y_axis)
-
-# Combine plots
-p1 <- cowplot::plot_grid(y_axis, plot_rcot, plot_kpc_graph_1_1, plot_kpc_graph_1_10,
-                plot_kpc_graph_2_1, plot_kpc_graph_2_10, plot_kpc_graph_3_1,
-                plot_kpc_graph_3_20,
-                #  plot_kpc_graph_4_1,plot_kpc_graph_5_1,
-                plot_pcit, plot_fcit,
-                ncol = 10,  rel_widths = c(2, rep(0.5,8), 1), axis= "bt")
-
-#y.grob <- textGrob("Setting",
-#                   gp=gpar(fontface="bold", col="black", fontsize=15), rot=90)
-
-x.grob <- grid::textGrob(expression(paste("Sample size n=30,100,300,1000,3000,10000")),
-                   gp=gpar(fontface="bold", col="black", fontsize=15))
-
-gridExtra::grid.arrange(arrangeGrob(p1,# left = y.grob,
-                         bottom = x.grob))
 
 
 #### No CI
