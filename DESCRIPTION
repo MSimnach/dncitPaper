@@ -17,4 +17,5 @@ Imports:
     ggtree,
     grid,
     gridExtra,
+    magrittr,
     reshape2
