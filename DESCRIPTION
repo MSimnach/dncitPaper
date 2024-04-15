@@ -12,10 +12,12 @@ RoxygenNote: 7.3.1
 Imports: 
     ape,
     cowplot,
+    data.tree,
     dplyr,
     ggplot2,
     ggtree,
     grid,
     gridExtra,
     magrittr,
-    reshape2
+    reshape2,
+    utils

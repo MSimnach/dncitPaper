@@ -44,24 +44,20 @@ create_test_plot <- function(folder_path, dncits, settings, sample_sizes=NULL, b
   y_axis <- create_y_axis(settings)
 
   # Combine plots
-  p1 <- cowplot::plot_grid(y_axis, plot_rcot, plot_kpc_graph_1_1, plot_kpc_graph_1_10,
-                           plot_kpc_graph_2_1, plot_kpc_graph_2_10, plot_kpc_graph_3_1,
-                           plot_kpc_graph_3_20,
-                           #  plot_kpc_graph_4_1,plot_kpc_graph_5_1,
-                           plot_pcit, plot_fcit,
-                           ncol = 10,  rel_widths = c(2, rep(0.5,8), 1), axis= "bt")
+  p1 <- cowplot::plot_grid(y_axis, results_plots,
+                           ncol = length(dncits)+1,  rel_widths = c(2, rep(0.5,length(dncits)-1), 1), axis= "bt")
 
-  #y.grob <- textGrob("Setting",
-  #                   gp=gpar(fontface="bold", col="black", fontsize=15), rot=90)
+  #y.grob <- grid::textGrob("Setting",
+  #                   gp=ggplot2::gpar(fontface="bold", col="black", fontsize=15), rot=90)
   if(is.null(betas)){
     x.grob <- grid::textGrob(expression(paste("Sample size n=30,100,300,1000,3000,10000")),
-                             gp=gpar(fontface="bold", col="black", fontsize=15))
+                             gp=grid::gpar(fontface="bold", col="black", fontsize=15))
   }else if(is.null(sample_sizes)){
-    x.grob <- textGrob(expression(paste("Effect size ", beta, " in ", 10 %*% 10^{-k}, " for k=0,1,2,3")),
-                       gp=gpar(fontface="bold", col="black", fontsize=15))
+    x.grob <- grid::textGrob(expression(paste("Effect size ", beta, " in ", 10 %*% 10^{-k}, " for k=0,1,2,3")),
+                       gp=grid::gpar(fontface="bold", col="black", fontsize=15))
   }
 
-  x.grob <- gridExtra::grid.arrange(arrangeGrob(p1,# left = y.grob,
+  x.grob <- gridExtra::grid.arrange(gridExtra::arrangeGrob(p1,# left = y.grob,
                                       bottom = x.grob))
   return(x.grob)
 }
@@ -88,7 +84,7 @@ create_reject_tabs <- function(dncits, settings_files, all_files, list_result_ta
       count=1
       for (file_path in matching_files) {
 
-        data <- read.csv(file_path)
+        data <- utils::read.csv(file_path)
         if(count==1){
           merged_part <- data.frame('X' = data$X)
         }
@@ -135,36 +131,36 @@ create_long_tab <- function(dncit, result_tab_dncit){
 
 plot_left_dncit_col <- function (dncit, result_tab_dncit){
   dncit_tab_long <- create_long_tab(dncit, result_tab_dncit)
-  plot_dncit <- ggplot(dncit_tab_long, aes(x = variable, y = setting, fill = rejection_rate)) +
-    geom_tile()+
-    scale_fill_gradientn(colors = c('green', 'darkgreen', 'yellow1','orange', 'red'), values=c(0,0.05,0.1,0.15,1), limits=c(0,1)) +  # Adjust the color gradient as needed
-    labs(x = "Sample size", y = "", title = dncit) +  # No need to repeat y-axis label
-    theme(axis.text= element_blank(),  # Remove y-axis text
-          axis.title= element_blank())  +
-    theme(legend.position = "none")
+  plot_dncit <- ggplot2::ggplot(dncit_tab_long, ggplot2::aes(x = variable, y = setting, fill = rejection_rate)) +
+    ggplot2::geom_tile()+
+    ggplot2::scale_fill_gradientn(colors = c('green', 'darkgreen', 'yellow1','orange', 'red'), values=c(0,0.05,0.1,0.15,1), limits=c(0,1)) +  # Adjust the color gradient as needed
+    ggplot2::labs(x = "Sample size", y = "", title = dncit) +  # No need to repeat y-axis label
+    ggplot2::theme(axis.text= ggplot2::element_blank(),  # Remove y-axis text
+          axis.title= ggplot2::element_blank())  +
+    ggplot2::theme(legend.position = "none")
   return(plot_dncit)
 }
 
 plot_mid_dncit_col <- function(dncit, result_tab_dncit){
   dncit_tab_long <- create_long_tab(dncit, result_tab_dncit)
-  plot_dncit <- ggplot(dncit_tab_long, aes(x = variable, y = setting, fill = rejection_rate)) +
-    geom_tile()+
-    scale_fill_gradientn(colors = c('green', 'darkgreen', 'yellow1','orange', 'red'), values=c(0,0.05,0.1,0.15,1), limits=c(0,1)) +  # Adjust the color gradient as needed
-    labs(x = "Sample size", y = "", title = dncit) +  # No need to repeat y-axis label
-    theme(axis.text= element_blank(),  # Remove y-axis text
-          axis.title= element_blank()) +
-    theme(legend.position = "none")
+  plot_dncit <- ggplot2::ggplot(dncit_tab_long, ggplot2::aes(x = variable, y = setting, fill = rejection_rate)) +
+    ggplot2::geom_tile()+
+    ggplot2::scale_fill_gradientn(colors = c('green', 'darkgreen', 'yellow1','orange', 'red'), values=c(0,0.05,0.1,0.15,1), limits=c(0,1)) +  # Adjust the color gradient as needed
+    ggplot2::labs(x = "Sample size", y = "", title = dncit) +  # No need to repeat y-axis label
+    ggplot2::theme(axis.text= ggplot2::element_blank(),  # Remove y-axis text
+          axis.title= ggplot2::element_blank()) +
+    ggplot2::theme(legend.position = "none")
   return(plot_dncit)
 }
 
 plot_right_dncit_col <- function(dncit, result_tab_dncit){
   dncit_tab_long <- create_long_tab(dncit, result_tab_dncit)
-  plot_dncit_long <- ggplot(dncit_tab_long, aes(x = variable, y = setting, fill = rejection_rate)) +
-    geom_tile() +
-    scale_fill_gradientn(colors = c('green', 'darkgreen', 'yellow1','orange', 'red'), values=c(0,0.05,0.1,0.15,1), limits=c(0,1)) +  # Adjust the color gradient as needed
-    labs(x = "Sample size", y = "Setting", title = dncit) +
-    theme(axis.text= element_blank(),  # Remove y-axis text
-          axis.title= element_blank())
+  plot_dncit <- ggplot2::ggplot(dncit_tab_long, ggplot2::aes(x = variable, y = setting, fill = rejection_rate)) +
+    ggplot2::geom_tile() +
+    ggplot2::scale_fill_gradientn(colors = c('green', 'darkgreen', 'yellow1','orange', 'red'), values=c(0,0.05,0.1,0.15,1), limits=c(0,1)) +  # Adjust the color gradient as needed
+    ggplot2::labs(x = "Sample size", y = "Setting", title = dncit) +
+    ggplot2::theme(axis.text= ggplot2::element_blank(),  # Remove y-axis text
+          axis.title= ggplot2::element_blank())
   return(plot_dncit)
 }
 
@@ -185,8 +181,8 @@ create_y_axis <- function(settings){
   y_axis <-ggtree::ggtree(settings.phylo, layout='rectangular') +
     #geom_nodepoint()+
     #geom_tippoint() +
-    geom_label(aes(x=branch,label=label)) +
-    labs(title=' ')
+    ggplot2::geom_label(ggplot2::aes(x=branch,label=label)) +
+    ggplot2::labs(title=' ')
   #y_axis_b <- ggplot2::ggplot_build(y_axis)
   return(y_axis)
 }
