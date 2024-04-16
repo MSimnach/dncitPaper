@@ -23,7 +23,7 @@ data_gen <- function(seed, idx_sample=NULL, n_sample=NULL, idx_beta2=NULL, beta2
   set.seed(seed)
 
   X_orig <- load_X_orig(embedding_orig)
-  X_obs <- load_X_obs(embedding_obs)
+  X_obs <- load_X_obs(embedding_obs, embedding_orig, X_orig, eps_sigmaX)
   Z <- load_Z(confounder)
 
   # take only common IDs of X, Z
@@ -33,7 +33,7 @@ data_gen <- function(seed, idx_sample=NULL, n_sample=NULL, idx_beta2=NULL, beta2
   X_orig <- as.data.frame(X_orig)
   X_obs <- as.data.frame(X_obs)
   Z <- as.data.frame(Z)
-  X_merged <- inner_join(X_orig, X_obs, by='id')
+  X_merged <- dplyr::inner_join(X_orig, X_obs, by='id')
   subset_X_obs <- X_obs[X_obs$id %in% X_merged$id, ]
   subset_X_orig <-  X_orig[X_orig$id %in% X_merged$id, ]
   subset_Z <- Z[Z$id %in% X_merged$id, ]
@@ -48,7 +48,7 @@ data_gen <- function(seed, idx_sample=NULL, n_sample=NULL, idx_beta2=NULL, beta2
   X_orig <- subset_X_orig[idx,-c(1)]
   Z <- subset_Z[idx,-c(1)]
 
-  epsZ <- matrix(rnorm((nrow(Z)*ncol(Z)), 0, eps_sigmaZ),nrow=nrow(Z),ncol=ncol(Z))
+  epsZ <- matrix(stats::rnorm((nrow(Z)*ncol(Z)), 0, eps_sigmaZ),nrow=nrow(Z),ncol=ncol(Z))
   Z <- Z+epsZ
 
   #Standardize
@@ -69,7 +69,7 @@ data_gen <- function(seed, idx_sample=NULL, n_sample=NULL, idx_beta2=NULL, beta2
 }
 
 
-load_X_orig <- function(embedding){
+load_X_orig <- function(embedding_orig){
   if(embedding_orig == 'fastsurfer'){
     X <- data.table::fread(paste("./Data/ukb_fastsurfer.csv"), header=TRUE, nThread = 1)
   }else if(embedding_orig == 'condVAE'){
@@ -80,7 +80,7 @@ load_X_orig <- function(embedding){
   return(X)
 }
 
-load_X_obs <- function(embedding){
+load_X_obs <- function(embedding_obs, embedding_orig, X_orig, eps_sigmaX){
   if(embedding_obs==embedding_orig){
     X_obs <- X_orig
   }else if(embedding_obs == 'fastsurfer'){
@@ -90,7 +90,7 @@ load_X_obs <- function(embedding){
   }else if(embedding_obs == 'latentDiffusion'){
     X_obs <- data.table::fread(paste("./Data/ukb_latentDiffusion.csv"), header=TRUE, nThread = 1)
   }else if(grepl('noisy',embedding_obs, fixed=TRUE)){
-    epsX <- rnorm(nrow(X_orig)*(ncol(X_orig)-1), 0,eps_sigmaX)
+    epsX <- stats::rnorm(nrow(X_orig)*(ncol(X_orig)-1), 0,eps_sigmaX)
     X_obs <- cbind(X_orig[,1], X_orig[,2:ncol(X_orig)]+epsX)
   }
 }

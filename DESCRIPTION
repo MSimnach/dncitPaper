@@ -12,6 +12,7 @@ RoxygenNote: 7.3.1
 Imports: 
     ape,
     cowplot,
+    data.table,
     data.tree,
     dplyr,
     ggplot2,
@@ -20,6 +21,7 @@ Imports:
     gridExtra,
     magrittr,
     reshape2,
+    stats,
     utils
 Suggests: 
     testthat (>= 3.0.0)
