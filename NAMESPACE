@@ -2,4 +2,5 @@
 
 export(create_test_plot)
 export(data_gen)
+export(y_from_xz)
 importFrom(magrittr,"%>%")

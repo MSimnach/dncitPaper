@@ -6,8 +6,11 @@
 \usage{
 data_gen(
   seed,
-  idx_sample,
-  n_sample,
+  idx_sample = NULL,
+  n_sample = NULL,
+  idx_beta2 = NULL,
+  beta2s = NULL,
+  n = NULL,
   post_non_lin = 4,
   eps_sigmaX = 0,
   eps_sigmaY = 1,
@@ -24,6 +27,12 @@ data_gen(
 \item{idx_sample}{index of current sample size}
 
 \item{n_sample}{list of sample sizes}
+
+\item{idx_beta2}{index of current beta2}
+
+\item{beta2s}{list of beta2s}
+
+\item{n}{sample size}
 
 \item{post_non_lin}{post non-linearity function}
 
