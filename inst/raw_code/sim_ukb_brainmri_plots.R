@@ -6,7 +6,7 @@ settings <- data.frame(
     noise_x = rep(c(0, 50,500, 0), 6)
 )
 
-folder_path_T1E <- "C:\\Users\\Marco\\seadrive_root\\Marco Si\\Meine Bibliotheken\\Meine Bibliothek\\CITs\\P1 Deep CITs\\Paper_DNCITs\\Results\\CI\\rejection_rates"
+folder_path_T1E <- "/dhc/home/marco.simnacher/DeepCIT/CIT_benchmarking/Results/CI/rejection_rates"
 sample_sizes <- c(30, 100, 300, 1000, 3000, 10000)
 p_T1E <- create_test_plot(folder_path_T1E, dncits, settings, sample_sizes = sample_sizes)
 
