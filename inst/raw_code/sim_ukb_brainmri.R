@@ -12,7 +12,7 @@ if(cit == 'KCIT' || tail(args,1)=='10' || tail(args,1)=='20'){
 }else{
   n_sample = list(30, 100, 300, 1000, 3000, 10000)
 }
-n_seeds = 1:40
+n_seeds = 1:2
 n <- 1000
 beta2s_all <- list()
 for (k in -1:1){
@@ -36,12 +36,9 @@ res_time <- foreach (i= n_seeds, .packages = c('DNCIT')) %dopar% {
                                                      X <- as.matrix(XYZ_list[[1]])
                                                      Y <- as.matrix(XYZ_list[[2]])
                                                      Z <- as.matrix(XYZ_list[[3]])
-                                                     #XYZ <- data.frame(XYZ_list)
 
-                                                     if (length(args) > 10){
-                                                       cit_params <- list(cit=cit, params_cit=list(args[11:length(args)]))
-                                                     }else{
-                                                       cit_params <- list(cit=cit)
+                                                     if (args[10] == 'RCOT'){
+                                                       cit_params <- list(cit='RCOT', params_cit=list(seed=as.numeric(args[11])))
                                                      }
 
                                                      tmp <- DNCIT(X, Y, Z, embedding_map_with_parameters = 'feature_representations',
@@ -64,10 +61,8 @@ res_time <- foreach (i= n_seeds, .packages = c('DNCIT')) %dopar% {
                                                      Z <- as.matrix(XYZ_list[[3]])
                                                      #XYZ <- data.frame(XYZ_list)
 
-                                                     if (length(args) > 10){
-                                                       cit_params <- list(cit=cit, params_cit=list(args[11:length(args)]))
-                                                     }else{
-                                                       cit_params <- list(cit=cit)
+                                                     if (args[10] == 'RCOT'){
+                                                       cit_params <- list(cit='RCOT', params_cit=list(seed=as.numeric(args[11])))
                                                      }
 
                                                      tmp <- DNCIT(X, Y, Z, embedding_map_with_parameters = 'feature_representations',
@@ -80,7 +75,6 @@ res_time <- foreach (i= n_seeds, .packages = c('DNCIT')) %dopar% {
                                                  p_time
                                                }
 stopCluster(cl)
-print(res_time[[1]])
 
 if(grepl('/CI',args[1],fixed=TRUE)){
   p_res <- matrix(nrow=length(n_seeds), ncol=length(n_sample))
