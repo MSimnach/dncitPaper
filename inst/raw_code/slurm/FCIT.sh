@@ -6,7 +6,7 @@
 #SBATCH --cpus-per-task=2 # -c
 #SBATCH --mem=32gb
 #SBATCH --gpus=0
-#SBATCH --time=72:00:00 
+#SBATCH --time=01:00:00 
 #SBATCH --output=logs/FCIT_%j.log # %j is job id
 
 set +u

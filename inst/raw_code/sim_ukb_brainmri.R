@@ -1,5 +1,7 @@
 library(DNCIT)
-devtools::load_all()
+library(doParallel)
+library(foreach)
+devtools::load_all("./")
 args = commandArgs(trailingOnly=TRUE)
 
 n_cits <- 1
@@ -19,17 +21,17 @@ for (k in -1:1){
   beta2s_all <- append(beta2s_all, c(10,7.5,5, 2.5)*10^(-k))
 }
 beta2s <- beta2s_all
-cl <- makeCluster(2, outfile="")
-registerDoParallel(cl)
+cl <- parallel::makeCluster(2, outfile="")
+doParallel::registerDoParallel(cl)
 
-res_time <- foreach (i= n_seeds, .packages = c('DNCIT')) %dopar% {
+res_time <- foreach::foreach (i= n_seeds, .packages = c('DNCIT')) %dopar% {
                                                  if (grepl('/CI',args[1],fixed=TRUE)){
                                                    paste('CIT:', cit)
                                                    res <- rep(0,length(n_sample))
                                                    runtime <- rep(0,length(n_sample))
                                                    for (idx_sample in seq_along(n_sample)){
                                                      cat(paste("Iteration",i,"for sample size", n_sample[[idx_sample]], "\n"))
-                                                     XYZ_list <- data_gen(seed=i, idx_sample=idx_sample, n_sample=n_sample, idx_beta2=NULL, beta2s=NULL, n=NULL,
+                                                     XYZ_list <- dncitPaper::data_gen(seed=i, idx_sample=idx_sample, n_sample=n_sample, idx_beta2=NULL, beta2s=NULL, n=NULL,
                                                                           post_non_lin=as.numeric(args[2]), eps_sigmaX=as.numeric(args[3]), eps_sigmaY=as.numeric(args[4]),
                                                                           eps_sigmaZ=as.numeric(args[5]), embedding_orig=args[6], embedding_obs=args[7],
                                                                           confounder=args[8], response=args[9])
@@ -95,7 +97,7 @@ res_time <- foreach (i= n_seeds, .packages = c('DNCIT')) %dopar% {
                                                  }
                                                  p_time
                                                }
-stopCluster(cl)
+parallel::stopCluster(cl)
 
 if(grepl('/CI',args[1],fixed=TRUE)){
   p_res <- matrix(nrow=length(n_seeds), ncol=length(n_sample))
