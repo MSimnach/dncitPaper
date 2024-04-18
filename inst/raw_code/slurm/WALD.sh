@@ -3,10 +3,10 @@
 #SBATCH --mail-type=END,FAIL
 #SBATCH --mail-user=marco.simnacher@guest.hpi.de
 #SBATCH --partition=gpu,cpu,gpua100 # -p
-#SBATCH --cpus-per-task=2 # -c
-#SBATCH --mem=8gb
+#SBATCH --cpus-per-task=40 # -c
+#SBATCH --mem=256gb
 #SBATCH --gpus=0
-#SBATCH --time=02:00:00 
+#SBATCH --time=03:00:00 
 #SBATCH --output=logs/WALD_%j.log # %j is job id
 
 set +u

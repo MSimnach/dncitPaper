@@ -1,6 +1,7 @@
 library(doParallel)
 library(foreach)
-devtools::load_all('/dhc/home/marco.simnacher/DNCIT')
+#devtools::load_all('/dhc/home/marco.simnacher/DNCIT')
+library(DNCIT)
 devtools::load_all('/dhc/home/marco.simnacher/dncitPaper')
 args = commandArgs(trailingOnly=TRUE)
 
@@ -16,14 +17,14 @@ if(cit == 'KCIT' || tail(args,1)=='10' || tail(args,1)=='20'){
 }else{
   n_sample = list(30, 100, 300, 1000, 3000, 10000)
 }
-n_seeds = 1:2
+n_seeds = 1:40
 n <- 1000
 beta2s_all <- list()
 for (k in -1:1){
   beta2s_all <- append(beta2s_all, c(10,7.5,5, 2.5)*10^(-k))
 }
 beta2s <- beta2s_all
-cl <- parallel::makeCluster(2, outfile="")
+cl <- parallel::makeCluster(40, outfile="")
 doParallel::registerDoParallel(cl)
 
 res_time <- foreach::foreach (i= n_seeds, .packages = c('DNCIT')) %dopar% {
@@ -65,9 +66,9 @@ res_time <- foreach::foreach (i= n_seeds, .packages = c('DNCIT')) %dopar% {
                                                      }else if(args[10]=='FCIT'){
                                                         cit_params <- list(cit='fcit')
                                                      }else if(args[10]=='WALD'){
-                                                        cit_params <- list(cit='wald', params_cit=NULL)
+                                                        cit_params <- list(cit='wald')
                                                      }
-
+                                                     
                                                      tmp <- DNCIT::DNCIT(X, Y, Z, embedding_map_with_parameters = 'feature_representations',
                                                            cit_with_parameters = cit_params)
                                                      res[idx_sample] <- tmp$p

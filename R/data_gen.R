@@ -66,7 +66,7 @@ data_gen <- function(seed, idx_sample=NULL, n_sample=NULL, idx_beta2=NULL, beta2
     if(is.null(beta2s)){
       Y <- y_from_xz(Z, eps_sigmaY, post_non_lin=post_non_lin)
     }else if(is.null(n_sample)){
-      Y <- y_from_xz(Z, eps_sigmaY, X=X_orig,post_non_lin=post_non_lin)
+      Y <- y_from_xz(Z, eps_sigmaY, X=X_orig, beta2s=beta2s, idx_beta2=idx_beta2,post_non_lin=post_non_lin)
     }
 
   }

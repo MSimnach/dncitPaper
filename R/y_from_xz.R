@@ -7,7 +7,7 @@
 #'
 #' @return returns function to construct Y
 #' @export
-y_from_xz <- function(Z, eps_sigmaY,X=NULL, post_non_lin = 1) {
+y_from_xz <- function(Z, eps_sigmaY,X=NULL,beta2s=NULL, idx_beta2=NULL, post_non_lin = 1) {
   g <- post_non_lin_g(post_non_lin)
   epsY <- stats::rnorm(nrow(Z), 0, eps_sigmaY)
   if(is.null(X)){
@@ -16,7 +16,7 @@ y_from_xz <- function(Z, eps_sigmaY,X=NULL, post_non_lin = 1) {
     epsX <- stats::rnorm(nrow(Z), 0, 1)
     X <- scale(X)
     Z <- scale(Z)
-    Y <- g(scale(rowMeans(as.matrix(cbind(X,Z)))+epsY))
+    Y <- g(scale(rowMeans(Z))+scale(rowMeans(X_orig))*beta2s[[idx_beta2]]+epsY)
   }
 }
 
