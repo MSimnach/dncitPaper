@@ -43,7 +43,7 @@ res_time <- foreach::foreach (i= n_seeds, .packages = c('DNCIT')) %dopar% {
                                                        cit_params <- list(cit='RCOT', params_cit=list(seed=as.numeric(args[11])))
                                                      }
 
-                                                     tmp <- DNCIT(X, Y, Z, embedding_map_with_parameters = 'feature_representations',
+                                                     tmp <- DNCIT::DNCIT(X, Y, Z, embedding_map_with_parameters = 'feature_representations',
                                                            cit_with_parameters = cit_params)
                                                      res[idx_sample] <- tmp$p
                                                      runtime[idx_sample] <- tmp$runtime
@@ -55,8 +55,10 @@ res_time <- foreach::foreach (i= n_seeds, .packages = c('DNCIT')) %dopar% {
                                                    runtime <- rep(0,length(beta2s))
                                                    for (idx_beta2 in seq_along(beta2s)){
                                                      cat(paste("Iteration",i, "for beta2", beta2s[[idx_beta2]], "\n"))
-                                                     XYZ_list <- data_gen(seed=i, idx_beta2=idx_beta2, beta2s=beta2s, n=n, post_non_lin=as.numeric(args[2]), eps_sigmaX=as.numeric(args[3]), eps_sigmaY=as.numeric(args[4]),
-                                                                          eps_sigmaZ=as.numeric(args[5]), embedding_orig=args[6], embedding_obs=args[7], confounder=args[8], response=args[9])
+                                                     XYZ_list <- dncitPaper::data_gen(seed=i, idx_sample=NULL, n_sample=NULL,idx_beta2=idx_beta2, beta2s=beta2s, n=n, 
+                                                                          post_non_lin=as.numeric(args[2]), eps_sigmaX=as.numeric(args[3]), eps_sigmaY=as.numeric(args[4]),
+                                                                          eps_sigmaZ=as.numeric(args[5]), embedding_orig=args[6], embedding_obs=args[7], confounder=args[8], 
+                                                                          response=args[9])
                                                      X <- as.matrix(XYZ_list[[1]])
                                                      Y <- as.matrix(XYZ_list[[2]])
                                                      Z <- as.matrix(XYZ_list[[3]])
@@ -87,7 +89,7 @@ res_time <- foreach::foreach (i= n_seeds, .packages = c('DNCIT')) %dopar% {
                                                         cit_params <- list(cit='fcit')
                                                      }
 
-                                                     tmp <- DNCIT(X, Y, Z, embedding_map_with_parameters = 'feature_representations',
+                                                     tmp <- DNCIT::DNCIT(X, Y, Z, embedding_map_with_parameters = 'feature_representations',
                                                                   cit_with_parameters = cit_params)
                                                      res[idx_sample] <- tmp$p
                                                      runtime[idx_sample] <- tmp$runtime
