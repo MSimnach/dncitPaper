@@ -6,7 +6,7 @@
 #SBATCH --cpus-per-task=40 # -c
 #SBATCH --mem=256gb
 #SBATCH --gpus=0
-#SBATCH --time=12:00:00 
+#SBATCH --time=02:00:00 
 #SBATCH --output=logs/RCOT_%j.log # %j is job id
 
 set +u

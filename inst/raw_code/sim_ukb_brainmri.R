@@ -17,17 +17,17 @@ if(cit == 'KCIT' || tail(args,1)=='10' || tail(args,1)=='20'){
 }else{
   n_sample = list(30, 100, 300, 1000, 3000, 10000)
 }
-n_seeds = 1:40
+n_seeds = 1:2
 n <- 1000
 beta2s_all <- list()
 for (k in -1:1){
   beta2s_all <- append(beta2s_all, c(10,7.5,5, 2.5)*10^(-k))
 }
 beta2s <- beta2s_all
-cl <- parallel::makeCluster(40, outfile="")
+cl <- parallel::makeCluster(2, outfile="")
 doParallel::registerDoParallel(cl)
 
-res_time <- foreach::foreach (i= n_seeds, .packages = c('DNCIT')) %dopar% {
+res_time <- foreach::foreach (i= n_seeds, .packages = c('DNCIT', 'dncitPaper')) %dopar% {
                                                  if (grepl('/CI',args[1],fixed=TRUE)){
                                                    paste('CIT:', cit)
                                                    res <- rep(0,length(n_sample))

@@ -11,12 +11,11 @@ y_from_xz <- function(Z, eps_sigmaY,X=NULL,beta2s=NULL, idx_beta2=NULL, post_non
   g <- post_non_lin_g(post_non_lin)
   epsY <- stats::rnorm(nrow(Z), 0, eps_sigmaY)
   if(is.null(X)){
-    Y <- g(scale(rowMeans(as.matrix(Z)))+epsY)
+    Y <- g(scale(rowMeans(Z))+epsY)
   } else {
-    epsX <- stats::rnorm(nrow(Z), 0, 1)
-    X <- scale(X)
-    Z <- scale(Z)
-    Y <- g(scale(rowMeans(Z))+scale(rowMeans(X_orig))*beta2s[[idx_beta2]]+epsY)
+    X_sd <- scale(X)
+    Z_sd <- scale(Z)
+    Y <- g(scale(rowMeans(Z_sd))+scale(rowMeans(X_sd))*beta2s[[idx_beta2]]+epsY)
   }
 }
 

@@ -3,10 +3,10 @@
 #SBATCH --mail-type=END,FAIL
 #SBATCH --mail-user=marco.simnacher@guest.hpi.de
 #SBATCH --partition=gpu,cpu,gpua100 # -p
-#SBATCH --cpus-per-task=40 # -c
-#SBATCH --mem=256gb
+#SBATCH --cpus-per-task=80 # -c
+#SBATCH --mem=512gb
 #SBATCH --gpus=0
-#SBATCH --time=12:00:00 
+#SBATCH --time=06:00:00 
 #SBATCH --output=logs/kpc_graph_2_10_%j.log # %j is job id
 
 set +u
