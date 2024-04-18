@@ -1,7 +1,6 @@
-library(DNCIT)
 library(doParallel)
 library(foreach)
-#library(dncitPaper)
+devtools::load_all('/dhc/home/marco.simnacher/DNCIT')
 devtools::load_all('/dhc/home/marco.simnacher/dncitPaper')
 args = commandArgs(trailingOnly=TRUE)
 
@@ -12,17 +11,19 @@ print(args)
 ####### In parallel #######
 if(cit == 'KCIT' || tail(args,1)=='10' || tail(args,1)=='20'){
   n_sample = list(30, 100, 300, 1000)
+}else if(cit=='WALD'){
+  n_sample = list(300, 1000, 3000, 10000)
 }else{
   n_sample = list(30, 100, 300, 1000, 3000, 10000)
 }
-n_seeds = 1:40
+n_seeds = 1:2
 n <- 1000
 beta2s_all <- list()
 for (k in -1:1){
   beta2s_all <- append(beta2s_all, c(10,7.5,5, 2.5)*10^(-k))
 }
 beta2s <- beta2s_all
-cl <- parallel::makeCluster(40, outfile="")
+cl <- parallel::makeCluster(2, outfile="")
 doParallel::registerDoParallel(cl)
 
 res_time <- foreach::foreach (i= n_seeds, .packages = c('DNCIT')) %dopar% {
@@ -63,6 +64,8 @@ res_time <- foreach::foreach (i= n_seeds, .packages = c('DNCIT')) %dopar% {
                                                       cit_params <- list(cit='cpt_kpc', params_cit=list(k=k, Knn = as.numeric(args[12]), model.formula.YZ=model_formula_YZ))
                                                      }else if(args[10]=='FCIT'){
                                                         cit_params <- list(cit='fcit')
+                                                     }else if(args[10]=='WALD'){
+                                                        cit_params <- list(cit='wald', params_cit=NULL)
                                                      }
 
                                                      tmp <- DNCIT::DNCIT(X, Y, Z, embedding_map_with_parameters = 'feature_representations',
@@ -108,7 +111,9 @@ res_time <- foreach::foreach (i= n_seeds, .packages = c('DNCIT')) %dopar% {
                                                       }
                                                       cit_params <- list(cit='cpt_kpc', params_cit=list(k=k, Knn = as.numeric(args[12]), model.formula.YZ=model_formula_YZ))
                                                      }else if(args[10]=='FCIT'){
-                                                        cit_params <- list(cit='fcit')
+                                                        cit_params <- list(cit='fcit', params_cit=list())
+                                                     }else if(args[10]=='WALD'){
+                                                        cit_params <- list(cit='wald', params_cit=NULL)
                                                      }
 
                                                      tmp <- DNCIT::DNCIT(X, Y, Z, embedding_map_with_parameters = 'feature_representations',
