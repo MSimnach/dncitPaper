@@ -91,8 +91,8 @@ res_time <- foreach::foreach (i= n_seeds, .packages = c('DNCIT')) %dopar% {
 
                                                      tmp <- DNCIT::DNCIT(X, Y, Z, embedding_map_with_parameters = 'feature_representations',
                                                                   cit_with_parameters = cit_params)
-                                                     res[idx_sample] <- tmp$p
-                                                     runtime[idx_sample] <- tmp$runtime
+                                                     res[idx_beta2] <- tmp$p
+                                                     runtime[idx_beta2] <- tmp$runtime
                                                    }
                                                    p_time <- cbind(res, runtime)
                                                  }
