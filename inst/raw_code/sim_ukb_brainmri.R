@@ -1,7 +1,7 @@
 library(DNCIT)
 library(doParallel)
 library(foreach)
-devtools::load_all("./")
+library(dncitPaper)
 args = commandArgs(trailingOnly=TRUE)
 
 n_cits <- 1
@@ -55,7 +55,6 @@ res_time <- foreach::foreach (i= n_seeds, .packages = c('DNCIT')) %dopar% {
                                                    runtime <- rep(0,length(beta2s))
                                                    for (idx_beta2 in seq_along(beta2s)){
                                                      cat(paste("Iteration",i, "for beta2", beta2s[[idx_beta2]], "\n"))
-                                                     source(paste("src", args[1], "Data_gen.R",sep=""))
                                                      XYZ_list <- data_gen(seed=i, idx_beta2=idx_beta2, beta2s=beta2s, n=n, post_non_lin=as.numeric(args[2]), eps_sigmaX=as.numeric(args[3]), eps_sigmaY=as.numeric(args[4]),
                                                                           eps_sigmaZ=as.numeric(args[5]), embedding_orig=args[6], embedding_obs=args[7], confounder=args[8], response=args[9])
                                                      X <- as.matrix(XYZ_list[[1]])
