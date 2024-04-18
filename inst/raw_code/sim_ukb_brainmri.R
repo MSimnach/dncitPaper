@@ -1,7 +1,8 @@
 library(DNCIT)
 library(doParallel)
 library(foreach)
-library(dncitPaper)
+#library(dncitPaper)
+devtools::load_all('/dhc/home/marco.simnacher/dncitPaper')
 args = commandArgs(trailingOnly=TRUE)
 
 n_cits <- 1
@@ -14,14 +15,14 @@ if(cit == 'KCIT' || tail(args,1)=='10' || tail(args,1)=='20'){
 }else{
   n_sample = list(30, 100, 300, 1000, 3000, 10000)
 }
-n_seeds = 1:2
+n_seeds = 1:40
 n <- 1000
 beta2s_all <- list()
 for (k in -1:1){
   beta2s_all <- append(beta2s_all, c(10,7.5,5, 2.5)*10^(-k))
 }
 beta2s <- beta2s_all
-cl <- parallel::makeCluster(2, outfile="")
+cl <- parallel::makeCluster(40, outfile="")
 doParallel::registerDoParallel(cl)
 
 res_time <- foreach::foreach (i= n_seeds, .packages = c('DNCIT')) %dopar% {
@@ -41,6 +42,27 @@ res_time <- foreach::foreach (i= n_seeds, .packages = c('DNCIT')) %dopar% {
 
                                                      if (args[10] == 'RCOT'){
                                                        cit_params <- list(cit='RCOT', params_cit=list(seed=as.numeric(args[11])))
+                                                     }else if(args[10] == 'CMIknn'){
+                                                       cit_params <- list(cit='cmiknn', params_cit=list())
+                                                     }else if(args[10] == 'kpc_graph'){
+                                                      if (args[11]=='1'){
+                                                          k = kernlab::vanilladot()
+                                                      }else if (args[11]=='2') {
+                                                          k = kernlab::rbfdot(1/(2*stats::median(stats::dist(X))^2))
+                                                      }else if (args[11]=='3') {
+                                                          k = kernlab::laplacedot(1/(2*stats::median(stats::dist(X))^2))
+                                                      }else if (args[11]=='4') {
+                                                          k = kernlab::tanhdot()
+                                                      }
+                                                      if(args[8]=='AS'){
+                                                        model_formula_YZ <- "V1~1+s(V3, by=V2)"
+                                                      }else if(args[8]=='genes10'){
+                                                        add_confounders <- paste('+',paste('s(V', 4:ncol(YZ), ')', collapse='+', sep=""), sep="")
+                                                        model_formula_YZ <- paste('V1~1+s(V3, by=V2)', add_confounders, sep="")
+                                                      }
+                                                      cit_params <- list(cit='cpt_kpc', params_cit=list(k=k, Knn = as.numeric(args[12]), model.formula.YZ=model_formula_YZ))
+                                                     }else if(args[10]=='FCIT'){
+                                                        cit_params <- list(cit='fcit')
                                                      }
 
                                                      tmp <- DNCIT::DNCIT(X, Y, Z, embedding_map_with_parameters = 'feature_representations',

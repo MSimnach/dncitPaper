@@ -6,7 +6,7 @@
 #SBATCH --cpus-per-task=2 # -c
 #SBATCH --mem=32gb
 #SBATCH --gpus=0
-#SBATCH --time=02:00:00 
+#SBATCH --time=14:00:00 
 #SBATCH --output=logs/CMIknn_%j.log # %j is job id
 
 set +u
@@ -15,12 +15,12 @@ conda activate /dhc/home/marco.simnacher/conda3/envs/install-dncit
 
 ##### args =['/CI/ or /No_CI/', post_non_lin, eps_sigmaX, eps_sigmaY, eps_sigmaZ, embedding_orig, embedding_obs, confounder, response, CIT, CIT_params]
 ## test
-Rscript raw_code/sim_ukb_brainmri.R /CI/ 1 0 1 0 fastsurfer fastsurfer AS simulated CMIknn
-Rscript raw_code/sim_ukb_brainmri.R /No_CI/ 1 0 1 0 fastsurfer fastsurfer AS simulated CMIknn
-
-## same embedding
 # Rscript raw_code/sim_ukb_brainmri.R /CI/ 1 0 1 0 fastsurfer fastsurfer AS simulated CMIknn
 # Rscript raw_code/sim_ukb_brainmri.R /No_CI/ 1 0 1 0 fastsurfer fastsurfer AS simulated CMIknn
+
+## same embedding
+Rscript raw_code/sim_ukb_brainmri.R /CI/ 1 0 1 0 fastsurfer fastsurfer AS simulated CMIknn
+Rscript raw_code/sim_ukb_brainmri.R /No_CI/ 1 0 1 0 fastsurfer fastsurfer AS simulated CMIknn
 # Rscript raw_code/sim_ukb_brainmri.R /CI/ 1 0 50 0 fastsurfer fastsurfer AS simulated CMIknn
 # Rscript raw_code/sim_ukb_brainmri.R /No_CI/ 1 0 50 0 fastsurfer fastsurfer AS simulated CMIknn
 # Rscript raw_code/sim_ukb_brainmri.R /CI/ 4 0 1 0 fastsurfer fastsurfer AS simulated CMIknn
