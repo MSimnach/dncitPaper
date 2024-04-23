@@ -10,7 +10,7 @@ cit <- c(args[10])
 print(args)
 
 ####### In parallel #######
-if(cit == 'KCIT' || tail(args,1)=='10' || tail(args,1)=='20'){
+if(cit == 'KCIT' || tail(args,1)=='10' || tail(args,1)=='20' || cit=='CMIknn'){
   n_sample = list(30, 100, 300, 1000)
 }else if(cit=='WALD'){
   n_sample = list(300, 1000, 3000, 10000)
@@ -59,7 +59,7 @@ res_time <- foreach::foreach (i= n_seeds, .packages = c('DNCIT', 'dncitPaper')) 
                                                       if(args[8]=='AS'){
                                                         model_formula_YZ <- "V1~1+s(V3, by=V2)"
                                                       }else if(args[8]=='genes10'){
-                                                        add_confounders <- paste('+',paste('s(V', 4:ncol(YZ), ')', collapse='+', sep=""), sep="")
+                                                        add_confounders <- paste('+',paste('s(V', 4:(ncol(Y)+ncol(Z)), ')', collapse='+', sep=""), sep="")
                                                         model_formula_YZ <- paste('V1~1+s(V3, by=V2)', add_confounders, sep="")
                                                       }
                                                       cit_params <- list(cit='cpt_kpc', params_cit=list(k=k, Knn = as.numeric(args[12]), model.formula.YZ=model_formula_YZ))
@@ -107,12 +107,12 @@ res_time <- foreach::foreach (i= n_seeds, .packages = c('DNCIT', 'dncitPaper')) 
                                                       if(args[8]=='AS'){
                                                         model_formula_YZ <- "V1~1+s(V3, by=V2)"
                                                       }else if(args[8]=='genes10'){
-                                                        add_confounders <- paste('+',paste('s(V', 4:ncol(YZ), ')', collapse='+', sep=""), sep="")
+                                                        add_confounders <- paste('+',paste('s(V', 4:(ncol(Y)+ncol(Z)), ')', collapse='+', sep=""), sep="")
                                                         model_formula_YZ <- paste('V1~1+s(V3, by=V2)', add_confounders, sep="")
                                                       }
                                                       cit_params <- list(cit='cpt_kpc', params_cit=list(k=k, Knn = as.numeric(args[12]), model.formula.YZ=model_formula_YZ))
                                                      }else if(args[10]=='FCIT'){
-                                                        cit_params <- list(cit='fcit', params_cit=list())
+                                                        cit_params <- list(cit='fcit')
                                                      }else if(args[10]=='WALD'){
                                                         cit_params <- list(cit='wald', params_cit=NULL)
                                                      }
@@ -150,15 +150,15 @@ if(grepl('/CI',args[1],fixed=TRUE)){
   #print(xtable(rejected))
   write.csv(rejected,file=paste0("Results", args[1], "rejection_rates/", paste(args[-1], collapse="_"), ".csv", collapse=''))
 
-  #ks statistics
-  ks <- matrix(nrow = length(n_sample), ncol=n_cits)
-  for (idx_sample in seq_along(n_sample)){
-    ks[idx_sample,1] <- ks.test(p_res[,idx_sample], punif)$statistic
-  }
-  ks_df <- data.frame(ks)
-  colnames(ks_df)<- cit
-  row.names(ks_df) <- n_sample
-  write.csv(ks_df,file=paste0("Results", args[1], "Kolmogorov-Smirnov-Statistics/", paste(args[-1], collapse="_"), ".csv", collapse=''))
+  # #ks statistics
+  # ks <- matrix(nrow = length(n_sample), ncol=n_cits)
+  # for (idx_sample in seq_along(n_sample)){
+  #   ks[idx_sample,1] <- ks.test(p_res[,idx_sample], punif)$statistic
+  # }
+  # ks_df <- data.frame(ks)
+  # colnames(ks_df)<- cit
+  # row.names(ks_df) <- n_sample
+  # write.csv(ks_df,file=paste0("Results", args[1], "Kolmogorov-Smirnov-Statistics/", paste(args[-1], collapse="_"), ".csv", collapse=''))
 }else if(grepl('/No_CI',args[1],fixed=TRUE)){
   #save p-values and runtimes
   p_res <- matrix(nrow=length(n_seeds), ncol=length(beta2s))
