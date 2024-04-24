@@ -4,7 +4,14 @@
 \alias{y_from_xz}
 \title{Simulate response Y from Z and optionally X}
 \usage{
-y_from_xz(Z, eps_sigmaY, X = NULL, post_non_lin = 1)
+y_from_xz(
+  Z,
+  eps_sigmaY,
+  X = NULL,
+  beta2s = NULL,
+  idx_beta2 = NULL,
+  post_non_lin = 1
+)
 }
 \arguments{
 \item{Z}{observed confounders}

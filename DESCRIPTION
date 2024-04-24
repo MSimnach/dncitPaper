@@ -22,6 +22,7 @@ Imports:
     magrittr,
     reshape2,
     stats,
+    stringr,
     utils
 Suggests: 
     testthat (>= 3.0.0)
