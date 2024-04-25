@@ -42,7 +42,7 @@ ids_confounders <- c(id_eid, id_sex, id_age_assessment_center,id_assessment_cent
 total_number_confounders <- length(ids_confounders)
 
 ### Age sex as confounders
-ukb_pipeline <- data.table::na.omit(ukb_data)
+ukb_pipeline <- stats::na.omit(ukb_data)
 ukb_Z <- ukb_pipeline[,1:3]
 ukb_fastsurfer <- ukb_pipeline[,c(1, (total_number_confounders+1):(total_number_confounders+139)), with=FALSE]
 data.table::fwrite(ukb_fastsurfer, file = path_to_save_fastsurfer_X)
@@ -52,6 +52,6 @@ data.table::fwrite(ukb_Z, file = path_to_save_age_sex_Z)
 #ukb_transfer <- fread(file='M:/CITs/Application/UKB_data/ukb_condVAE.csv',  header=FALSE)
 
 #### ten dimensional confounders of genetic PCs
-ukb_pipeline_ten <- data.table::na.omit(ukb_data)
+ukb_pipeline_ten <- stats::na.omit(ukb_data)
 ukb_Z_genes10 <- ukb_pipeline_ten[,c(1:3, 6:15)]
 data.table::fwrite(ukb_Z_genes10, file = path_to_save_age_sex_10_genes_Z)
