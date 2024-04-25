@@ -27,6 +27,7 @@ path_to_pval_brain_trait_each <- 'M:/CITs/Application/UKB_data/Real-world_applic
 path_to_pval_brain_trait_each_w_joint <- 'M:/CITs/Application/UKB_data/Real-world_application/p_val_structure_trait_w_joint_structures.csv'
 path_to_pval_brain_trait_joint_rcot <- 'M:/CITs/Application/UKB_data/Real-world_application/p_val_structures_trait.csv'
 path_to_pval_brain_trait_confounder_control <- 'M:/CITs/Application/UKB_data/Real-world_application/p_val_structures_trait_confounder_control.csv'
+path_to_save_plots <- 'M:/CITs/Application/UKB_data/Real-world_application/'
 
 ##color palettes for plotting
 palet_discrete <- paletteer::paletteer_d("colorBlindness::Blue2Orange10Steps")
@@ -254,6 +255,7 @@ for(i in 1:nrow(ids_whole_brain_aseg)){
 #data.table::fwrite(subset_ukb_data_mri, file = path_to_save_preprocessed_data)
 ids_brain_structure <- c(as.character(unlist(ids_lr[seq(from = 1, to = nrow(ids_lr), by = 2),1])),
                          ids_whole_brain_aseg_vec)
+ids_brain <- rbind(ids_lr[seq(from = 1, to = nrow(ids_lr), by = 2),], ids_whole_brain_aseg)
 brain_structures <- paste0("brain_structure_", 1:length(ids_brain_structure))
 ## save ids brain structures in Avinun 2020
 #data.table::fwrite(as.data.frame(ids_brain_structure), file = path_to_save_ids_brain_avinun)
@@ -312,11 +314,11 @@ for (brain_structure in brain_structures) {
   print(brain_structure)
   #regress out head location in scanner
   for (trait in personality_traits) {
-    Y <- as.matrix(mri_neuroticism_dummy[brain_structure])
-    X <- as.matrix(mri_neuroticism_dummy[trait])
+    X <- as.matrix(mri_neuroticism_dummy[brain_structure])
+    Y <- as.matrix(mri_neuroticism_dummy[trait])
     # Wald test
     cit_params <- list(cit='wald')
-    cit_params$'params_cit' <- list(lm_formula=stats::as.formula(paste(brain_structure, "~ . + I(age^2)+age:sex+I(date_diff^2)")))
+    cit_params$'params_cit' <- list(lm_formula=stats::as.formula(paste(trait, "~ . + I(age^2)+age:sex+I(date_diff^2)")))
     wald_test <- DNCIT::DNCIT(X, Y, Z, embedding_map_with_parameters = 'feature_representations',
                                    cit_with_parameters = cit_params)
 
@@ -359,11 +361,17 @@ p_structure_trait <- p_df_adj_plot %>%
 p_structure_trait$combined <- with(p_structure_trait, paste("brain_structure_", Structure, Trait, sep = ""))
 p_structure_trait$is_highlight <- ifelse(p_structure_trait$combined %in% structure_trait_significant_avinun, 'yes','no')
 
+# labels for small p-values
+lab_small_p_df <- ids_brain[p_structure_trait[which(p_structure_trait$is_annotate == 'yes'),]$Structure,]
+labels <- c('medialorbitofrontal', 'rostralanteriorcingulate', 'posterior thalamic radiation',
+            'isthmuscingulate', 'Caudate', 'medial lemniscus', 'posterior thalamic radiation',
+            'rostralanteriorcingulate', 'pontine crossing tract')
+
 # Plotting similar to a Manhattan plot
-ggplot2::ggplot(p_structure_trait, ggplot2::aes(x = X_Axis, y = -log10(p_unadj), color = Trait), alpha=0.8, size=1.3) +
+plot_each_struc_trait <- ggplot2::ggplot(p_structure_trait, ggplot2::aes(x = X_Axis, y = -log10(p_unadj), color = Trait), alpha=0.8, size=1.3) +
   ggplot2::geom_point(alpha = 0.5) +
   ggplot2::scale_x_continuous(labels = unique(p_structure_trait$Trait), breaks = seq(53, max(p_structure_trait$X_Axis), by = 107)) +
-  ggplot2::scale_color_manual(values = rep(c("grey", "skyblue"), 22 )) +
+  ggplot2::scale_color_manual(values = rep(c(palet_discrete[8], palet_discrete[3]), 22 )) +
   ggplot2::labs(x = "Trait",
        y = expression("-log"[10] * "(p)"),
        color = "Trait") +
@@ -376,12 +384,12 @@ ggplot2::ggplot(p_structure_trait, ggplot2::aes(x = X_Axis, y = -log10(p_unadj),
     panel.grid.minor.x = ggplot2::element_blank()
   ) +
   # Add highlighted points
-  ggplot2::geom_point(data=subset(p_structure_trait, is_highlight=="yes"), color="orange", size=2) +
+  ggplot2::geom_point(data=subset(p_structure_trait, is_highlight=="yes"), color=palet_discrete[9], size=2) +
   # Add highlighted points
-  ggplot2::geom_point(data=subset(p_structure_trait, is_annotate=="yes"), color="orange", size=2) +
+  ggplot2::geom_point(data=subset(p_structure_trait, is_annotate=="yes"), color=palet_discrete[10], size=2) +
   # Add label using ggrepel to avoid overlapping
-  ggrepel::geom_label_repel( data=subset(p_structure_trait, is_annotate=="yes"),  ggplot2::aes(label=Structure), size=2)
-
+  ggrepel::geom_label_repel( data=subset(p_structure_trait, is_annotate=="yes"),  ggplot2::aes(label=labels), size=4)
+#ggplot2::ggsave(paste0(path_to_save_plots, 'individual_p_values_wald.png'), plot_each_struc_trait, width = 7, height = 7, dpi = 300)
 
 #### joint significance of brain structures
 ## Wald test for each trait separately
@@ -434,8 +442,118 @@ for(seed in 1:20){
 rcots_p_joint_traits[['all_traits']] <- mean(rcots_p_joint_all_traits)
 #data.table::fwrite(as.data.frame(rcots_p_joint_traits), file = path_to_pval_brain_trait_joint_rcot)
 
+##plot joint p-values also as Manhattan plot
+p_joint_df <- p_joint_df %>%
+  tibble::rownames_to_column(var = "Trait") %>%
+  dplyr::arrange(Trait) %>%
+  dplyr::mutate(Test=rep('Wald', length(personality_traits))) %>%
+  dplyr::mutate(p_adj=NULL)
+p_joint_rcot <- t(as.data.frame(rcots_p_joint_traits))
+p_joint_rcot <- data.frame(p_joint_rcot) %>%
+  tibble::rownames_to_column(var = "Trait")%>%
+  arrange(Trait) %>%
+  dplyr::mutate(Test=rep('RCoT', length(rcots_p_joint_traits)))
+colnames(p_joint_rcot) <- c('Trait', 'p_unadj', 'Test')
+p_joint <- rbind(p_joint_df, p_joint_rcot)%>%
+  # Add highlight and annotation information
+  mutate( is_annotate=ifelse(-log10(p_unadj)>2.5, "yes", "no"))
+p_joint$X_Axis <- 1:nrow(p_joint)
+
+plot_joint <- ggplot2::ggplot(p_joint, ggplot2::aes(x = X_Axis, y = -log10(p_unadj), color = Test), alpha=0.8, size=1.3) +
+  ggplot2::geom_point(alpha = 0.5) +
+  ggplot2::scale_x_continuous(labels = unique(p_joint$Test), breaks = seq(3.5, max(p_joint$X_Axis), by = 7)) +
+  ggplot2::scale_color_manual(values = rep(c(palet_discrete[8], palet_discrete[3]), 22 )) +
+  ggplot2::labs(x = "Test",
+                y = expression("-log"[10] * "(p)"),
+                color = "Test") +
+  # Custom the theme:
+  ggplot2::theme_bw() +
+  ggplot2::theme(
+    legend.position="none",
+    panel.border = ggplot2::element_blank(),
+    panel.grid.major.x = ggplot2::element_blank(),
+    panel.grid.minor.x = ggplot2::element_blank()
+  )+
+  ggplot2::ylim(0,4)+
+  ggplot2::geom_point(data=subset(p_joint, is_annotate=="yes"), color=palet_discrete[10], size=2) +
+  # Add label using ggrepel to avoid overlapping
+  ggrepel::geom_label_repel( data=subset(p_joint, is_annotate=="yes"),  ggplot2::aes(label=Trait), size=4)
+#ggplot2::ggsave(paste0(path_to_save_plots, 'joint_p_values.png'), plot_joint, width = 7, height = 7, dpi = 300)
 
 
+### Deep-RCoT with fastsurfer embedding map for all traits
+#fastsurfer ids
+ids_IDPs <- data.table::fread(path_to_fastsurfer_ids, select='Field ID')
+ids_IDPs_full_str <- ids_IDPs %>%
+  +   dplyr::mutate_all(list(~ stringr::str_c(., '-2.0'))) %>%
+  +   dplyr::pull(`Field ID`)
+ids_fastsurfer <- ids_IDPs_full_str[1:139]
+brain_structures_fast <- paste0("brain_structure_", 1:length(ids_fastsurfer))
+##Variables used and data subset
+ids_mri_trait_deep_rcot <- c(ids_confounders, ids_fastsurfer, unique(ids_personality))
+mrifast_trait <- stats::na.omit(subset_ukb_data_mri[,ids_mri_trait_deep_rcot])
+
+###Outputs
+# Neuroticism
+mrifast_trait$neuroticism <- scale(mrifast_trait[, id_neuroticism])
+# Sociability score
+mrifast_trait$sociability <- scale(rowSums(mrifast_trait[, ids_social]))
+# Warmth score
+mrifast_trait$warmth <- scale(rowSums(mrifast_trait[, ids_warmth]))
+# Diligence score
+mrifast_trait$diligence <- scale(rowSums(mrifast_trait[, ids_diligence]))
+# Curiosity score
+mrifast_trait$curiosity <- scale(rowSums(mrifast_trait[, ids_curiosity]))
+# Nervousness score
+mrifast_trait$nervousness <- scale(rowSums(mrifast_trait[, ids_nervousness]))
+
+## remove all original columns used to obtain the scores
+mrifast_trait <- mrifast_trait[, !names(mrifast_trait) %in% unique(ids_personality)]
+personality_traits <- c('neuroticism', 'sociability', 'warmth', 'diligence', 'curiosity', 'nervousness')
+colnames(mrifast_trait) <- c('sex', 'age', 'site', 'date',
+                               'head_size', 'head_location1', 'head_location2','head_location3','head_location4',
+                               'qc_discrepancy', 'gene1', 'gene2', 'gene3', 'gene4', 'gene5',
+                             brain_structures_fast, personality_traits)
+## dummy confounder site
+dummy_df_tmp <- fastDummies::dummy_cols(mrifast_trait, select_columns = 'site')
+mrifast_trait_dummy <- dummy_df_tmp[, !names(dummy_df_tmp) %in% c('site', 'site_10003')]
+## date difference to first date
+mrifast_trait_dummy$date_diff <- mrifast_trait_dummy[,'date'] - min(mrifast_trait_dummy[,'date'])
+mrifast_trait_dummy <- mrifast_trait_dummy[, !names(mrifast_trait_dummy) %in% c('date')]
+
+# confounder names
+confounders <- c(grep("^site_", colnames(mrifast_trait_dummy), value=TRUE),
+                 'sex', 'age', 'date_diff',
+                 'head_size', 'head_location1', 'head_location2','head_location3','head_location4',
+                 'qc_discrepancy', 'gene1', 'gene2', 'gene3', 'gene4', 'gene5')
+
+### Deep-RCoT
+rcots_p_joint_fast <- list()
+Z <- sapply(as.data.frame(mrifast_trait_dummy[, confounders]), as.numeric)
+X <- as.matrix(mrifast_trait_dummy[brain_structures_fast])
+# for each trait
+for (trait in personality_traits){
+  print(trait)
+  Y <- as.matrix(mrifast_trait_dummy[, trait])
+  rcots_p_joint_fast_ <- rep(1,20)
+  for(seed in 1:20){
+    cit_params <- list(cit='RCOT', params_cit=list(seed=seed))
+    rcot_p <- DNCIT::DNCIT(X, Y, Z, embedding_map_with_parameters = 'feature_representations',
+                           cit_with_parameters = cit_params)$p
+    rcots_p_joint_fast_[seed] <- rcot_p
+  }
+  rcots_p_joint_fast[[trait]] <- mean(rcots_p_joint_fast_)
+}
+# for all traits together
+Y <- as.matrix(mrifast_trait_dummy[, personality_traits])
+rcots_p_joint_all_traits_fast <- rep(1,20)
+for(seed in 1:20){
+  cit_params <- list(cit='RCOT', params_cit=list(seed=seed))
+  rcot_p <- DNCIT::DNCIT(X, Y, Z, embedding_map_with_parameters = 'feature_representations',
+                         cit_with_parameters = cit_params)$p
+  rcots_p_joint_all_traits_fast[seed] <- rcot_p
+}
+rcots_p_joint_fast[['all_traits']] <- mean(rcots_p_joint_all_traits_fast)
 
 #### Confounder and DNCITs
 ### 1) Confounder control: test if nonlinear relationships with confounders are satisfactory addressed in Wald tests
