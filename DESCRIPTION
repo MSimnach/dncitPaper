@@ -15,6 +15,7 @@ Imports:
     data.table,
     data.tree,
     dplyr,
+    fastDummies,
     ggplot2,
     ggtree,
     grid,
