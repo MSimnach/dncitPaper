@@ -143,7 +143,7 @@ if(grepl('/CI',args[1],fixed=TRUE)){
   #rejection rates
   n_seeds_ <- length(n_seeds)
   for (idx_sample in seq_along(n_sample)){
-    rejected <- colSums(p_res < 0.05) / n_seeds_
+    rejected <- colSums(p_res < 0.05, na.rm=TRUE) / n_seeds_
   }
   rejected <- data.frame(rejected, row.names = n_sample)
   colnames(rejected) <- cit
@@ -175,7 +175,7 @@ if(grepl('/CI',args[1],fixed=TRUE)){
   #rejection rates
   n_seeds_ <- length(n_seeds)
   for (idx_beta2 in seq_along(beta2s)){
-    rejected <- colSums(p_res < 0.05) / n_seeds_
+    rejected <- colSums(p_res < 0.05, na.rm=TRUE) / n_seeds_
   }
   rejected <- data.frame(rejected, row.names = beta2s)
   colnames(rejected) <- cit
