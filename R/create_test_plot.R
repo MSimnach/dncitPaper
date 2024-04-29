@@ -8,7 +8,7 @@
 #'
 #' @return returns a plot with all rejection rates of all settings and all CITs
 #' @export
-create_test_plot <- function(folder_path, dncits, settings, sample_sizes=NULL, betas=NULL){
+create_test_plot <- function(folder_path, dncits, settings, sample_sizes=NULL, betas=NULL, runtimes_plot=FALSE){
   # List all files in the folder
   all_files <- list.files(folder_path, full.names = TRUE)
 
@@ -34,14 +34,39 @@ create_test_plot <- function(folder_path, dncits, settings, sample_sizes=NULL, b
     list_result_tabs[[dncit_char]] <- create_empty_result_tab(settings_files,sample_sizes=sample_sizes, betas=betas)
   }
 
-  list_result_tabs_full <- create_reject_tabs(dncits, settings_files, all_files, list_result_tabs)
+  if(runtimes_plot==TRUE){
+    list_result_tabs_full <- create_runtime_tabs(dncits, settings_files, all_files, list_result_tabs, sample_sizes)
+  }else{
+    list_result_tabs_full <- create_reject_tabs(dncits, settings_files, all_files, list_result_tabs)
+  }
+
 
   results_plots <- list()
-  for(dncit in dncits){
-    if(which(dncits == dncit) == length(dncits)){
-      results_plots[[dncit]] <- plot_dncit_col(dncit, list_result_tabs_full[[dncit]], legend=TRUE)
-    }else{
-      results_plots[[dncit]] <- plot_dncit_col(dncit, list_result_tabs_full[[dncit]])
+  if(runtimes_plot==TRUE){
+    maximum_runtime <- 0
+    #get scale for runtime plot
+    for(dncit in dncits){
+      df_tmp <- list_result_tabs_full[[dncit]][,-1]
+      df_tmp[] <- lapply(list_result_tabs_full[[dncit]][,-1], function(x) as.numeric(as.character(x)))
+      max_tmp <- max(df_tmp, na.rm=TRUE)
+      if(max_tmp > maximum_runtime){
+        maximum_runtime <- max_tmp
+      }
+    }
+    for(dncit in dncits){
+      if(which(dncits == dncit) == length(dncits)){
+        results_plots[[dncit]] <- plot_dncit_runtime_col(dncit, list_result_tabs_full[[dncit]], maximum_runtime=maximum_runtime, legend=TRUE)
+      }else{
+        results_plots[[dncit]] <- plot_dncit_runtime_col(dncit, list_result_tabs_full[[dncit]], maximum_runtime=maximum_runtime)
+      }
+    }
+  }else{
+    for(dncit in dncits){
+      if(which(dncits == dncit) == length(dncits)){
+        results_plots[[dncit]] <- plot_dncit_col(dncit, list_result_tabs_full[[dncit]], legend=TRUE)
+      }else{
+        results_plots[[dncit]] <- plot_dncit_col(dncit, list_result_tabs_full[[dncit]])
+      }
     }
   }
 
@@ -96,6 +121,7 @@ create_reject_tabs <- function(dncits, settings_files, all_files, list_result_ta
         col_name <- gsub(part, "", basename(file_path))
 
         # Modify col_name to always start with first letter after '_'
+
         first_underscore <- regexpr("_", col_name)
         if (first_underscore != -1) {
           if(startsWith(col_name, 'kpc_graph')){
@@ -104,6 +130,10 @@ create_reject_tabs <- function(dncits, settings_files, all_files, list_result_ta
             col_name <- substring(col_name, first_underscore + 1)
           }
         }
+        if(col_name=='1.csv'){
+          col_name <- 'RCOT_1.csv'
+        }
+
 
         if (ncol(data) > 1) {
           colnames(data)[-1] <- col_name
@@ -113,13 +143,87 @@ create_reject_tabs <- function(dncits, settings_files, all_files, list_result_ta
       }
       #extract rejection rates for each DNCIT
       for(dncit in dncits){
-        dncit_csv <- paste0(dncit, '.csv')
+        if(dncit=='RCOT'){
+          dncit_csv <- paste0(dncit, '_1.csv')
+        }else{
+          dncit_csv <- paste0(dncit, '.csv')
+        }
         if (dncit_csv %in% colnames(merged_part)){
           list_result_tabs[[dncit]][count2,] <- c(part, merged_part[[dncit_csv]])
         }
       }
     }
   }
+  print(list_result_tabs)
+  return(list_result_tabs)
+
+}
+
+create_runtime_tabs <- function(dncits, settings_files, all_files, list_result_tabs, sample_sizes){
+  count2 <- 0
+
+  for (part in settings_files) {
+    count2 = count2+1
+    matching_files <- grep(part, all_files, value = TRUE)
+
+    if (length(matching_files) > 1) {
+      count=1
+      for (file_path in matching_files) {
+
+        tmp <- utils::read.csv(file_path)
+        tmp <- colMeans(tmp)
+        file_path_reject <- gsub('Runtime', 'rejection_rates', file_path)
+        tmp_reject <- utils::read.csv(file_path_reject)
+        j <- 1
+        for(i in 1:length(tmp_reject[,1])){
+          if(!is.na(tmp_reject[i,2])){
+            tmp_reject[i,2] <- tmp[j+1]
+            j <- j+1
+          }
+        }
+        data <- tmp_reject
+
+        if(count==1){
+          merged_part <- data.frame('X' = data$X)
+        }
+        count=count+1
+        col_name <- gsub(part, "", basename(file_path))
+
+        # Modify col_name to always start with first letter after '_'
+        first_underscore <- regexpr("_", col_name)
+        if (first_underscore != -1) {
+          if(startsWith(col_name, 'kpc_graph')){
+
+          }else{
+            col_name <- substring(col_name, first_underscore + 1)
+          }
+        }
+
+        if(col_name=='1.csv'){
+          col_name <- 'RCOT_1.csv'
+        }
+
+
+        if (ncol(data) > 1) {
+          colnames(data)[-1] <- col_name
+        }
+
+        merged_part <- dplyr::full_join(merged_part, data, by = "X")
+      }
+      #extract rejection rates for each DNCIT
+      for(dncit in dncits){
+        if(dncit=='RCOT'){
+          dncit_csv <- paste0(dncit, '_1.csv')
+        }else{
+          dncit_csv <- paste0(dncit, '.csv')
+        }
+        if (dncit_csv %in% colnames(merged_part)){
+          list_result_tabs[[dncit]][count2,] <- c(part, merged_part[[dncit_csv]])
+        }
+      }
+    }
+  }
+  print(list_result_tabs)
   return(list_result_tabs)
 }
 
@@ -136,10 +240,26 @@ plot_dncit_col <- function(dncit, result_tab_dncit, legend=FALSE){
   title <- cit_name(dncit)
   plot_dncit <- ggplot2::ggplot(dncit_tab_long, ggplot2::aes(x = variable, y = setting, fill = rejection_rate)) +
     ggplot2::geom_tile()+
-    ggplot2::scale_fill_gradientn(colors = c('green', 'darkgreen', 'yellow1','orange', 'red'), values=c(0,0.05,0.1,0.15,1), limits=c(0,1)) +  # Adjust the color gradient as needed
+    ggplot2::scale_fill_gradientn(colors = paletteer::paletteer_c("grDevices::RdYlBu", 1000), values=c(0,0.05,0.1,0.15,1), limits=c(0,1)) +  # Adjust the color gradient as needed
     ggplot2::labs(x = "Sample size", y = "", title = title) +  # No need to repeat y-axis label
     ggplot2::theme(axis.text= ggplot2::element_blank(),  # Remove y-axis text
           axis.title= ggplot2::element_blank())
+  if(legend==FALSE){
+    plot_dncit <- plot_dncit +
+      ggplot2::theme(legend.position = "none")
+  }
+  return(plot_dncit)
+}
+
+plot_dncit_runtime_col <- function(dncit, result_tab_dncit, legend=FALSE, maximum_runtime=NULL){
+  dncit_tab_long <- create_long_tab(dncit, result_tab_dncit)
+  title <- cit_name(dncit)
+  plot_dncit <- ggplot2::ggplot(dncit_tab_long, ggplot2::aes(x = variable, y = setting, fill = rejection_rate)) +
+    ggplot2::geom_tile()+
+    ggplot2::scale_fill_gradientn(colors = paletteer::paletteer_c("grDevices::RdYlBu", 1000), limits=c(0,maximum_runtime)) +  # Adjust the color gradient as needed
+    ggplot2::labs(x = "Sample size", y = "", title = title) +  # No need to repeat y-axis label
+    ggplot2::theme(axis.text= ggplot2::element_blank(),  # Remove y-axis text
+                   axis.title= ggplot2::element_blank())
   if(legend==FALSE){
     plot_dncit <- plot_dncit +
       ggplot2::theme(legend.position = "none")
