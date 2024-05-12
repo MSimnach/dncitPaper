@@ -20,6 +20,8 @@
 #' @export
 data_gen <- function(seed, idx_sample=NULL, n_sample=NULL, idx_beta2=NULL, beta2s=NULL, n=NULL, post_non_lin=4, eps_sigmaX=0, eps_sigmaY=1, eps_sigmaZ=0, embedding_orig='fastsurfer',
                      embedding_obs='fastsurfer', confounder='AS', response='simulated'){
+  #path_to_ukb_data <- "/dhc/home/marco.simnacher/DeepCIT/CIT_benchmarking/Data"
+  path_to_ukb_data <- "/home/RDC/simnacma/H:/simnacma/CITs/Application/UKB_data"
   set.seed(seed)
 
   X_orig <- load_X_orig(embedding_orig)
@@ -37,7 +39,7 @@ data_gen <- function(seed, idx_sample=NULL, n_sample=NULL, idx_beta2=NULL, beta2
   subset_X_obs <- X_obs[X_obs$id %in% X_merged$id, ]
   subset_X_orig <-  X_orig[X_orig$id %in% X_merged$id, ]
   subset_Z <- Z[Z$id %in% X_merged$id, ]
-  #check if ids are equal 
+  #check if ids are equal
   stopifnot(all.equal(subset_X_orig[,1], subset_Z[,1]))
 
   #sample rows
@@ -77,11 +79,11 @@ data_gen <- function(seed, idx_sample=NULL, n_sample=NULL, idx_beta2=NULL, beta2
 
 load_X_orig <- function(embedding_orig){
   if(embedding_orig == 'fastsurfer'){
-    X <- data.table::fread(paste("/dhc/home/marco.simnacher/DeepCIT/CIT_benchmarking/Data/ukb_fastsurfer.csv"), header=TRUE, nThread = 1)
+    X <- data.table::fread(paste0(path_to_ukb_data, '/ukb_fastsurfer.csv'), header=TRUE, nThread = 1)
   }else if(embedding_orig == 'condVAE'){
-    X <- data.table::fread(paste("/dhc/home/marco.simnacher/DeepCIT/CIT_benchmarking/Data/ukb_condVAE.csv"), header=TRUE, nThread = 1)
+    X <- data.table::fread(paste0(path_to_ukb_data, "/ukb_condVAE.csv"), header=TRUE, nThread = 1)
   }else if(embedding_orig == 'latentDiffusion'){
-    X <- data.table::fread(paste("/dhc/home/marco.simnacher/DeepCIT/CIT_benchmarking/Data/ukb_latentDiffusion.csv"), header=TRUE, nThread = 1)
+    X <- data.table::fread(paste0(path_to_ukb_data, "ukb_latentDiffusion.csv"), header=TRUE, nThread = 1)
   }
   return(X)
 }
@@ -90,11 +92,11 @@ load_X_obs <- function(embedding_obs, embedding_orig, X_orig, eps_sigmaX){
   if(embedding_obs==embedding_orig){
     X_obs <- X_orig
   }else if(embedding_obs == 'fastsurfer'){
-    X_obs <- data.table::fread(paste("/dhc/home/marco.simnacher/DeepCIT/CIT_benchmarking/Data/ukb_fastsurfer.csv"), header=TRUE, nThread = 1)
+    X_obs <- data.table::fread(paste0(path_to_ukb_data, "/ukb_fastsurfer.csv"), header=TRUE, nThread = 1)
   }else if(embedding_obs == 'condVAE'){
-    X_obs <- data.table::fread(paste("/dhc/home/marco.simnacher/DeepCIT/CIT_benchmarking/Data/ukb_condVAE.csv"), header=TRUE, nThread = 1)
+    X_obs <- data.table::fread(paste0(path_to_ukb_data, "/ukb_condVAE.csv"), header=TRUE, nThread = 1)
   }else if(embedding_obs == 'latentDiffusion'){
-    X_obs <- data.table::fread(paste("/dhc/home/marco.simnacher/DeepCIT/CIT_benchmarking/Data/ukb_latentDiffusion.csv"), header=TRUE, nThread = 1)
+    X_obs <- data.table::fread(paste0(path_to_ukb_data, "/ukb_latentDiffusion.csv"), header=TRUE, nThread = 1)
   }else if(grepl('noisy',embedding_obs, fixed=TRUE)){
     epsX <- stats::rnorm(nrow(X_orig)*(ncol(X_orig)-1), 0,eps_sigmaX)
     X_obs <- cbind(X_orig[,1], X_orig[,2:ncol(X_orig)]+epsX)
@@ -103,8 +105,8 @@ load_X_obs <- function(embedding_obs, embedding_orig, X_orig, eps_sigmaX){
 
 load_Z <- function(confounder){
   if(confounder=='AS'){
-    Z <- data.table::fread(paste("/dhc/home/marco.simnacher/DeepCIT/CIT_benchmarking/Data/ukb_Z_age_sex.csv"), header=TRUE)
+    Z <- data.table::fread(paste0(path_to_ukb_data, "/ukb_Z_age_sex.csv"), header=TRUE)
   }else if(confounder == 'genes10'){
-    Z <- data.table::fread(paste("/dhc/home/marco.simnacher/DeepCIT/CIT_benchmarking/Data/ukb_Z_genes10.csv"), header=TRUE)
+    Z <- data.table::fread(paste0(path_to_ukb_data, "/ukb_Z_genes10.csv"), header=TRUE)
   }
 }
