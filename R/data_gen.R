@@ -24,9 +24,9 @@ data_gen <- function(seed, idx_sample=NULL, n_sample=NULL, idx_beta2=NULL, beta2
   path_to_ukb_data <- "/home/RDC/simnacma/H:/simnacma/CITs/Application/UKB_data"
   set.seed(seed)
 
-  X_orig <- load_X_orig(embedding_orig)
-  X_obs <- load_X_obs(embedding_obs, embedding_orig, X_orig, eps_sigmaX)
-  Z <- load_Z(confounder)
+  X_orig <- load_X_orig(path_to_ukb_data,embedding_orig)
+  X_obs <- load_X_obs(path_to_ukb_data,embedding_obs, embedding_orig, X_orig, eps_sigmaX)
+  Z <- load_Z(path_to_ukb_data,confounder)
 
   # take only common IDs of X, Z
   colnames(X_orig)[1] <- 'id'
@@ -77,7 +77,7 @@ data_gen <- function(seed, idx_sample=NULL, n_sample=NULL, idx_beta2=NULL, beta2
 }
 
 
-load_X_orig <- function(embedding_orig){
+load_X_orig <- function(path_to_ukb_data, embedding_orig){
   if(embedding_orig == 'fastsurfer'){
     X <- data.table::fread(paste0(path_to_ukb_data, '/ukb_fastsurfer.csv'), header=TRUE, nThread = 1)
   }else if(embedding_orig == 'condVAE'){
@@ -88,7 +88,7 @@ load_X_orig <- function(embedding_orig){
   return(X)
 }
 
-load_X_obs <- function(embedding_obs, embedding_orig, X_orig, eps_sigmaX){
+load_X_obs <- function(path_to_ukb_data,embedding_obs, embedding_orig, X_orig, eps_sigmaX){
   if(embedding_obs==embedding_orig){
     X_obs <- X_orig
   }else if(embedding_obs == 'fastsurfer'){
@@ -103,9 +103,9 @@ load_X_obs <- function(embedding_obs, embedding_orig, X_orig, eps_sigmaX){
   }
 }
 
-load_Z <- function(confounder){
+load_Z <- function(path_to_ukb_data,confounder){
   if(confounder=='AS'){
-    Z <- data.table::fread(paste0(path_to_ukb_data, "/ukb_Z_age_sex.csv"), header=TRUE)
+    Z <- data.table::fread(paste0(path_to_ukb_data, "/ukb_Z.csv"), header=TRUE)
   }else if(confounder == 'genes10'){
     Z <- data.table::fread(paste0(path_to_ukb_data, "/ukb_Z_genes10.csv"), header=TRUE)
   }

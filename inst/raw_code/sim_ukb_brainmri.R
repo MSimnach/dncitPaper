@@ -6,8 +6,7 @@ library(DNCIT)
 #devtools::load_all('/dhc/home/marco.simnacher/dncitPaper')
 #devtools::install('/home/RDC/simnacma/Coding/dncitPaper')
 library('dncitPaper')
-#args = commandArgs(trailingOnly=TRUE)
-args <- c("/CI/", "1", "0", "1", "0", "fastsurfer", "fastsurfer", "AS", "simulated", "RCOT", "1")
+args = commandArgs(trailingOnly=TRUE)
 
 n_cits <- 1
 cit <- c(args[10])
@@ -28,7 +27,7 @@ for (k in -1:1){
   beta2s_all <- append(beta2s_all, c(10,7.5,5, 2.5)*10^(-k))
 }
 beta2s <- beta2s_all
-cl <- parallel::makeCluster(2, outfile="")
+cl <- parallel::makeCluster(20, outfile="")
 doParallel::registerDoParallel(cl)
 
 res_time <- foreach::foreach (i= n_seeds, .packages = c('DNCIT', 'dncitPaper')) %dopar% {
