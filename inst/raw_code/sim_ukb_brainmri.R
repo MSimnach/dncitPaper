@@ -1,8 +1,10 @@
 library(doParallel)
 library(foreach)
 #devtools::load_all('/dhc/home/marco.simnacher/DNCIT')
-library(DNCIT)
-devtools::load_all('/dhc/home/marco.simnacher/dncitPaper')
+devtools::load_all('/home/RDC/simnacma/Coding/DNCIT')
+#library(DNCIT)
+#devtools::load_all('/dhc/home/marco.simnacher/dncitPaper')
+devtools::load_all('/home/RDC/simnacma/Coding/dncitPaper')
 args = commandArgs(trailingOnly=TRUE)
 
 n_cits <- 1
@@ -68,7 +70,7 @@ res_time <- foreach::foreach (i= n_seeds, .packages = c('DNCIT', 'dncitPaper')) 
                                                      }else if(args[10]=='WALD'){
                                                         cit_params <- list(cit='wald')
                                                      }
-                                                     
+
                                                      tmp <- DNCIT::DNCIT(X, Y, Z, embedding_map_with_parameters = 'feature_representations',
                                                            cit_with_parameters = cit_params)
                                                      res[idx_sample] <- tmp$p
@@ -81,9 +83,9 @@ res_time <- foreach::foreach (i= n_seeds, .packages = c('DNCIT', 'dncitPaper')) 
                                                    runtime <- rep(0,length(beta2s))
                                                    for (idx_beta2 in seq_along(beta2s)){
                                                      cat(paste("Iteration",i, "for beta2", beta2s[[idx_beta2]], "\n"))
-                                                     XYZ_list <- dncitPaper::data_gen(seed=i, idx_sample=NULL, n_sample=NULL,idx_beta2=idx_beta2, beta2s=beta2s, n=n, 
+                                                     XYZ_list <- dncitPaper::data_gen(seed=i, idx_sample=NULL, n_sample=NULL,idx_beta2=idx_beta2, beta2s=beta2s, n=n,
                                                                           post_non_lin=as.numeric(args[2]), eps_sigmaX=as.numeric(args[3]), eps_sigmaY=as.numeric(args[4]),
-                                                                          eps_sigmaZ=as.numeric(args[5]), embedding_orig=args[6], embedding_obs=args[7], confounder=args[8], 
+                                                                          eps_sigmaZ=as.numeric(args[5]), embedding_orig=args[6], embedding_obs=args[7], confounder=args[8],
                                                                           response=args[9])
                                                      X <- as.matrix(XYZ_list[[1]])
                                                      Y <- as.matrix(XYZ_list[[2]])
