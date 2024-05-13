@@ -6,8 +6,9 @@ library(DNCIT)
 #devtools::load_all('/dhc/home/marco.simnacher/dncitPaper')
 #devtools::install('/home/RDC/simnacma/Coding/dncitPaper')
 library('dncitPaper')
-setDTthreads(1)
+data.table::setDTthreads(1)
 args = commandArgs(trailingOnly=TRUE)
+cat(args[10])
 
 n_cits <- 1
 cit <- c(args[10])
@@ -15,11 +16,11 @@ print(args)
 
 ####### In parallel #######
 if(cit == 'KCIT' || tail(args,1)=='10' || tail(args,1)=='20' || cit=='CMIknn'){
-  n_sample = list(30, 100, 300, 1000)
+  n_sample = list(50, 100, 500, 1000)
 }else if(cit=='WALD'){
-  n_sample = list(300, 1000, 3000, 10000)
+  n_sample = list(500, 1000, 5000, 10000)
 }else{
-  n_sample = list(30, 100, 300, 1000, 3000, 10000)
+  n_sample = list(50, 100, 500, 1000, 5000, 10000)
 }
 n_seeds = 1:20
 n <- 1000
@@ -35,7 +36,7 @@ doParallel::registerDoParallel(cl)
 
 res_time <- foreach::foreach (i= n_seeds, .packages = c('DNCIT', 'dncitPaper')) %dopar% {
                                                  if (grepl('/CI',args[1],fixed=TRUE)){
-                                                   paste('CIT:', cit)
+                                                   cat('CIT:', cit)
                                                    res <- rep(0,length(n_sample))
                                                    runtime <- rep(0,length(n_sample))
                                                    for (idx_sample in seq_along(n_sample)){
@@ -82,7 +83,7 @@ res_time <- foreach::foreach (i= n_seeds, .packages = c('DNCIT', 'dncitPaper')) 
                                                    }
                                                    p_time <- cbind(res, runtime)
                                                  }else if(grepl('/No_CI',args[1],fixed=TRUE)){
-                                                   paste('CIT:', cit)
+                                                   cat('CIT:', cit)
                                                    res <- rep(0,length(beta2s))
                                                    runtime <- rep(0,length(beta2s))
                                                    for (idx_beta2 in seq_along(beta2s)){
