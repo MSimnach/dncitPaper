@@ -5,9 +5,10 @@ library(dplyr)
 library(stringr)
 
 # paths to data repository
-path_to_ukb_data <- 'M:/CITs/Application/UKB_data/ukb49727.csv'
-path_to_fastsurfer_ids <- 'C:\\Users\\Marco\\seadrive_root\\Marco Si\\Meine Bibliotheken\\Meine Bibliothek\\CITs\\P1 Deep CITs\\UK biobank\\Data/IDPs/Ids_IDPs.csv'
+path_to_ukb_data <- 'B:/CITs/Application/UKB_data/ukb49727.csv'
+path_to_fastsurfer_ids <- 'B:/CITs/Application/UKB_data/ids/Ids_IDPs.csv'
 path_to_save_fastsurfer_X <- "M:\\CITs\\Application\\UKB_data\\ukb_fastsurfer.csv"
+path_to_save_freesurfer_X <- "B:\\CITs\\Application\\UKB_data\\ukb_freesurfer.csv"
 path_to_save_age_sex_Z <- "M:\\CITs\\Application\\UKB_data\\ukb_Z_age_sex.csv"
 path_to_save_age_sex_10_genes_Z <- "M:\\CITs\\Application\\UKB_data\\ukb_Z_genes10.csv"
 
@@ -25,7 +26,7 @@ id_home_location_urban <- '20118-0.0'
 ids_genetic_pcs <- colnames(ukb_whole_columns)[grepl('22009', colnames(ukb_whole_columns), fixed = TRUE)]
 
 # Fastsurfer feature representation ids
-ids_IDPs <- data.table::fread(path_to_fastsurfer_ids, select='Field ID')
+ids_IDPs <- data.table::fread(file =path_to_fastsurfer_ids, select='Field ID')
 ids_IDPs_full_str <- ids_IDPs %>%
   dplyr::mutate_all(list(~ stringr::str_c(., '-2.0'))) %>%
   dplyr::pull(`Field ID`)
@@ -44,9 +45,20 @@ total_number_confounders <- length(ids_confounders)
 ### Age sex as confounders
 ukb_pipeline <- stats::na.omit(ukb_data)
 ukb_Z <- ukb_pipeline[,1:3]
+data.table::fwrite(ukb_Z, file = path_to_save_age_sex_Z)
+
+### Embedding map: Fastsurfer
 ukb_fastsurfer <- ukb_pipeline[,c(1, (total_number_confounders+1):(total_number_confounders+139)), with=FALSE]
 data.table::fwrite(ukb_fastsurfer, file = path_to_save_fastsurfer_X)
-data.table::fwrite(ukb_Z, file = path_to_save_age_sex_Z)
+
+### Embedding map: Freesurfer
+# there are 139 Fastsurfer features and 14 FIRST features at the first 153 values in ids_IDPs_full_str; we extract the
+# Freesurfer features afterwards
+n_freesurfer_features <- length(ids_IDPs_full_str)-153
+start_col_freesurfer <- length(ids_ukb_brain_mri)-n_freesurfer_features
+end_col_freesurfer <- length(ids_ukb_brain_mri)
+ukb_freesurfer <- ukb_pipeline[,c(1, start_col_freesurfer:end_col_freesurfer)]
+data.table::fwrite(ukb_freesurfer, file=path_to_save_freesurfer_X)
 
 ### Embedding from conditional VAE
 #ukb_transfer <- fread(file='M:/CITs/Application/UKB_data/ukb_condVAE.csv',  header=FALSE)
