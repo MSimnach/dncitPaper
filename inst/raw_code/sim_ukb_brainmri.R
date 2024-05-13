@@ -6,6 +6,7 @@ library(DNCIT)
 #devtools::load_all('/dhc/home/marco.simnacher/dncitPaper')
 #devtools::install('/home/RDC/simnacma/Coding/dncitPaper')
 library('dncitPaper')
+setDTthreads(1)
 args = commandArgs(trailingOnly=TRUE)
 
 n_cits <- 1
@@ -27,6 +28,8 @@ for (k in -1:1){
   beta2s_all <- append(beta2s_all, c(10,7.5,5, 2.5)*10^(-k))
 }
 beta2s <- beta2s_all
+
+Sys.setenv(OMP_NUM_THREADS = "10")
 cl <- parallel::makeCluster(10, outfile="")
 doParallel::registerDoParallel(cl)
 

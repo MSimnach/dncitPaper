@@ -60,7 +60,7 @@ cols_desikan_gw <- 953:1022+n_confounders
 cols_desikan_pial <- 1023:1088+n_confounders
 cols_desikan_white <- 1089:1290+n_confounders
 cols_subseg <- 1291:1411+n_confounders
-cols_freesurfer_selected <- c(cols_aseg, cols_a2009s)
+cols_freesurfer_selected <- c(cols_aseg, cols_desikan_pial)
 ukb_freesurfer <- ukb_pipeline[,c(1, cols_freesurfer_selected), with=FALSE]
 data.table::fwrite(ukb_freesurfer, file=path_to_save_freesurfer_X)
 

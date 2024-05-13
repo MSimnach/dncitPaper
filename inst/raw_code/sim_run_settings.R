@@ -5,11 +5,11 @@
 settings <- data.frame(
   dependence = rep(c('/CI/', '/No_CI/'), each = 24),
   fct_relation = rep(rep(c('1','4','5'), each=4), 4),
-  eps_sigmaX = rep(rep(c(0, 50,500, 0), 6), 2),
+  eps_sigmaX = rep(rep(c(0, 50,0, 0), 6), 2),
   eps_sigmaY = rep(1, 48),
   eps_sigmaZ = rep(0, 48),
   embedding_orig = rep('fastsurfer', 48),
-  embedding_obs = rep(c('fastsurfer', 'noisy', 'noisy', 'condVAE'), 12),
+  embedding_obs = rep(c('fastsurfer', 'noisy', 'freesurfer', 'condVAE'), 12),
   confounder = rep(rep(c("AS", "genes10"), each=12),2),
   response = rep('simulated', 48)
 )

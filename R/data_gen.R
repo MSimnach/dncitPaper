@@ -84,6 +84,8 @@ load_X_orig <- function(path_to_ukb_data, embedding_orig){
     X <- data.table::fread(paste0(path_to_ukb_data, "/ukb_condVAE.csv"), header=TRUE, nThread = 1)
   }else if(embedding_orig == 'latentDiffusion'){
     X <- data.table::fread(paste0(path_to_ukb_data, "ukb_latentDiffusion.csv"), header=TRUE, nThread = 1)
+  }else if(embedding_orig == 'freesurfer'){
+    X <- data.table::fread(paste0(path_to_ukb_data, "ukb_freesurfer.csv"), header=TRUE, nThread = 1)
   }
   return(X)
 }
@@ -97,6 +99,8 @@ load_X_obs <- function(path_to_ukb_data,embedding_obs, embedding_orig, X_orig, e
     X_obs <- data.table::fread(paste0(path_to_ukb_data, "/ukb_condVAE.csv"), header=TRUE, nThread = 1)
   }else if(embedding_obs == 'latentDiffusion'){
     X_obs <- data.table::fread(paste0(path_to_ukb_data, "/ukb_latentDiffusion.csv"), header=TRUE, nThread = 1)
+  }else if(embedding_obs == 'freesurfer'){
+    X_obs <- data.table::fread(paste0(path_to_ukb_data, "/ukb_freesurfer.csv"), header=TRUE, nThread = 1)
   }else if(grepl('noisy',embedding_obs, fixed=TRUE)){
     epsX <- stats::rnorm(nrow(X_orig)*(ncol(X_orig)-1), 0,eps_sigmaX)
     X_obs <- cbind(X_orig[,1], X_orig[,2:ncol(X_orig)]+epsX)
@@ -105,8 +109,8 @@ load_X_obs <- function(path_to_ukb_data,embedding_obs, embedding_orig, X_orig, e
 
 load_Z <- function(path_to_ukb_data,confounder){
   if(confounder=='AS'){
-    Z <- data.table::fread(paste0(path_to_ukb_data, "/ukb_Z.csv"), header=TRUE)
+    Z <- data.table::fread(paste0(path_to_ukb_data, "/ukb_Z.csv"), header=TRUE, nThread = 1)
   }else if(confounder == 'genes10'){
-    Z <- data.table::fread(paste0(path_to_ukb_data, "/ukb_Z_genes10.csv"), header=TRUE)
+    Z <- data.table::fread(paste0(path_to_ukb_data, "/ukb_Z_genes10.csv"), header=TRUE, nThread = 1)
   }
 }
