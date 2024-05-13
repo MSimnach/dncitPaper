@@ -1,4 +1,5 @@
 ### Definition of simulation settings and run over all settings for all DNCITs
+setwd('inst')
 # Settings
 #### args =['/CI/ or /No_CI/', post_non_lin, eps_sigmaX, eps_sigmaY, eps_sigmaZ, embedding_orig, embedding_obs, confounder, response, CIT, CIT_params]
 #c("/CI/", "1", "0", "1", "0", "fastsurfer", "fastsurfer", "AS", "simulated", "RCOT", "1")
@@ -14,8 +15,8 @@ settings <- data.frame(
   response = rep('simulated', 48)
 )
 
-cits <- c('RCOT 1', 'WALD')# 'kpc_graph 2 10', 'FCIT', 'CMIknn')
-settings <- settings[c(3, 15,27, 39),]
+cits <- c('RCOT 1', 'WALD', 'kpc_graph 2 10', 'FCIT', 'CMIknn')
+settings <- settings
 # Run 'sim_ukb_brainmri.R' for all settings
 for (cit in cits){
   for (i in 1:nrow(settings)) {

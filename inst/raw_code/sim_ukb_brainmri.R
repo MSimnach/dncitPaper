@@ -17,12 +17,12 @@ print(args)
 ####### In parallel #######
 if(cit == 'KCIT' || tail(args,1)=='10' || tail(args,1)=='20' || cit=='CMIknn'){
   n_sample = list(50, 100, 500, 1000)
-}else if(cit=='WALD'){
+}else if(cit=='WALD' || cit=='RCOT'){
   n_sample = list(500, 1000, 5000, 10000)
 }else{
   n_sample = list(50, 100, 500, 1000, 5000, 10000)
 }
-n_seeds = 1:20
+n_seeds = 1:100
 n <- 1000
 beta2s_all <- list()
 for (k in -1:1){
@@ -30,8 +30,8 @@ for (k in -1:1){
 }
 beta2s <- beta2s_all
 
-Sys.setenv(OMP_NUM_THREADS = "20")
-cl <- parallel::makeCluster(20, outfile="")
+Sys.setenv(OMP_NUM_THREADS = "50")
+cl <- parallel::makeCluster(50, outfile="")
 doParallel::registerDoParallel(cl)
 
 res_time <- foreach::foreach (i= n_seeds, .packages = c('DNCIT', 'dncitPaper')) %dopar% {
