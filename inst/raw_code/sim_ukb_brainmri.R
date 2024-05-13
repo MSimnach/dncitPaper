@@ -21,7 +21,7 @@ if(cit == 'KCIT' || tail(args,1)=='10' || tail(args,1)=='20' || cit=='CMIknn'){
 }else{
   n_sample = list(30, 100, 300, 1000, 3000, 10000)
 }
-n_seeds = 1:40
+n_seeds = 1:20
 n <- 1000
 beta2s_all <- list()
 for (k in -1:1){
@@ -29,8 +29,8 @@ for (k in -1:1){
 }
 beta2s <- beta2s_all
 
-Sys.setenv(OMP_NUM_THREADS = "10")
-cl <- parallel::makeCluster(10, outfile="")
+Sys.setenv(OMP_NUM_THREADS = "20")
+cl <- parallel::makeCluster(20, outfile="")
 doParallel::registerDoParallel(cl)
 
 res_time <- foreach::foreach (i= n_seeds, .packages = c('DNCIT', 'dncitPaper')) %dopar% {

@@ -14,8 +14,8 @@ settings <- data.frame(
   response = rep('simulated', 48)
 )
 
-cits <- c('RCOT 1', 'kpc_graph 2 10', 'FCIT', 'CMIknn')
-settings <- settings[c(1,25,2,26),]
+cits <- c('RCOT 1', 'WALD')# 'kpc_graph 2 10', 'FCIT', 'CMIknn')
+settings <- settings[c(1:4, 13:16,25:28, 37:40),]
 # Run 'sim_ukb_brainmri.R' for all settings
 for (cit in cits){
   for (i in 1:nrow(settings)) {
