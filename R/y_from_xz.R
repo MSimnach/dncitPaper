@@ -29,7 +29,7 @@ post_non_lin_g <- function(post_non_lin){
     }
   } else if (post_non_lin %in% 4:5) {
     g <- function(s) {
-      #s <- scale(s)
+      s <- scale(s)
       y <- exp(-s^2/2) * sin(ifelse(post_non_lin == 4, 3, 24) * s)
       return(y)
     }
