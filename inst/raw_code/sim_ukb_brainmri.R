@@ -22,7 +22,7 @@ if(cit == 'KCIT' || tail(args,1)=='10' || tail(args,1)=='20' || cit=='CMIknn'){
 }else{
   n_sample = list(50, 100, 500, 1000, 5000, 10000)
 }
-n_seeds = 1:100
+n_seeds = 1:200
 n <- 1000
 beta2s_all <- list()
 for (k in -1:1){
