@@ -181,10 +181,8 @@ if(grepl('/CI',args[1],fixed=TRUE)){
 
   #rejection rates
   n_seeds_ <- length(n_seeds)
-  for (idx_beta2 in seq_along(beta2s)){
-    rejected <- colSums(p_res < 0.05, na.rm=TRUE) / n_seeds_
-  }
-  rejected <- data.frame(rejected, row.names = beta2s)
+  rejected_ <- colSums(p_res < 0.05, na.rm=TRUE) / n_seeds_
+  rejected <- data.frame(rejected_, row.names = beta2s)
   colnames(rejected) <- cit
   #print(xtable(rejected))
   write.csv(rejected,file=paste0("Results", args[1], "rejection_rates/", paste(args[-1], collapse="_"), ".csv", collapse=''))
