@@ -22,7 +22,7 @@ if(cit == 'KCIT' || tail(args,1)=='10' || tail(args,1)=='20' || cit=='CMIknn'){
 }else{
   n_sample = list(50, 100, 500, 1000, 5000, 10000)
 }
-n_seeds = 1:100
+n_seeds = 1:50
 n <- 1000
 beta2s_all <- list()
 for (k in -1:1){
@@ -102,22 +102,22 @@ res_time <- foreach::foreach (i= n_seeds, .packages = c('DNCIT', 'dncitPaper')) 
                                                      }else if(args[10] == 'CMIknn'){
                                                        cit_params <- list(cit='cmiknn', params_cit=list())
                                                      }else if(args[10] == 'kpc_graph'){
-                                                      if (args[11]=='1'){
-                                                          k = kernlab::vanilladot()
-                                                      }else if (args[11]=='2') {
-                                                          k = kernlab::rbfdot(1/(2*stats::median(stats::dist(X))^2))
-                                                      }else if (args[11]=='3') {
-                                                          k = kernlab::laplacedot(1/(2*stats::median(stats::dist(X))^2))
-                                                      }else if (args[11]=='4') {
-                                                          k = kernlab::tanhdot()
-                                                      }
-                                                      if(args[8]=='AS'){
-                                                        model_formula_YZ <- "V1~1+s(V3, by=V2)"
-                                                      }else if(args[8]=='genes10'){
-                                                        add_confounders <- paste('+',paste('s(V', 4:(ncol(Y)+ncol(Z)), ')', collapse='+', sep=""), sep="")
-                                                        model_formula_YZ <- paste('V1~1+s(V3, by=V2)', add_confounders, sep="")
-                                                      }
-                                                      cit_params <- list(cit='cpt_kpc', params_cit=list(k=k, Knn = as.numeric(args[12]), model.formula.YZ=model_formula_YZ))
+                                                        if (args[11]=='1'){
+                                                            k = kernlab::vanilladot()
+                                                        }else if (args[11]=='2') {
+                                                            k = kernlab::rbfdot(1/(2*stats::median(stats::dist(X))^2))
+                                                        }else if (args[11]=='3') {
+                                                            k = kernlab::laplacedot(1/(2*stats::median(stats::dist(X))^2))
+                                                        }else if (args[11]=='4') {
+                                                            k = kernlab::tanhdot()
+                                                        }
+                                                        if(args[8]=='AS'){
+                                                          model_formula_YZ <- "V1~1+s(V3, by=V2)"
+                                                        }else if(args[8]=='genes10'){
+                                                          add_confounders <- paste('+',paste('s(V', 4:(ncol(Y)+ncol(Z)), ')', collapse='+', sep=""), sep="")
+                                                          model_formula_YZ <- paste('V1~1+s(V3, by=V2)', add_confounders, sep="")
+                                                        }
+                                                        cit_params <- list(cit='cpt_kpc', params_cit=list(k=k, Knn = as.numeric(args[12]), model.formula.YZ=model_formula_YZ))
                                                      }else if(args[10]=='FCIT'){
                                                         cit_params <- list(cit='fcit')
                                                      }else if(args[10]=='WALD'){
