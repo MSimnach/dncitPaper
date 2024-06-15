@@ -17,7 +17,7 @@ y_from_xz <- function(Z, eps_sigmaY,X=NULL,beta2s=NULL, idx_beta2=NULL, post_non
     beta_X_ <- stats::rnorm(ncol(X), 0, 1)
     active_X <- stats::rbinom(ncol(X), 1, 0.75)
     beta_X <- beta_X_*active_X
-    Y <- g(scale(rowMeans(Z))+scale(X%*%beta_X*beta2s[[idx_beta2]])+epsY)
+    Y <- g(rowMeans(Z)+X%*%beta_X*beta2s[[idx_beta2]]+epsY)
   }
 }
 
