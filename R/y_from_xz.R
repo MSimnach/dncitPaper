@@ -14,9 +14,10 @@ y_from_xz <- function(Z, eps_sigmaY,X=NULL,beta2s=NULL, idx_beta2=NULL, post_non
   if(is.null(X)){
     Y <- g(rowMeans(Z)+epsY)
   } else {
-    beta_X_ <- stats::rnorm(ncol(X), 0, 1)
-    active_X <- stats::rbinom(ncol(X), 1, 0.75)
-    beta_X <- abs(beta_X_*active_X)
+    #beta_X_ <- stats::rnorm(ncol(X), 0, 1)
+    #active_X <- stats::rbinom(ncol(X), 1, 0.75)
+    #beta_X <- abs(beta_X_*active_X)
+    beta_X <- rep(1, ncol(X))
     Y <- g(rowMeans(Z)+X%*%beta_X*beta2s[[idx_beta2]]+epsY)
   }
 }

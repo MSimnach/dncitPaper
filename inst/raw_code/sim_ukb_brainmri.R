@@ -22,10 +22,10 @@ if(cit == 'KCIT' || tail(args,1)=='10' || tail(args,1)=='20' || cit=='CMIknn'){
 }else{
   n_sample = list(50, 100, 500, 1000, 5000, 10000)
 }
-n_seeds = 1:50
+n_seeds = 1:100
 n <- 1000
 beta2s_all <- list()
-for (k in -1:1){
+for (k in 0:2){
   beta2s_all <- append(beta2s_all, c(10,7.5,5, 2.5)*10^(-k))
 }
 beta2s <- beta2s_all
