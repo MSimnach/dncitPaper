@@ -15,8 +15,9 @@ y_from_xz <- function(Z, eps_sigmaY,X=NULL,beta2s=NULL, idx_beta2=NULL, post_non
     Y <- g(rowMeans(Z)+epsY)
   } else {
     beta_X_ <- stats::rnorm(ncol(X), 0, 1)
-    active_X <- stats::rbinom(ncol(X), 1, 0.75)
+    active_X <- stats::rbinom(ncol(X), 1, 0.5)
     beta_X <- abs(beta_X_*active_X)
+    beta_X <- beta_X/sum(beta_X)
     #beta_X <- rep(1/ncol(X), ncol(X))
 
     Y <- g(rowMeans(Z)+X%*%beta_X*beta2s[[idx_beta2]]+epsY)
@@ -33,7 +34,7 @@ post_non_lin_g <- function(post_non_lin){
   } else if (post_non_lin %in% 4:5) {
     g <- function(s) {
       s <- scale(s)
-      y <- exp(-s^2/2) * sin(ifelse(post_non_lin == 4, 3, 24) * s)
+      y <- exp(-s^2/2) * sin(ifelse(post_non_lin == 4, 2, 6) * s)
       return(y)
     }
   }
