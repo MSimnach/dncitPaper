@@ -161,8 +161,8 @@ labels <- c('medialorbitofrontal', 'rostralanteriorcingulate', 'posterior thalam
 plot_each_struc_trait <- ggplot2::ggplot(p_structure_trait, ggplot2::aes(x = X_Axis, y = -log10(p_unadj), color = Trait), alpha=0.8, size=1.3) +
   ggplot2::geom_point(alpha = 0.5) +
   ggplot2::scale_x_continuous(labels = unique(p_structure_trait$Trait), breaks = seq(53, max(p_structure_trait$X_Axis), by = 107)) +
-  ggplot2::scale_color_manual(values = rep(c(palet_discrete[8], palet_discrete[3]), 22 )) +
-  ggplot2::labs(x = "Trait",
+  ggplot2::scale_color_manual(values = rep(c(palet_discrete[9], palet_discrete[2]), 22 )) +
+  ggplot2::labs(x = "Trait-Each brain structure",
        y = expression("-log"[10] * "(p)"),
        color = "Trait") +
   # Custom the theme:
@@ -173,8 +173,11 @@ plot_each_struc_trait <- ggplot2::ggplot(p_structure_trait, ggplot2::aes(x = X_A
     panel.grid.major.x = ggplot2::element_blank(),
     panel.grid.minor.x = ggplot2::element_blank()
   ) +
+  # add colum separation for each trait
+  geom_vline(xintercept = c(0,107, 214, 321, 428, 535, 642), linetype = "dashed", color = "black") +
+  geom_hline(yintercept=0)+
   # Add highlighted points
-  ggplot2::geom_point(data=subset(p_structure_trait, is_highlight=="yes"), color=palet_discrete[9], size=2) +
+  ggplot2::geom_point(data=subset(p_structure_trait, is_highlight=="yes"), color="black", size=2) +
   # Add highlighted points
   ggplot2::geom_point(data=subset(p_structure_trait, is_annotate=="yes"), color=palet_discrete[10], size=2) +
   # Add label using ggrepel to avoid overlapping
@@ -253,11 +256,14 @@ plot_joint <- ggplot2::ggplot(p_joint, ggplot2::aes(x = X_Axis, y = -log10(p_una
   ggplot2::geom_point(alpha = 0.5) +
   ggplot2::scale_x_continuous(labels = unique(p_joint$Test), breaks = seq(3.5, max(p_joint$X_Axis), by = 7)) +
   ggplot2::scale_color_manual(values = rep(c(palet_discrete[8], palet_discrete[3]), 22 )) +
-  ggplot2::labs(x = "Test",
+  ggplot2::labs(x = "Test-Trait-All brain structures",
                 y = expression("-log"[10] * "(p)"),
                 color = "Test") +
   # Custom the theme:
   ggplot2::theme_bw() +
+  # add colum separation for each trait
+  geom_vline(xintercept = c(0,6,13), linetype = "dashed", color = "black") +
+  geom_hline(yintercept=0)+
   ggplot2::theme(
     legend.position="none",
     panel.border = ggplot2::element_blank(),
@@ -275,8 +281,8 @@ plot_joint <- ggplot2::ggplot(p_joint, ggplot2::aes(x = X_Axis, y = -log10(p_una
 #fastsurfer ids
 ids_IDPs <- data.table::fread(path_to_fastsurfer_ids, select='Field ID')
 ids_IDPs_full_str <- ids_IDPs %>%
-  +   dplyr::mutate_all(list(~ stringr::str_c(., '-2.0'))) %>%
-  +   dplyr::pull(`Field ID`)
+  dplyr::mutate_all(list(~ stringr::str_c(., '-2.0'))) %>%
+  dplyr::pull(`Field ID`)
 ids_fastsurfer <- ids_IDPs_full_str[1:139]
 brain_structures_fast <- paste0("brain_structure_", 1:length(ids_fastsurfer))
 ##Variables used and data subset
@@ -360,12 +366,15 @@ p_joint$X_Axis <- 1:nrow(p_joint)
 plot_joint <- ggplot2::ggplot(p_joint, ggplot2::aes(x = X_Axis, y = -log10(p_unadj), color = Test), alpha=0.8, size=1.3) +
   ggplot2::geom_point(alpha = 0.5) +
   ggplot2::scale_x_continuous(labels = unique(p_joint$Test), breaks = seq(3.5, max(p_joint$X_Axis), by = 7)) +
-  ggplot2::scale_color_manual(values = rep(c(palet_discrete[8], palet_discrete[3]), 22 )) +
-  ggplot2::labs(x = "Test",
+  ggplot2::scale_color_manual(values = rep(c(palet_discrete[9], palet_discrete[2]), 22 )) +
+  ggplot2::labs(x = "Test-Trait(s)-All brain structures",
                 y = expression("-log"[10] * "(p)"),
                 color = "Test") +
   # Custom the theme:
   ggplot2::theme_bw() +
+  # add colum separation for each trait
+  geom_vline(xintercept = c(0.5,6.5,13.5,20.5), linetype = "dashed", color = "black") +
+  geom_hline(yintercept=0)+
   ggplot2::theme(
     legend.position="none",
     panel.border = ggplot2::element_blank(),
