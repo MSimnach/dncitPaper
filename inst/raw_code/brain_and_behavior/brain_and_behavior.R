@@ -168,11 +168,16 @@ plot_each_struc_trait <- ggplot2::ggplot(p_structure_trait, ggplot2::aes(x = X_A
   # Custom the theme:
   ggplot2::theme_bw() +
   ggplot2::theme(
+    axis.title.x = element_text(size = 20),  # Change x-axis label size
+    axis.title.y = element_text(size = 20),  # Change y-axis label size
+    axis.text.x = element_text(size = 12),   # Change x-axis tick label size
+    axis.text.y = element_text(size = 12),   # Change y-axis tick label size
     legend.position="none",
     panel.border = ggplot2::element_blank(),
     panel.grid.major.x = ggplot2::element_blank(),
     panel.grid.minor.x = ggplot2::element_blank()
   ) +
+  ggplot2::ylim(0,4) +
   # add colum separation for each trait
   geom_vline(xintercept = c(0,107, 214, 321, 428, 535, 642), linetype = "dashed", color = "black") +
   geom_hline(yintercept=0)+
@@ -265,6 +270,10 @@ plot_joint <- ggplot2::ggplot(p_joint, ggplot2::aes(x = X_Axis, y = -log10(p_una
   geom_vline(xintercept = c(0,6,13), linetype = "dashed", color = "black") +
   geom_hline(yintercept=0)+
   ggplot2::theme(
+    axis.title.x = element_text(size = 20),  # Change x-axis label size
+    axis.title.y = element_text(size = 20),  # Change y-axis label size
+    axis.text.x = element_text(size = 15),   # Change x-axis tick label size
+    axis.text.y = element_text(size = 15),   # Change y-axis tick label size
     legend.position="none",
     panel.border = ggplot2::element_blank(),
     panel.grid.major.x = ggplot2::element_blank(),
@@ -363,7 +372,7 @@ p_joint <- rbind(p_joint_df, p_joint_rcot, p_joint_rcot_fast)%>%
   # Add highlight and annotation information
   mutate( is_annotate=ifelse(-log10(p_unadj)>2.5, "yes", "no"))
 p_joint$X_Axis <- 1:nrow(p_joint)
-plot_joint <- ggplot2::ggplot(p_joint, ggplot2::aes(x = X_Axis, y = -log10(p_unadj), color = Test), alpha=0.8, size=1.3) +
+plot_joint <- ggplot2::ggplot(p_joint, ggplot2::aes(x = X_Axis, y = -log10(p_unadj), color = Test), alpha=0.8, size=1.4) +
   ggplot2::geom_point(alpha = 0.5) +
   ggplot2::scale_x_continuous(labels = unique(p_joint$Test), breaks = seq(3.5, max(p_joint$X_Axis), by = 7)) +
   ggplot2::scale_color_manual(values = rep(c(palet_discrete[9], palet_discrete[2]), 22 )) +
@@ -376,6 +385,10 @@ plot_joint <- ggplot2::ggplot(p_joint, ggplot2::aes(x = X_Axis, y = -log10(p_una
   geom_vline(xintercept = c(0.5,6.5,13.5,20.5), linetype = "dashed", color = "black") +
   geom_hline(yintercept=0)+
   ggplot2::theme(
+    axis.title.x = element_text(size = 20),  # Change x-axis label size
+    axis.title.y = element_text(size = 20),  # Change y-axis label size
+    axis.text.x = element_text(size = 15),   # Change x-axis tick label size
+    axis.text.y = element_text(size = 15),   # Change y-axis tick label size
     legend.position="none",
     panel.border = ggplot2::element_blank(),
     panel.grid.major.x = ggplot2::element_blank(),
