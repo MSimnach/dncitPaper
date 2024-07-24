@@ -21,6 +21,7 @@ path_to_freesurfer_aseg_ids <- 'M:/CITs/Application/UKB_data/Real-world_applicat
 path_to_save_ids_brain_avinun <- 'M:/CITs/Application/UKB_data/ids/ids_brain_avinun.csv'
 path_to_save_ids_confounder_avinun <- 'M:/CITs/Application/UKB_data/ids/ids_confounder_avinun.csv'
 path_to_save_ids_personality_avinun <- 'M:/CITs/Application/UKB_data/ids/ids_personality_avinun.csv'
+path_to_save_ids_personality <- 'M:/CITs/Application/UKB_data/ids/ids_personality.csv'
 # paths to save results
 path_to_save_preprocessed_data <- 'M:/CITs/Application/UKB_data/ukb_free_fast_behavior_healthy.csv'
 path_to_save_ukb_avinun <- 'M:/CITs/Application/UKB_data/ukb_avinun.csv'
