@@ -5,12 +5,13 @@ library(dplyr)
 library(stringr)
 
 # paths to data repository
-path_to_ukb_data <- 'H:/simnacma/CITs/Application/UKB_data/ukb49727.csv'
-path_to_fastsurfer_ids <- 'H:/simnacma/CITs/Application/UKB_data/ids/Ids_IDPs.csv'
-path_to_save_fastsurfer_X <- "M:\\CITs\\Application\\UKB_data\\ukb_fastsurfer.csv"
-path_to_save_freesurfer_X <- "H:\\simnacma\\CITs\\Application\\UKB_data\\ukb_freesurfer.csv"
-path_to_save_age_sex_Z <- "M:\\CITs\\Application\\UKB_data\\ukb_Z_age_sex.csv"
-path_to_save_age_sex_10_genes_Z <- "M:\\CITs\\Application\\UKB_data\\ukb_Z_genes10.csv"
+path_to_ukb_data <- 'B:/CITs/Application/UKB_data/ukb49727.csv'
+path_to_fastsurfer_ids <- 'B:/CITs/Application/UKB_data/ids/Ids_IDPs.csv'
+path_to_save_fastsurfer_X <- "B:\\CITs\\Application\\UKB_data\\ukb_fastsurfer.csv"
+path_to_save_freesurfer_X <- "B:\\CITs\\Application\\UKB_data\\ukb_freesurfer.csv"
+path_to_save_age_sex_Z <- "B:\\CITs\\Application\\UKB_data\\ukb_Z_age_sex.csv"
+path_to_save_age_sex_10_genes_Z <- "B:\\CITs\\Application\\UKB_data\\ukb_Z_genes10.csv"
+path_to_confounder_ids <- 'B:/CITs/Application/UKB_data/ids/ids_confounder_avinun.csv'
 
 ### Subset available UKB to obtain available col names
 ukb_whole_columns <- data.table::fread(file=path_to_ukb_data, header=TRUE, nrows=10)
@@ -71,3 +72,45 @@ data.table::fwrite(ukb_freesurfer, file=path_to_save_freesurfer_X)
 ukb_pipeline_ten <- stats::na.omit(ukb_data)
 ukb_Z_genes10 <- ukb_pipeline_ten[,c(1:3, 6:15)]
 data.table::fwrite(ukb_Z_genes10, file = path_to_save_age_sex_10_genes_Z)
+
+
+#### Multiple confounder sets
+path_to_save_confounders <- "B:\\CITs\\Application\\UKB_data\\"
+ids_confounders <- data.table::fread(file=path_to_confounder_ids,header=TRUE)$ids_confounder
+ukb_confounders <- data.table::fread(file=path_to_ukb_data,select = ids_confounders, header=TRUE)
+
+## Preprocess confounds
+colnames(ukb_confounders) <- c('sex', 'age', 'site', 'date',
+                               'head_size', 'head_location1', 'head_location2','head_location3','head_location4',
+                               'qc_discrepancy', 'gene1', 'gene2', 'gene3', 'gene4', 'gene5')
+## dummy confounder site
+dummy_df <- fastDummies::dummy_cols(ukb_confounders, select_columns = 'site')
+confounds_dummy <- dummy_df[, !names(dummy_df) %in% c('site', 'site_10003')]
+## date difference to first date
+confounds_dummy$date_diff <- confounds_dummy[,'date'] - min(confounds_dummy[,'date'])
+confounds_dummy <- confounds_dummy[, !names(confounds_dummy) %in% c('date')]
+# confounder names
+confounders <- c(grep("^site_", colnames(confounds_dummy), value=TRUE),
+                 'sex', 'age', 'date_diff',
+                 'head_size', 'head_location1', 'head_location2','head_location3','head_location4',
+                 'qc_discrepancy', 'gene1', 'gene2', 'gene3', 'gene4', 'gene5')
+
+## Select confounder sets
+#only age
+ukb_z1 <- confounds_dummy['age']
+data.table::fwrite(ukb_z1, file = paste0(path_to_save_confounders, "ukb_z1_age.csv")
+#age, head size
+ukb_z2 <- ukb_confounders[ids_confounders[c(2,5)]]
+data.table::fwrite(ukb_z2, file = paste0(path_to_save_confounders, "ukb_z2_agesex.csv")
+#age, sex, head size, site
+ukb_z4 <- ukb_confounders[ids_confounders[c(1,2,3,5)]]
+data.table::fwrite(ukb_z4, file = paste0(path_to_save_confounders, "ukb_z4_agesexsitesize.csv")
+#age, sex, head size, site, date, qc-discrepancy
+ukb_z6 <- ukb_confounders[ids_confounders[c(1:5,10)]]
+data.table::fwrite(ukb_z6, file = paste0(path_to_save_confounders, "ukb_z6_agesexsitesizedateqc.csv")
+#age, sex, head size, site, date, qc-discrepancy, 4xhead location
+ukb_z10 <- ukb_confounders[ids_confounders[c(1:10)]]
+data.table::fwrite(ukb_z10, file = paste0(path_to_save_confounders, "ukb_z10_agesexsitesizedateqclocation.csv")
+#age, sex, head size, site, date, qc-discrepancy, 4xhead location, 5xgenes
+ukb_z15 <- ukb_confounders
+data.table::fwrite(ukb_z15, file = paste0(path_to_save_confounders, "ukb_z15_agesexsitesizedateqcgenes.csv")
