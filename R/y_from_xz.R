@@ -7,21 +7,31 @@
 #'
 #' @return returns function to construct Y
 #' @export
-y_from_xz <- function(Z, eps_sigmaY,X=NULL,beta2s=NULL, idx_beta2=NULL, post_non_lin = 1) {
+y_from_xz <- function(Z, eps_sigmaY,X=NULL,beta2s=NULL, idx_beta2=NULL, post_non_lin = 1, g_z = "linear") {
   g <- post_non_lin_g(post_non_lin)
   epsY <- stats::rnorm(nrow(Z), 0, eps_sigmaY)
 
+  # transform Z and aggregate over columns with random effects
+  transformed_z <- transform_z(as.data.frame(Z), g_z)
+  beta_Z_ <- stats::rnorm(ncol(transformed_z), 0, 1)
+  active_Z <- stats::rbinom(ncol(transformed_z), 1, 0.5)
+  beta_Z <- abs(beta_Z_*active_Z)
+  beta_Z <- beta_Z/sum(beta_Z)
+  predictor_z <- as.matrix(transformed_z)%*%beta_Z
+
   if(is.null(X)){
-    Y <- g(rowMeans(Z)+epsY)
+    Y <- g(predictor_z+epsY)
   } else {
     beta_X_ <- stats::rnorm(ncol(X), 0, 1)
     active_X <- stats::rbinom(ncol(X), 1, 0.5)
     beta_X <- abs(beta_X_*active_X)
     beta_X <- beta_X/sum(beta_X)
     #beta_X <- rep(1/ncol(X), ncol(X))
+    predictor_x <- X%*%beta_X*beta2s[[idx_beta2]]
 
-    Y <- g(rowMeans(Z)+X%*%beta_X*beta2s[[idx_beta2]]+epsY)
+    Y <- g(oredictor_z+predictor_x+epsY)
   }
+  return(Y)
 }
 
 post_non_lin_g <- function(post_non_lin){
@@ -45,4 +55,50 @@ post_non_lin_g <- function(post_non_lin){
     }
   }
   return(g)
+}
+
+transform_z <- function(Z, g_z){
+  if (g_z %in% "linear") {
+    return(Z)
+  } else if (g_z %in% "squared") {
+    #square numeric columns
+    for (col in names(Z)) {
+      if (!is_binary(Z[[col]])) {
+        # Add squared column if not binary
+        Z[[paste0(col, "_squared")]] <- Z[[col]]^2
+      }
+    }
+    return(Z)
+  } else if (g_z %in% "realistic") {
+    #square numeric columns
+    for (col in names(Z)) {
+      if (!is_binary(Z[[col]])) {
+        # Add squared column if not binary
+        Z[[paste0(col, "_squared")]] <- Z[[col]]^2
+      }
+    }
+    # Add interaction terms for all pairs of confounders
+    if ('sex' %in% names(Z)){
+      Z[['sex_x_age']] <- Z[['sex']] * Z[['age']]
+    }
+    # add cubic term for date_diff
+    if("date_diff" %in% names(Z)){
+      Z$date_diff_cubed <- Z$date_diff^3
+    }
+    return(Z)
+  } else if (g_z %in% "breakpoint3"){
+    for (col in names(Z)) {
+      if (!is_binary(Z[[col]])) {
+        # Add squared column if not binary
+        Z[[paste0(col, "exp_sin")]] <- exp(-Z[[col]]^2)*sin(3*Z[[col]])
+      }
+    }
+    return(Z)
+  }
+}
+
+# Function to check if a column has only 2 values (binary after sd e.g.)
+is_binary <- function(x) {
+  unique_values <- unique(x)
+  length(unique_values) == 2
 }
