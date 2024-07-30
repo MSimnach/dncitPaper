@@ -23,7 +23,6 @@ if(cit == 'KCIT' || tail(args,1)=='10' || tail(args,1)=='20' || cit=='CMIknn'){
   n_sample = list(25, 33, 45, 60, 80, 100, 145, 200, 256, 350, 460, 615, 825, 1,100, 1,475, 1,964, 5000, 10000)
 }
 n_seeds = 1:200
-n <- 1000
 '
 #vary also effect sizes -> change also how to save results in for loops
 beta2s_all <- list()
