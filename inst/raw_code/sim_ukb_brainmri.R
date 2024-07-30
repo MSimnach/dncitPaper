@@ -56,7 +56,7 @@ res_time <- foreach::foreach (i= n_seeds, .packages = c('DNCIT', 'dncitPaper')) 
                                                      XYZ_list <- dncitPaper::data_gen(seed=i, idx_sample=idx_sample, n_sample=n_sample, idx_beta2=NULL, beta2s=NULL, n=NULL,
                                                                           post_non_lin=as.numeric(args[2]), eps_sigmaX=as.numeric(args[3]), eps_sigmaY=as.numeric(args[4]),
                                                                           eps_sigmaZ=as.numeric(args[5]), embedding_orig=args[6], embedding_obs=args[7],
-                                                                          confounder=args[8], response=args[9])
+                                                                          confounder=args[8], g_z=args[9])
                                                      X <- as.matrix(XYZ_list[[1]])
                                                      Y <- as.matrix(XYZ_list[[2]])
                                                      Z <- as.matrix(XYZ_list[[3]])
@@ -103,7 +103,7 @@ res_time <- foreach::foreach (i= n_seeds, .packages = c('DNCIT', 'dncitPaper')) 
                                                      XYZ_list <- dncitPaper::data_gen(seed=i, idx_sample=NULL, n_sample=NULL,idx_beta2=idx_beta2, beta2s=beta2s, n=n,
                                                                           post_non_lin=as.numeric(args[2]), eps_sigmaX=as.numeric(args[3]), eps_sigmaY=as.numeric(args[4]),
                                                                           eps_sigmaZ=as.numeric(args[5]), embedding_orig=args[6], embedding_obs=args[7], confounder=args[8],
-                                                                          response=args[9])
+                                                                          g_z=args[9])
                                                      X <- as.matrix(XYZ_list[[1]])
                                                      Y <- as.matrix(XYZ_list[[2]])
                                                      Z <- as.matrix(XYZ_list[[3]])

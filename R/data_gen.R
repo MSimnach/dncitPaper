@@ -14,12 +14,12 @@
 #' @param embedding_orig embedding map used to obtain original feature representations (used to simulate conditional association or CI)
 #' @param embedding_obs embedding map used to obtain observed feature representations (used for CI testing)
 #' @param confounder confounder used to simulate Y
-#' @param response response variable
+#' @param g_z confounder response relationship
 #'
 #' @return list of X_obs, Y, Z
 #' @export
 data_gen <- function(seed, idx_sample=NULL, n_sample=NULL, idx_beta2=NULL, beta2s=NULL, n=NULL, post_non_lin=4, eps_sigmaX=0, eps_sigmaY=1, eps_sigmaZ=0, embedding_orig='fastsurfer',
-                     embedding_obs='fastsurfer', confounder='AS', response='simulated'){
+                     embedding_obs='fastsurfer', confounder='AS', g_z='linear'){
   #path_to_ukb_data <- "/dhc/home/marco.simnacher/DeepCIT/CIT_benchmarking/Data"
   path_to_ukb_data <- "/home/RDC/simnacma/H:/simnacma/CITs/Application/UKB_data"
   set.seed(seed)
@@ -56,7 +56,7 @@ data_gen <- function(seed, idx_sample=NULL, n_sample=NULL, idx_beta2=NULL, beta2
   row.names(X_obs) <- 1:nrow(X_obs)
   row.names(X_orig) <- 1:nrow(X_orig)
 
-  epsZ <- matrix(stats::rnorm((nrow(Z)*ncol(Z)), 0, eps_sigmaZ),nrow=nrow(Z),ncol=ncol(Z))
+  epsZ <- matrix(stats::rnorm((nrow(Z)*ncol(Z)), 0, eps_sigmaZ), nrow=nrow(Z), ncol=ncol(Z))
   Z <- Z+epsZ
 
   #Standardize
@@ -64,13 +64,10 @@ data_gen <- function(seed, idx_sample=NULL, n_sample=NULL, idx_beta2=NULL, beta2
   X_orig <- scale(X_orig)
   X_obs <- scale(X_obs)
 
-  if(response=='simulated'){
-    if(is.null(beta2s)){
-      Y <- y_from_xz(Z, eps_sigmaY, post_non_lin=post_non_lin)
-    }else if(is.null(n_sample)){
-      Y <- y_from_xz(Z, eps_sigmaY, X=X_orig, beta2s=beta2s, idx_beta2=idx_beta2,post_non_lin=post_non_lin)
-    }
-
+  if(is.null(beta2s)){
+    Y <- y_from_xz(Z, eps_sigmaY, post_non_lin=post_non_lin, g_z=g_z)
+  }else if(is.null(n_sample)){
+    Y <- y_from_xz(Z, eps_sigmaY, X=X_orig, beta2s=beta2s, idx_beta2=idx_beta2, post_non_lin=post_non_lin, g_z=g_z)
   }
 
   return(list(X_obs,Y,Z))

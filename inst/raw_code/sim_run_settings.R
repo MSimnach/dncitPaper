@@ -1,8 +1,8 @@
 ### Definition of simulation settings and run over all settings for all DNCITs
 setwd('inst')
 # Settings
-#### args =['/CI/ or /No_CI/', post_non_lin, eps_sigmaX, eps_sigmaY, eps_sigmaZ, embedding_orig, embedding_obs, confounder, response, CIT, CIT_params]
-#c("/CI/", "1", "0", "1", "0", "fastsurfer", "fastsurfer", "AS", "simulated", "RCOT", "1")
+#### args =['/CI/ or /No_CI/', post_non_lin, eps_sigmaX, eps_sigmaY, eps_sigmaZ, embedding_orig, embedding_obs, confounder, g_z, CIT, CIT_params]
+#c("/CI/", "1", "0", "1", "0", "fastsurfer", "fastsurfer", "AS", "linear", "RCOT", "1")
 settings <- data.frame(
   dependence = rep(c('/CI/', '/No_CI/'), each = 40),
   fct_relation = rep(rep(c('1','2','3','4','5'), each=4), 4),
@@ -12,7 +12,7 @@ settings <- data.frame(
   embedding_orig = rep('fastsurfer', 80),
   embedding_obs = rep(c('fastsurfer', 'noisy', 'freesurfer', 'condVAE'), 20),
   confounder = rep(rep(c("AS", "genes10"), each=20),2),
-  response = rep('simulated', 80)
+  response = rep('linear', 80)
 )
 
 cits <- c('WALD', 'RCOT 1', 'kpc_graph 2 10', 'CMIknn', 'FCIT')
