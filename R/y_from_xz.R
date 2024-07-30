@@ -27,14 +27,20 @@ y_from_xz <- function(Z, eps_sigmaY,X=NULL,beta2s=NULL, idx_beta2=NULL, post_non
 post_non_lin_g <- function(post_non_lin){
   if (post_non_lin %in% 1:3) {
     g <- function(s) {
-      s <- scale(s)
+      #s <- scale(s)
       y <- s^post_non_lin
       return(y)
     }
-  } else if (post_non_lin %in% 4:5) {
+  } else if (post_non_lin == 4) {
     g <- function(s) {
-      s <- scale(s)
-      y <- exp(-s^2/2) * sin(ifelse(post_non_lin == 4, 2, 6) * s)
+      #s <- scale(s)
+      y <- tanh(s)
+      return(y)
+    }
+  } else if (post_non_lin == 5) {
+    g <- function(s) {
+      #s <- scale(s)
+      y <- exp(-abs(s))
       return(y)
     }
   }
