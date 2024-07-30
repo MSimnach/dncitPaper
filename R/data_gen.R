@@ -18,7 +18,7 @@
 #'
 #' @return list of X_obs, Y, Z
 #' @export
-data_gen <- function(seed, idx_sample=NULL, n_sample=NULL, idx_beta2=NULL, beta2s=NULL, n=NULL, post_non_lin=4, eps_sigmaX=0, eps_sigmaY=1, eps_sigmaZ=0, embedding_orig='fastsurfer',
+data_gen <- function(seed, idx_sample=NULL, n_sample=NULL, idx_beta2=NULL, beta2s=NULL, post_non_lin=4, eps_sigmaX=0, eps_sigmaY=1, eps_sigmaZ=0, embedding_orig='fastsurfer',
                      embedding_obs='fastsurfer', confounder='AS', g_z='linear'){
   #path_to_ukb_data <- "/dhc/home/marco.simnacher/DeepCIT/CIT_benchmarking/Data"
   path_to_ukb_data <- "/home/RDC/simnacma/H:/simnacma/CITs/Application/UKB_data"
@@ -43,11 +43,7 @@ data_gen <- function(seed, idx_sample=NULL, n_sample=NULL, idx_beta2=NULL, beta2
   stopifnot(all.equal(subset_X_orig[,1], subset_Z[,1]))
 
   #sample rows
-  if(is.null(beta2s)){
-    idx <- sample(1:nrow(X_merged), n_sample[[idx_sample]])
-  }else if(is.null(n_sample)){
-    idx <- sample(1:nrow(X_merged), n)
-  }
+  idx <- sample(1:nrow(X_merged), n_sample[[idx_sample]])
   X_obs <- subset_X_obs[idx,-c(1)]
   X_orig <- subset_X_orig[idx,-c(1)]
   Z <- subset_Z[idx,-c(1)]
@@ -66,7 +62,7 @@ data_gen <- function(seed, idx_sample=NULL, n_sample=NULL, idx_beta2=NULL, beta2
 
   if(is.null(beta2s)){
     Y <- y_from_xz(Z, eps_sigmaY, post_non_lin=post_non_lin, g_z=g_z)
-  }else if(is.null(n_sample)){
+  }else{
     Y <- y_from_xz(Z, eps_sigmaY, X=X_orig, beta2s=beta2s, idx_beta2=idx_beta2, post_non_lin=post_non_lin, g_z=g_z)
   }
 
