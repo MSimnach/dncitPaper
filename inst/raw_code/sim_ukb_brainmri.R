@@ -36,9 +36,13 @@ if(args[7]=='condVAE'){
 }
 beta2s <- beta2s_all
 
-if(cit %in% c('CMIknn', 'FCIT')){
+if(cit %in% c('FCIT')){
   Sys.setenv(OMP_NUM_THREADS = "50")
   cl <- parallel::makeCluster(2, outfile="")
+  doParallel::registerDoParallel(cl)
+}else if(cit %in% c('CMIknn')){
+  Sys.setenv(OMP_NUM_THREADS = "100")
+  cl <- parallel::makeCluster(100, outfile="")
   doParallel::registerDoParallel(cl)
 }else{
   Sys.setenv(OMP_NUM_THREADS = "50")
