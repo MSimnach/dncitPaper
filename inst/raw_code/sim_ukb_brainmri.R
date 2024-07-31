@@ -39,12 +39,12 @@ beta2s <- beta2s_all
 '
 beta2s <- list(0.4)
 
-
-if(cit %in% c('FCIT')){
+'
+if(cit %in% c("FCIT")){
   Sys.setenv(OMP_NUM_THREADS = "50")
   cl <- parallel::makeCluster(2, outfile="")
   doParallel::registerDoParallel(cl)
-}else if(cit %in% c('CMIknn')){
+}else if(cit %in% c("CMIknn")){
   Sys.setenv(OMP_NUM_THREADS = "100")
   cl <- parallel::makeCluster(100, outfile="")
   doParallel::registerDoParallel(cl)
@@ -53,6 +53,8 @@ if(cit %in% c('FCIT')){
   cl <- parallel::makeCluster(50, outfile="")
   doParallel::registerDoParallel(cl)
 }
+'
+cl <- parallel::makeCluster(2, outfile="")
 
 res_time <- foreach::foreach (i= n_seeds, .packages = c('DNCIT', 'dncitPaper')) %dopar% {
                                                  if (grepl('/CI',args[1],fixed=TRUE)){
