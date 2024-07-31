@@ -37,7 +37,7 @@ data_gen <- function(seed, idx_sample=NULL, n_sample=NULL, idx_beta2=NULL, beta2
   Z <- as.data.frame(Z)
 
   common_ids <- Reduce(intersect, list(X_orig$id, X_obs$id, Z$id))
-  cat(paste('common_ids', common_ids[1:10]))
+
   subset_X_obs <- X_obs[X_obs$id %in% common_ids, ]
   subset_X_orig <-  X_orig[X_orig$id %in% common_ids, ]
   subset_Z <- Z[Z$id %in% common_ids, ]
@@ -50,14 +50,32 @@ data_gen <- function(seed, idx_sample=NULL, n_sample=NULL, idx_beta2=NULL, beta2
   X_orig <- subset_X_orig[idx,-c(1)]
   Z <- subset_Z[idx,-c(1), drop=FALSE]
 
-  row.names(Z) <- 1:nrow(Z)
-  row.names(X_obs) <- 1:nrow(X_obs)
-  row.names(X_orig) <- 1:nrow(X_orig)
-
   epsZ <- matrix(stats::rnorm((nrow(Z)*ncol(Z)), 0, eps_sigmaZ), nrow=nrow(Z), ncol=ncol(Z))
   Z <- Z+epsZ
 
+  #remove zero columns and multicollinearity in one-hot-encoding of sites (due to subsampling)
+  site_columns <- grep("^site", colnames(Z), value = TRUE)
+  for (site in site_columns){
+    site_sum <- sum(Z[[site]])
+    if(site_sum == 0){
+      Z <- Z[, !names(Z) %in% site]
+    }
+  }
+  site_columns <- grep("^site", colnames(Z), value = TRUE)
+  # Sum the 'site' columns row-wise
+  site_sum <- sum(Z[site_columns])
+  #remove one site column
+  if(site_sum == nrow(Z)){
+    for(site in site_columns){
+      if(is_binary(Z[[site]])){
+        Z <- Z[, !names(Z) %in% site]
+        break
+      }
+    }
+  }
+
   #Standardize
+  # Scale Z column only if more than one unique value in column to avoid NaNs
   Z <- scale(Z)
   X_orig <- scale(X_orig)
   X_obs <- scale(X_obs)
@@ -67,6 +85,11 @@ data_gen <- function(seed, idx_sample=NULL, n_sample=NULL, idx_beta2=NULL, beta2
   }else{
     Y <- y_from_xz(Z, eps_sigmaY, X=X_orig, beta2s=beta2s, idx_beta2=idx_beta2, post_non_lin=post_non_lin, g_z=g_z)
   }
+
+  row.names(Z) <- 1:nrow(Z)
+  row.names(X_obs) <- 1:nrow(X_obs)
+  row.names(X_orig) <- 1:nrow(X_orig)
+  row.names(Y) <- 1:nrow(Y)
 
   return(list(X_obs,Y,Z))
 }
@@ -121,3 +144,11 @@ load_Z <- function(path_to_ukb_data,confounder){
     Z <- data.table::fread(paste0(path_to_ukb_data, "/ukb_z15_agesexsitesizedateqcgenes.csv"), header=TRUE, nThread = 1)
   }
 }
+
+# Function to check if a column has only 2 values (binary after sd e.g.)
+is_binary <- function(x) {
+  unique_values <- unique(x)
+  length(unique_values) == 2
+}
+
+

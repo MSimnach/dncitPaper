@@ -18,25 +18,25 @@ print(args)
 if(cit == 'KCIT' || tail(args,1)=='10' || tail(args,1)=='20' || cit=='CMIknn'){
   n_sample = list(25, 33, 45, 60, 80, 100, 145, 200, 256, 350, 460, 615, 825, 1100, 1475, 1964)
 }else if(cit=='WALD' || cit=='RCOT'){
-  n_sample = list(145, 200, 256, 350, 460, 615, 825, 1100, 1475, 1964, 5000, 10000)
+  n_sample = list(350, 460, 615, 825, 1100, 1475, 1964, 5000, 10000)
 }else{
   n_sample = list(25, 33, 45, 60, 80, 100, 145, 200, 256, 350, 460, 615, 825, 1100, 1475, 1964, 5000, 10000)
 }
-n_seeds = 1:10
-'
+n_seeds = 1:200
+
 #vary also effect sizes -> change also how to save results in for loops
-beta2s_all <- list()
-if(args[7]=="condVAE"){
-  for (k in -2:2){
-    beta2s_all <- append(beta2s_all, c(10,7.5,5, 2.5)*10^(-k))
-  }
-}else{
-  for (k in -1:3){
-    beta2s_all <- append(beta2s_all, c(10,7.5,5, 2.5)*10^(-k))
-  }
-}
-beta2s <- beta2s_all
-'
+#beta2s_all <- list()
+#if(args[7]=="condVAE"){
+#  for (k in -2:2){
+#    beta2s_all <- append(beta2s_all, c(10,7.5,5, 2.5)*10^(-k))
+#  }
+#}else{
+#  for (k in -1:3){
+#    beta2s_all <- append(beta2s_all, c(10,7.5,5, 2.5)*10^(-k))
+#  }
+#}
+#beta2s <- beta2s_all
+
 beta2s <- list(0.4)
 
 

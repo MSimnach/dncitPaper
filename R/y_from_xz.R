@@ -12,7 +12,9 @@ y_from_xz <- function(Z, eps_sigmaY,X=NULL,beta2s=NULL, idx_beta2=NULL, post_non
   epsY <- stats::rnorm(nrow(Z), 0, eps_sigmaY)
 
   # transform Z and aggregate over columns with random effects
+  #cat(paste('Z', as.data.frame(Z)[1:3,], '\n'))
   transformed_z <- transform_z(as.data.frame(Z), g_z)
+  #cat(paste('transformed_z', transformed_z[1:3,], '\n'))
   beta_Z_ <- stats::rnorm(ncol(transformed_z), 0, 1)
   active_Z <- stats::rbinom(ncol(transformed_z), 1, 0.5)
   if(sum(active_Z)==0){
@@ -20,7 +22,9 @@ y_from_xz <- function(Z, eps_sigmaY,X=NULL,beta2s=NULL, idx_beta2=NULL, post_non
   }
   beta_Z <- abs(beta_Z_*active_Z)
   beta_Z <- beta_Z/sum(beta_Z)
+  #cat(paste('beta_Z', beta_Z, '\n'))
   predictor_z <- as.matrix(transformed_z)%*%beta_Z
+  #cat(paste('predictor_z', predictor_z[1:5], '\n'))
 
   if(is.null(X)){
     Y <- g(predictor_z+epsY)
@@ -32,8 +36,9 @@ y_from_xz <- function(Z, eps_sigmaY,X=NULL,beta2s=NULL, idx_beta2=NULL, post_non
     #beta_X <- rep(1/ncol(X), ncol(X))
     predictor_x <- X%*%beta_X*beta2s[[idx_beta2]]
 
-    Y <- g(oredictor_z+predictor_x+epsY)
+    Y <- g(predictor_z+predictor_x+epsY)
   }
+  #cat(paste('Y', Y[1:5,]))
   return(Y)
 }
 
@@ -86,7 +91,7 @@ transform_z <- function(Z, g_z){
     }
     # add cubic term for date_diff
     if("date_diff" %in% names(Z)){
-      Z$date_diff_cubed <- Z$date_diff^3
+      Z[['date_diff_cubed']] <- Z[['date_diff^3']]
     }
     return(Z)
   } else if (g_z %in% "breakpoint3"){
