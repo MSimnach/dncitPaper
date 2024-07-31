@@ -16,13 +16,13 @@ print(args)
 
 ####### In parallel #######
 if(cit == 'KCIT' || tail(args,1)=='10' || tail(args,1)=='20' || cit=='CMIknn'){
-  n_sample = list(25, 33, 45, 60, 80, 100, 145, 200, 256, 350, 460, 615, 825, 1,100, 1,475, 1,964)
+  n_sample = list(25, 33, 45, 60, 80, 100, 145, 200, 256, 350, 460, 615, 825, 1100, 1475, 1964)
 }else if(cit=='WALD' || cit=='RCOT'){
-  n_sample = list(145, 200, 256, 350, 460, 615, 825, 1,100, 1,475, 1,964, 5000, 10000)
+  n_sample = list(145, 200, 256, 350, 460, 615, 825, 1100, 1475, 1964, 5000, 10000)
 }else{
-  n_sample = list(25, 33, 45, 60, 80, 100, 145, 200, 256, 350, 460, 615, 825, 1,100, 1,475, 1,964, 5000, 10000)
+  n_sample = list(25, 33, 45, 60, 80, 100, 145, 200, 256, 350, 460, 615, 825, 1100, 1475, 1964, 5000, 10000)
 }
-n_seeds = 1:200
+n_seeds = 1:10
 '
 #vary also effect sizes -> change also how to save results in for loops
 beta2s_all <- list()
@@ -39,7 +39,7 @@ beta2s <- beta2s_all
 '
 beta2s <- list(0.4)
 
-'
+
 if(cit %in% c("FCIT")){
   Sys.setenv(OMP_NUM_THREADS = "50")
   cl <- parallel::makeCluster(2, outfile="")
@@ -53,8 +53,9 @@ if(cit %in% c("FCIT")){
   cl <- parallel::makeCluster(50, outfile="")
   doParallel::registerDoParallel(cl)
 }
-'
-cl <- parallel::makeCluster(2, outfile="")
+
+#cl <- parallel::makeCluster(2, outfile="")
+#doParallel::registerDoParallel(cl)
 
 res_time <- foreach::foreach (i= n_seeds, .packages = c('DNCIT', 'dncitPaper')) %dopar% {
                                                  if (grepl('/CI',args[1],fixed=TRUE)){
@@ -63,7 +64,7 @@ res_time <- foreach::foreach (i= n_seeds, .packages = c('DNCIT', 'dncitPaper')) 
                                                    runtime <- rep(0,length(n_sample))
                                                    for (idx_sample in seq_along(n_sample)){
                                                      cat(paste("Iteration",i,"for sample size", n_sample[[idx_sample]], "\n"))
-                                                     XYZ_list <- dncitPaper::data_gen(seed=i, idx_sample=idx_sample, n_sample=n_sample, idx_beta2=NULL, beta2s=NULL, n=NULL,
+                                                     XYZ_list <- dncitPaper::data_gen(seed=i, idx_sample=idx_sample, n_sample=n_sample, idx_beta2=NULL, beta2s=NULL,
                                                                           post_non_lin=as.numeric(args[2]), eps_sigmaX=as.numeric(args[3]), eps_sigmaY=as.numeric(args[4]),
                                                                           eps_sigmaZ=as.numeric(args[5]), embedding_orig=args[6], embedding_obs=args[7],
                                                                           confounder=args[8], g_z=args[9])

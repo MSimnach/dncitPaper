@@ -15,6 +15,9 @@ y_from_xz <- function(Z, eps_sigmaY,X=NULL,beta2s=NULL, idx_beta2=NULL, post_non
   transformed_z <- transform_z(as.data.frame(Z), g_z)
   beta_Z_ <- stats::rnorm(ncol(transformed_z), 0, 1)
   active_Z <- stats::rbinom(ncol(transformed_z), 1, 0.5)
+  if(sum(active_Z)==0){
+    active_Z[1] <- 1
+  }
   beta_Z <- abs(beta_Z_*active_Z)
   beta_Z <- beta_Z/sum(beta_Z)
   predictor_z <- as.matrix(transformed_z)%*%beta_Z

@@ -35,18 +35,20 @@ data_gen <- function(seed, idx_sample=NULL, n_sample=NULL, idx_beta2=NULL, beta2
   X_orig <- as.data.frame(X_orig)
   X_obs <- as.data.frame(X_obs)
   Z <- as.data.frame(Z)
-  X_merged <- dplyr::inner_join(X_orig, X_obs, by='id')
-  subset_X_obs <- X_obs[X_obs$id %in% X_merged$id, ]
-  subset_X_orig <-  X_orig[X_orig$id %in% X_merged$id, ]
-  subset_Z <- Z[Z$id %in% X_merged$id, ]
+
+  common_ids <- Reduce(intersect, list(X_orig$id, X_obs$id, Z$id))
+  cat(paste('common_ids', common_ids[1:10]))
+  subset_X_obs <- X_obs[X_obs$id %in% common_ids, ]
+  subset_X_orig <-  X_orig[X_orig$id %in% common_ids, ]
+  subset_Z <- Z[Z$id %in% common_ids, ]
   #check if ids are equal
   stopifnot(all.equal(subset_X_orig[,1], subset_Z[,1]))
 
   #sample rows
-  idx <- sample(1:nrow(X_merged), n_sample[[idx_sample]])
+  idx <- sample(1:nrow(subset_Z), n_sample[[idx_sample]])
   X_obs <- subset_X_obs[idx,-c(1)]
   X_orig <- subset_X_orig[idx,-c(1)]
-  Z <- subset_Z[idx,-c(1)]
+  Z <- subset_Z[idx,-c(1), drop=FALSE]
 
   row.names(Z) <- 1:nrow(Z)
   row.names(X_obs) <- 1:nrow(X_obs)
