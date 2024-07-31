@@ -46,8 +46,7 @@ ukb_avinun <- as.data.frame(data.table::fread(file=path_to_save_ukb_avinun,heade
 ids_all <- c(ids_confounders, ids_brain_structure, ids_personality)
 
 
-
-### 1) Confounder control: test if nonlinear relationships with confounders are satisfactory addressed in Wald tests
+### 1.1) Confounder control: test if nonlinear relationships with confounders are satisfactory addressed in Wald tests (Avinun+RCoT)
 confounders_short <- c('age', 'sex', 'genes', 'head_size', 'head_position', 'date_diff', 'site')
 brain_structures_lin_unconfounded <- list()
 # for each confounder compute linearly unconfounded brain structure measurements
