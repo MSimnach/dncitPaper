@@ -54,20 +54,20 @@ settings_dim_z <- data.frame(cit = rep('Rscript'), script=rep('raw_code/sim_ukb_
 
 settings_final <- rbind(settings_g_z, settings_dim_z)
 settings_final$CIT <- 'RCOT 1'
-write.table(settings, file = "raw_code/slurm/settings_rcot.txt", sep = " ", row.names = FALSE, col.names = TRUE, quote = FALSE)
+write.table(settings_final, file = "raw_code/slurm/settings_rcot.txt", sep = " ", row.names = FALSE, col.names = TRUE, quote = FALSE)
 
 settings_final <- rbind(settings_g_z, settings_dim_z)
-settings_final$CIT <- 'RCOT 1'
-write.table(settings, file = "raw_code/slurm/settings_rcot.txt", sep = " ", row.names = FALSE, col.names = TRUE, quote = FALSE)
+settings_final$CIT <- 'CMIknn'
+write.table(settings, file = "raw_code/slurm/settings_cmiknn.txt", sep = " ", row.names = FALSE, col.names = TRUE, quote = FALSE)
 
 settings_final <- rbind(settings_g_z, settings_dim_z)
-settings_final$CIT <- 'RCOT 1'
-write.table(settings, file = "raw_code/slurm/settings_rcot.txt", sep = " ", row.names = FALSE, col.names = TRUE, quote = FALSE)
+settings_final$CIT <- 'kpc_graph 2 10'
+write.table(settings, file = "raw_code/slurm/settings_kpc_graph 2 10.txt", sep = " ", row.names = FALSE, col.names = TRUE, quote = FALSE)
 
 settings_final <- rbind(settings_g_z, settings_dim_z)
-settings_final$CIT <- 'RCOT 1'
-write.table(settings, file = "raw_code/slurm/settings_rcot.txt", sep = " ", row.names = FALSE, col.names = TRUE, quote = FALSE)
+settings_final$CIT <- 'WALD'
+write.table(settings, file = "raw_code/slurm/settings_wald.txt", sep = " ", row.names = FALSE, col.names = TRUE, quote = FALSE)
 
 settings_final <- rbind(settings_g_z, settings_dim_z)
-settings_final$CIT <- 'RCOT 1'
-write.table(settings, file = "raw_code/slurm/settings_rcot.txt", sep = " ", row.names = FALSE, col.names = TRUE, quote = FALSE)
+settings_final$CIT <- 'FCIT'
+write.table(settings, file = "raw_code/slurm/settings_fcit.txt", sep = " ", row.names = FALSE, col.names = TRUE, quote = FALSE)
