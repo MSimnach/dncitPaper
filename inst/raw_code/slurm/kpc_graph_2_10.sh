@@ -3,7 +3,7 @@
 #SBATCH --mail-type=END,FAIL
 #SBATCH --mail-user=marco.simnacher@guest.hpi.de
 #SBATCH --partition=gpu,gpupro,cpu,gpua100 # -p
-#SBATCH --cpus-per-task=2 # -c
+#SBATCH --cpus-per-task=50 # -c
 #SBATCH --mem=256gb
 #SBATCH --gpus=0
 #SBATCH --time=72:00:00 
