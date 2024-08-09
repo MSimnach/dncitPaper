@@ -3,6 +3,7 @@
 library(data.table)
 library(dplyr)
 library(stringr)
+library(car)
 
 # paths to data repository
 path_to_ukb_data <- 'M:/CITs/Application/UKB_data/ukb49727.csv'
@@ -62,8 +63,26 @@ cols_desikan_pial <- 1023:1088+n_confounders
 cols_desikan_white <- 1089:1290+n_confounders
 cols_subseg <- 1291:1411+n_confounders
 cols_freesurfer_selected <- c(cols_aseg, cols_desikan_pial)
-ukb_freesurfer <- ukb_pipeline[,c(1, cols_freesurfer_selected), with=FALSE]
+ukb_freesurfer <- as.data.frame(ukb_pipeline[,c(1, cols_freesurfer_selected), with=FALSE])
+# remove multicolinear columns (stepwise selection: remove columns with highest VIF, test again for VIF, repeat until no variable has vif >10)
+lm_freesurfer <- stats::lm(eid ~ ., data=ukb_freesurfer)
+vif_vals <- car::vif(lm_freesurfer)
+sort(vif_vals)
+ukb_freesurfer_no_colinear <- ukb_freesurfer[ , !(colnames(ukb_freesurfer) %in% c("26514-2.0", "26515-2.0", "26516-2.0", "26517-2.0", "26518-2.0", "26519-2.0", "26520-2.0", "26521-2.0", "26522-2.0"))]
+lm_freesurfer <- stats::lm(eid ~ ., data=ukb_freesurfer_no_colinear)
+vif_vals <- car::vif(lm_freesurfer)
+sort(vif_vals)
+ukb_freesurfer_no_colinear <- ukb_freesurfer_no_colinear[ , !(colnames(ukb_freesurfer_no_colinear) %in% c("26923-2.0", "26956-2.0", "26553-2.0", "26538-2.0", "26569-2.0", "26552-2.0", "26541-2.0", "26565-2.0", "26554-2.0"))]
+lm_freesurfer <- stats::lm(eid ~ ., data=ukb_freesurfer_no_colinear)
+vif_vals <- car::vif(lm_freesurfer)
+sort(vif_vals)
 data.table::fwrite(ukb_freesurfer, file=path_to_save_freesurfer_X)
+
+## Freesurfer as in Avinun
+path_to_save_ids_brain_avinun <- 'M:/CITs/Application/UKB_data/ids/ids_brain_avinun.csv'
+ids_brain_structure <- data.table::fread(file=path_to_save_ids_brain_avinun,header=TRUE)$ids_brain_structure
+ukb_freesurfer <- data.table::fread(file=path_to_save_freesurfer_X, header=TRUE)
+apply(ukb_freesurfer, 2, function(x) length(unique(x)))
 
 ### Embedding from conditional VAE
 #ukb_transfer <- fread(file='M:/CITs/Application/UKB_data/ukb_condVAE.csv',  header=FALSE)
