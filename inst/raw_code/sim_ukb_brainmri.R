@@ -16,11 +16,11 @@ print(args)
 
 ####### In parallel #######
 if(cit == 'KCIT' || tail(args,1)=='10' || tail(args,1)=='20' || cit=='CMIknn'){
-  n_sample = list(25, 33, 45, 60, 80, 100, 145, 200, 256, 350, 460, 615, 825, 1100, 1475, 1964)
+  n_sample = list(25, 45, 80, 145, 256, 350, 460, 825, 1100)
 }else if(cit=='WALD' || cit=='RCOT'){
-  n_sample = list(350, 460, 615, 825, 1100, 1475, 1964, 5000, 10000)
+  n_sample = list(350, 460, 825, 1100, 1475, 1964, 5000, 10000)
 }else{
-  n_sample = list(25, 33, 45, 60, 80, 100, 145, 200, 256, 350, 460, 615, 825, 1100, 1475, 1964, 5000, 10000)
+  n_sample = list(145, 256, 350, 460, 825, 1100, 1475, 1964, 5000, 10000)
 }
 n_seeds = 1:200
 
@@ -37,7 +37,7 @@ n_seeds = 1:200
 #}
 #beta2s <- beta2s_all
 
-beta2s <- list(0.4)
+beta2s <- list(1)
 
 
 if(cit %in% c("FCIT")){
@@ -91,35 +91,44 @@ res_time <- foreach::foreach (i= n_seeds, .packages = c('DNCIT', 'dncitPaper')) 
                                                       }else if(args[8]=='ukb_z2'){
                                                         model_formula_YZ <- 'V1~1+s(V2)+s(V3)'
                                                       }else if(args[8]=='ukb_z4'){
-                                                        model_formula_YZ <- 'V1~1+s(V2)+s(V3)+.'
+                                                        n_covs <- ncol(Z)
+                                                        lin_covs <- paste0("V", seq(4, n_covs+1))
+                                                        lin_covs_string <- paste(lin_covs, collapse = "+")
+                                                        model_formula_YZ <- paste0('V1~1+s(V2)+s(V3)+', lin_covs_string)
                                                       }else if(args[8]=='ukb_z6'){
                                                         n_covs <- ncol(Z)
-                                                        date_diff <- as.character(n_covs-1)
-                                                        qc <- as.character(n_covs)
-                                                        model_formula_YZ <- paste('V1~1+s(V2)+s(V3)+s(V', date_diff, ')+s(V', qc, ')+.', sep="")
+                                                        date_diff <- as.character(n_covs)
+                                                        qc <- as.character(n_covs+1)
+                                                        lin_covs <- paste0("V", seq(4, n_covs-1))
+                                                        lin_covs_string <- paste(lin_covs, collapse = "+")
+                                                        model_formula_YZ <- paste('V1~1+s(V2)+s(V3)+s(V', date_diff, ')+s(V', qc, ')+', lin_covs_string, sep="")
                                                       }else if(args[8]=='ukb_z10'){
                                                         n_covs <- ncol(Z)
-                                                        date_diff <- as.character(n_covs-5)
-                                                        qc <- as.character(n_covs-4)
-                                                        head_loc_1 <- as.character(n_covs-3)
-                                                        head_loc_2 <- as.character(n_covs-2)
-                                                        head_loc_3 <- as.character(n_covs-1)
-                                                        head_loc_4 <- as.character(n_covs)
-                                                        model_formula_YZ <- paste('V1~1+s(V2)+s(V3)+s(V', date_diff, ')+s(V', qc, ')+s(V', head_loc_1, ')+s(V', head_loc_2, ')+s(V', head_loc_3, ')+s(V', head_loc_4, ')+.', sep="")
+                                                        date_diff <- as.character(n_covs-4)
+                                                        qc <- as.character(n_covs-3)
+                                                        head_loc_1 <- as.character(n_covs-2)
+                                                        head_loc_2 <- as.character(n_covs-1)
+                                                        head_loc_3 <- as.character(n_covs)
+                                                        head_loc_4 <- as.character(n_covs+1)
+                                                        lin_covs <- paste0("V", seq(4, n_covs-5))
+                                                        lin_covs_string <- paste(lin_covs, collapse = "+")
+                                                        model_formula_YZ <- paste('V1~1+s(V2)+s(V3)+s(V', date_diff, ')+s(V', qc, ')+s(V', head_loc_1, ')+s(V', head_loc_2, ')+s(V', head_loc_3, ')+s(V', head_loc_4, ')+', lin_covs_string, sep="")
                                                       }else if(args[8]=='ukb_z15'){
                                                         n_covs <- ncol(Z)
-                                                        date_diff <- as.character(n_covs-10)
-                                                        qc <- as.character(n_covs-9)
-                                                        head_loc_1 <- as.character(n_covs-8)
-                                                        head_loc_2 <- as.character(n_covs-7)
-                                                        head_loc_3 <- as.character(n_covs-6)
-                                                        head_loc_4 <- as.character(n_covs-5)
-                                                        gene_1 <- as.character(n_covs-4)
-                                                        gene_2 <- as.character(n_covs-3)
-                                                        gene_3 <- as.character(n_covs-2)
-                                                        gene_4 <- as.character(n_covs-1)
-                                                        gene_5 <- as.character(n_covs)
-                                                        model_formula_YZ <- paste('V1~1+s(V2)+s(V3)+s(V', date_diff, ')+s(V', qc, ')+s(V', head_loc_1, ')+s(V', head_loc_2, ')+s(V', head_loc_3, ')+s(V', head_loc_4, ')+s(V', gene_1, ')+s(V', gene_2, ')+s(V', gene_3, ')+s(V', gene_4, ')+s(V', gene_5, ')+.', sep="")
+                                                        date_diff <- as.character(n_covs-9)
+                                                        qc <- as.character(n_covs-8)
+                                                        head_loc_1 <- as.character(n_covs-7)
+                                                        head_loc_2 <- as.character(n_covs-6)
+                                                        head_loc_3 <- as.character(n_covs-5)
+                                                        head_loc_4 <- as.character(n_covs-4)
+                                                        gene_1 <- as.character(n_covs-3)
+                                                        gene_2 <- as.character(n_covs-2)
+                                                        gene_3 <- as.character(n_covs-1)
+                                                        gene_4 <- as.character(n_covs)
+                                                        gene_5 <- as.character(n_covs+1)
+                                                        lin_covs <- paste0("V", seq(4, n_covs-10))
+                                                        lin_covs_string <- paste(lin_covs, collapse = "+")
+                                                        model_formula_YZ <- paste('V1~1+s(V2)+s(V3)+s(V', date_diff, ')+s(V', qc, ')+s(V', head_loc_1, ')+s(V', head_loc_2, ')+s(V', head_loc_3, ')+s(V', head_loc_4, ')+s(V', gene_1, ')+s(V', gene_2, ')+s(V', gene_3, ')+s(V', gene_4, ')+s(V', gene_5, ')+', lin_covs_string, sep="")
                                                       }
                                                       cit_params <- list(cit='cpt_kpc', params_cit=list(k=k, Knn = as.numeric(args[12]), model.formula.YZ=model_formula_YZ))
                                                      }else if(args[10]=='FCIT'){
