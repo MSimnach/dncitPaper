@@ -22,6 +22,7 @@ data_gen <- function(seed, idx_sample=NULL, n_sample=NULL, idx_beta2=NULL, beta2
                      embedding_obs='fastsurfer', confounder='AS', g_z='linear'){
   path_to_ukb_data <- "/dhc/home/marco.simnacher/DeepCIT/CIT_benchmarking/Data"
   #path_to_ukb_data <- "/home/RDC/simnacma/H:/simnacma/CITs/Application/UKB_data"
+  #path_to_ukb_data <- "M:/CITs/Application/UKB_data"
   set.seed(seed)
 
   X_orig <- load_X_orig(path_to_ukb_data,embedding_orig)
