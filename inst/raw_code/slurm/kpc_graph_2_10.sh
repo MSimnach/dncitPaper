@@ -4,7 +4,7 @@
 #SBATCH --mail-user=marco.simnacher@guest.hpi.de
 #SBATCH --partition=gpu,gpupro,cpu,gpua100 # -p
 #SBATCH --cpus-per-task=50 # -c
-#SBATCH --mem=256gb
+#SBATCH --mem=128gb
 #SBATCH --gpus=0
 #SBATCH --time=72:00:00 
 #SBATCH --output=logs/kpc_graph_2_10_%j.log # %j is job id
