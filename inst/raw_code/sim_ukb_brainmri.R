@@ -112,7 +112,7 @@ res_time <- foreach::foreach (i= n_seeds, .packages = c('DNCIT', 'dncitPaper')) 
                                                         head_loc_4 <- as.character(n_covs+1)
                                                         lin_covs <- paste0("V", seq(4, n_covs-5))
                                                         lin_covs_string <- paste(lin_covs, collapse = "+")
-                                                        model_formula_YZ <- paste('V1~1+s(V2)+s(V3)+s(V', date_diff, ')+s(V', qc, ')+s(V', head_loc_1, ')+s(V', head_loc_2, ')+s(V', head_loc_3, ')+s(V', head_loc_4, ')+', lin_covs_string, sep="")
+                                                        model_formula_YZ <- paste('V1~1+s(V2)+s(V3)+s(V', date_diff, ')+s(V', qc, ')+s(V', head_loc_1, ', k=3)+s(V', head_loc_2, ', k=3)+s(V', head_loc_3, ', k=3)+s(V', head_loc_4, ', k=3)+', lin_covs_string, sep="")
                                                       }else if(args[8]=='ukb_z15'){
                                                         n_covs <- ncol(Z)
                                                         date_diff <- as.character(n_covs-9)
@@ -128,7 +128,7 @@ res_time <- foreach::foreach (i= n_seeds, .packages = c('DNCIT', 'dncitPaper')) 
                                                         gene_5 <- as.character(n_covs+1)
                                                         lin_covs <- paste0("V", seq(4, n_covs-10))
                                                         lin_covs_string <- paste(lin_covs, collapse = "+")
-                                                        model_formula_YZ <- paste('V1~1+s(V2)+s(V3)+s(V', date_diff, ')+s(V', qc, ')+s(V', head_loc_1, ')+s(V', head_loc_2, ')+s(V', head_loc_3, ')+s(V', head_loc_4, ')+s(V', gene_1, ')+s(V', gene_2, ')+s(V', gene_3, ')+s(V', gene_4, ')+s(V', gene_5, ')+', lin_covs_string, sep="")
+                                                        model_formula_YZ <- paste('V1~1+s(V2)+s(V3)+s(V', date_diff, ')+s(V', qc, ')+s(V', head_loc_1, ', k=3)+s(V', head_loc_2, ', k=3)+s(V', head_loc_3, ', k=3)+s(V', head_loc_4, ', k=3)+s(V', gene_1, ', k=3)+s(V', gene_2, ', k=3)+s(V', gene_3, ', k=3)+s(V', gene_4, ', k=3)+s(V', gene_5, ', k=3)+', lin_covs_string, sep="")
                                                       }
                                                       if (i == 8){
                                                         paste('Iteration', 8, 'gam formula:', model_formula_YZ, '\n')
