@@ -2,7 +2,7 @@
 #SBATCH --job-name=CITs_benchmarking
 #SBATCH --mail-type=END,FAIL
 #SBATCH --mail-user=marco.simnacher@guest.hpi.de
-#SBATCH --partition=gpu,gpupro,cpu,gpua100 # -p
+#SBATCH --partition=gpu,gpupro,cpu # -p
 #SBATCH --cpus-per-task=50 # -c
 #SBATCH --mem=128gb
 #SBATCH --gpus=0
@@ -71,12 +71,12 @@ conda activate /dhc/home/marco.simnacher/conda3/envs/install-dncit
 # Rscript raw_code/sim_ukb_brainmri.R /CI/ 1 0 1 0 fastsurfer freesurfer ukb_z15 squared CMIknn
 # Rscript raw_code/sim_ukb_brainmri.R /CI/ 1 0 1 0 fastsurfer condVAE ukb_z15 squared CMIknn
 # Rscript raw_code/sim_ukb_brainmri.R /No_CI/ 1 0 1 0 fastsurfer fastsurfer ukb_z1 squared CMIknn
-Rscript raw_code/sim_ukb_brainmri.R /No_CI/ 1 3 1 0 fastsurfer noisy ukb_z1 squared CMIknn
+# Rscript raw_code/sim_ukb_brainmri.R /No_CI/ 1 3 1 0 fastsurfer noisy ukb_z1 squared CMIknn
 # Rscript raw_code/sim_ukb_brainmri.R /No_CI/ 1 0 1 0 fastsurfer freesurfer ukb_z1 squared CMIknn
 # Rscript raw_code/sim_ukb_brainmri.R /No_CI/ 1 0 1 0 fastsurfer condVAE ukb_z1 squared CMIknn
 # Rscript raw_code/sim_ukb_brainmri.R /No_CI/ 1 0 1 0 fastsurfer fastsurfer ukb_z2 squared CMIknn
 # Rscript raw_code/sim_ukb_brainmri.R /No_CI/ 1 3 1 0 fastsurfer noisy ukb_z2 squared CMIknn
-Rscript raw_code/sim_ukb_brainmri.R /No_CI/ 1 0 1 0 fastsurfer freesurfer ukb_z2 squared CMIknn
+# Rscript raw_code/sim_ukb_brainmri.R /No_CI/ 1 0 1 0 fastsurfer freesurfer ukb_z2 squared CMIknn
 Rscript raw_code/sim_ukb_brainmri.R /No_CI/ 1 0 1 0 fastsurfer condVAE ukb_z2 squared CMIknn
 Rscript raw_code/sim_ukb_brainmri.R /No_CI/ 1 0 1 0 fastsurfer fastsurfer ukb_z4 squared CMIknn
 Rscript raw_code/sim_ukb_brainmri.R /No_CI/ 1 3 1 0 fastsurfer noisy ukb_z4 squared CMIknn
