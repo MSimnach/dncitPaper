@@ -3,18 +3,17 @@
 palet_discrete <- paletteer::paletteer_d("colorBlindness::Blue2Orange10Steps")
 
 
-#### CI and No CI
-folder_path_ci <- "M:\\CITs\\Application\\UKB_data\\Results\\CI\\rejection_rates"
-folder_path_no_ci <- "M:\\CITs\\Application\\UKB_data\\Results\\No_CI\\rejection_rates"
-all_files_ci <- list.files(folder_path_ci, full.names = TRUE)
-all_files_no_ci <- list.files(folder_path_no_ci, full.names = TRUE)
-all_files <- union(all_files_ci, all_files_no_ci)
+#### split into CI and No CI
+folder_path <- "M:\\CITs\\Application\\UKB_data\\Results\\No_CI\\rejection_rates"
+#folder_path <- "M:\\CITs\\Application\\UKB_data\\Results\\CI\\rejection_rates"
+all_files <- list.files(folder_path, full.names = TRUE)
+all_files <- all_files[setdiff(1:length(all_files), grep('2_0_1_0|2_3_1_0|3_0_1_0|3_3_1_0|4_0_1_0|4_3_1_0|5_0_1_0|5_3_1_0', all_files))]
 
-### 1) nested loop over
+### 1) Data preparation for nested loop over
 # loop 1: confounder dimension (1,2,4,6,10,15)
 # loop 2: sample size
 # fixed confounder relationship (squared terms of all continuous confounders)
-# plot Deep-WALD and Deep-RCOT for all four embedding maps (freesurfer, fastsurfer, condVAE, noisy fastsurfer)
+# Deep-WALD and Deep-RCOT for all four embedding maps (freesurfer, fastsurfer, condVAE, noisy fastsurfer)
 squared_conf_files <- all_files[grep("squared", all_files)]
 wald_files <- all_files[grep("WALD", all_files)]
 rcot_files <- all_files[grep("RCOT", all_files)]
@@ -22,8 +21,7 @@ files_conf_dim <- union(intersect(squared_conf_files, wald_files), intersect(squ
 
 # Result tab for each DNCIT
 params <- list(sample_sizes = as.factor(c(350, 460, 825, 1100, 1475, 1964, 5000, 10000)),
-      confounder = c('ukb_z1_', 'ukb_z2', 'ukb_z4', 'ukb_z6', 'ukb_z10', 'ukb_z15'),
-      dependence = c('CI','No_CI'))
+      confounder = c('ukb_z1_', 'ukb_z2', 'ukb_z4', 'ukb_z6', 'ukb_z10', 'ukb_z15'))
 design <- expand.grid(params)
 design <- design %>%
   mutate("fastsurfer_fastsurfer-RCOT" = rep(NA, nrow(design)),
@@ -36,50 +34,195 @@ design <- design %>%
 embedding_maps <- c('fastsurfer_fastsurfer', 'freesurfer', 'condVAE')
 dncits <- c('RCOT', 'WALD')
 confounder <- c('ukb_z1_', 'ukb_z2', 'ukb_z4', 'ukb_z6', 'ukb_z10', 'ukb_z15')
-for(dependence in c('Results\\\\CI','No_CI')){
-  for(dncit in dncits){
-    for (embedding in embedding_maps){
-      for (conf in confounder){
-        files_ci <- grep(dependence, files_conf_dim, value = TRUE)
-        files_dncit <- grep(dncit, files_ci, value = TRUE)
-        files_dncit_conf <- grep(embedding, files_dncit, value = TRUE)
-        files <- grep(conf, files_dncit_conf, value=TRUE)
-        if(length(files)>1){
-          files <- grep('1_0_1_0', files, value=TRUE)
-        }
-        df <- read.csv(files, header = TRUE, sep = ",")
-        col <- grepl(embedding, colnames(design)) & grepl(dncit, colnames(design))
-        design[design$confounder==conf, col] <- df[,2]
-      }
+for(dncit in dncits){
+  for (embedding in embedding_maps){
+    for (conf in confounder){
+      files_dncit <- grep(dncit, files_conf_dim, value = TRUE)
+      files_dncit_conf <- grep(embedding, files_dncit, value = TRUE)
+      files <- grep(conf, files_dncit_conf, value=TRUE)
+      df <- read.csv(files, header = TRUE, sep = ",")
+      col <- grepl(embedding, colnames(design)) & grepl(dncit, colnames(design))
+      design[design$confounder==conf, col] <- df[,2]
     }
   }
 }
-
 
 design$confounder <- rep(c(1,2,4,6,10,15), each=8)
 colnames(design) <- c("sample_sizes", "confounder dimension", "Fastsurfer-RCOT", "Fastsurfer-WALD",
                       "Freesurfer-RCOT", "Freesurfer-WALD", "condVAE-RCOT", "condVAE-WALD")
 
-## nested loop plot
-p = looplot::nested_loop_plot(resdf = design,
-                     x = "sample_sizes", steps = "confounder dimension",
-                     steps_y_base = -0.05, steps_y_height = 0.05,
-                     x_name = "Sample size", y_name = "Rejection rate",
-                     spu_x_shift = 1,
-                     colors = palet_discrete[rep(c(2,9),3)],
-                     line_linetypes = rep(c(1,2,3), each=2),
-                     sizes = rep(2,6),
-                     line_size = 1.5,
-                     point_shapes = rep(c(15,19),3),
-                     steps_values_annotate = TRUE, steps_annotation_size = 4,
-                     hline_intercept = 0,
-                     y_expand_add = c(0.05,0.05),
-                     legend_name = "DNCIT",
-                     post_processing = list(
-                       add_custom_theme = list(
-                         axis.text.x = ggplot2::element_text(angle = -90,
-                                                    vjust = 0.5,
-                                                    size = 8)
-                       )
-                     ))
-print(p)
+design_conf_dim_ci <- design
+#design_conf_dim_no_ci <- design
+
+### 2) Data preparation for nested loop over
+# loop 1: confounder functional relationship g_z ("linear", "squared", "realistic", "breakpoint3")
+# loop 2: sample size
+# fixed confounder dimension 2
+# Deep-WALD and Deep-RCOT for all four embedding maps (freesurfer, fastsurfer, condVAE, noisy fastsurfer)
+ukb_z2_conf_files <- all_files[grep("ukb_z2", all_files)]
+wald_files <- all_files[grep("WALD", all_files)]
+rcot_files <- all_files[grep("RCOT", all_files)]
+files_conf_relation <- union(intersect(ukb_z2_conf_files, wald_files), intersect(ukb_z2_conf_files, rcot_files))
+
+# Result tab for each DNCIT
+params <- list(sample_sizes = as.factor(c(350, 460, 825, 1100, 1475, 1964, 5000, 10000)),
+               confounder = c('linear', 'squared', 'realistic'))#, 'breakpoint3'))
+design <- expand.grid(params)
+design <- design %>%
+  mutate("fastsurfer_fastsurfer-RCOT" = rep(NA, nrow(design)),
+         "fastsurfer_fastsurfer-WALD" = rep(NA, nrow(design)),
+         "freesurfer-RCOT" = rep(NA, nrow(design)),
+         "freesurfer-WALD" = rep(NA, nrow(design)),
+         "condVAE-RCOT" = rep(NA, nrow(design)),
+         "condVAE-WALD" = rep(NA, nrow(design)))
+
+embedding_maps <- c('fastsurfer_fastsurfer', 'freesurfer', 'condVAE')
+dncits <- c('RCOT', 'WALD')
+confounder <- c('linear', 'squared', 'realistic', 'breakpoint3')
+for(dncit in dncits){
+  for (embedding in embedding_maps){
+    for (conf in confounder){
+      files_dncit <- grep(dncit, files_conf_relation, value = TRUE)
+      files_dncit_conf <- grep(embedding, files_dncit, value = TRUE)
+      files <- grep(conf, files_dncit_conf, value=TRUE)
+      df <- read.csv(files, header = TRUE, sep = ",")
+      col <- grepl(embedding, colnames(design)) & grepl(dncit, colnames(design))
+      design[design$confounder==conf, col] <- df[,2]
+    }
+  }
+}
+
+design$confounder <- rep(c('linear', 'squared', 'realistic'), each=8)
+colnames(design) <- c("sample_sizes", "confounder", "Fastsurfer-RCOT", "Fastsurfer-WALD",
+                      "Freesurfer-RCOT", "Freesurfer-WALD", "condVAE-RCOT", "condVAE-WALD")
+
+design_conf_relation_ci <- design
+#design_conf_relation_no_ci <- design
+
+
+
+##### nested loop plots
+## 1) splitted into T1E and power
+## CI
+p_ci <- looplot::nested_loop_plot(resdf = design,
+                              x = "sample_sizes", steps = "confounder dimension",
+                              steps_y_base = -0.05, steps_y_height = 0.05,
+                              x_name = "Sample size", y_name = "Rejection rate",
+                              spu_x_shift = 1,
+                              colors = palet_discrete[rep(c(2,9),3)],
+                              line_linetypes = rep(c(1,2,3), each=2),
+                              sizes = rep(2,6),
+                              line_size = 1.5,
+                              point_shapes = rep(c(15,19),3),
+                              steps_values_annotate = TRUE, steps_annotation_size = 4,
+                              hline_intercept = c(0, 0.05),
+                              hline_linetype = c(3,1),
+                              hline_size = c(1,1.5),
+                              y_expand_add = c(0.05,0.05),
+                              legend_name = "DNCIT",
+                              post_processing = list(
+                                add_custom_theme = list(
+                                  axis.text.x = ggplot2::element_text(angle = -90,
+                                                                      vjust = 0.5,
+                                                                      size = 8)
+                                )
+                              ))
+print(p_ci)
+
+## No CI
+p_no_ci = looplot::nested_loop_plot(resdf = design,
+                              x = "sample_sizes", steps = "confounder dimension",
+                              steps_y_base = -0.05, steps_y_height = 0.05,
+                              x_name = "Sample size", y_name = "Rejection rate",
+                              spu_x_shift = 1,
+                              colors = palet_discrete[rep(c(2,9),3)],
+                              line_linetypes = rep(c(1,2,3), each=2),
+                              sizes = rep(2,6),
+                              line_size = 1.5,
+                              point_shapes = rep(c(15,19),3),
+                              steps_values_annotate = TRUE, steps_annotation_size = 4,
+                              hline_intercept = 0,
+                              y_expand_add = c(0.05,0.05),
+                              legend_name = "DNCIT",
+                              post_processing = list(
+                                add_custom_theme = list(
+                                  axis.text.x = ggplot2::element_text(angle = -90,
+                                                                      vjust = 0.5,
+                                                                      size = 8)
+                                )
+                              ))
+print(p_no_ci)
+
+## 2) power and T1E together
+# conf relation
+design <- rbind(design_conf_relation_ci, design_conf_relation_no_ci)
+design$'Dependence' <- rep(c('No', 'Yes'), each=24)
+design <- design %>%
+  mutate(confounder = recode(confounder,
+                             'linear' = 1,
+                             'squared' = 2,
+                             'realistic' = 3))#,
+                             #'complex' = 4))
+p_conf_relation <- looplot::nested_loop_plot(resdf = design,
+                                    x = "sample_sizes",
+                                    grid_rows = 'Dependence',
+                                    steps = "confounder",
+                                    steps_y_base = -0.1, steps_y_height = 0.05,
+                                    x_name = "Sample size", y_name = "Rejection rate",
+                                    spu_x_shift = 1,
+                                    colors = palet_discrete[rep(c(2,9),3)],
+                                    line_linetypes = rep(c(1,2,3), each=2),
+                                    sizes = rep(2,6),
+                                    line_size = 1.5,
+                                    point_shapes = rep(c(15,19),3),
+                                    steps_values_annotate = TRUE, steps_annotation_size = 4,
+                                    hline_intercept = 0,
+                                    y_expand_add = c(0.1,0.15),
+                                    legend_name = "DNCIT",
+                                    replace_labels = list(
+                                      Dependence = c('No'='T1E',
+                                                     'Yes'='Power'),
+                                      confounder = c('1'='linear',
+                                                     '2'='squared',
+                                                     '3'='realistic')
+                                    ),
+                                    post_processing = list(
+                                      add_custom_theme = list(
+                                        axis.text.x = ggplot2::element_text(angle = -90,
+                                                                            vjust = 0.5,
+                                                                            size = 8)
+                                      )
+                                    ))
+print(p_conf_relation)
+
+# conf dimension
+design <- rbind(design_conf_dim_ci, design_conf_dim_no_ci)
+design$'Dependence' <- rep(c('No', 'Yes'), each=48)
+p_conf_dim = looplot::nested_loop_plot(resdf = design,
+                                            x = "sample_sizes",
+                                            grid_rows = 'Dependence',
+                                            grid_cols  = "confounder dimension",
+                                            steps_y_base = -0.1, steps_y_height = 0.05,
+                                            x_name = "Sample size", y_name = "Rejection rate",
+                                            spu_x_shift = 1,
+                                            colors = palet_discrete[rep(c(2,9),3)],
+                                            line_linetypes = rep(c(1,2,3), each=2),
+                                            sizes = rep(2,6),
+                                            line_size = 1.5,
+                                            point_shapes = rep(c(15,19),3),
+                                            steps_values_annotate = TRUE, steps_annotation_size = 4,
+                                            hline_intercept = 0,
+                                            y_expand_add = c(0.1,0.15),
+                                            legend_name = "DNCIT",
+                                            replace_labels = list(
+                                              Dependence = c('No'='T1E',
+                                                             'Yes'='Power')
+                                            ),
+                                            post_processing = list(
+                                              add_custom_theme = list(
+                                                axis.text.x = ggplot2::element_text(angle = -90,
+                                                                                    vjust = 0.5,
+                                                                                    size = 8)
+                                              )
+                                            ))
+print(p_conf_dim)
