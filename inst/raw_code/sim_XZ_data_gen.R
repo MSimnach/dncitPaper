@@ -143,14 +143,14 @@ data.table::fwrite(ukb_z1, file = paste0(path_to_save_confounders, "ukb_z1_age.c
 ukb_z2 <- ukb_confounders[, .SD, .SDcols = c('id', 'age', 'head_size')]
 data.table::fwrite(ukb_z2, file = paste0(path_to_save_confounders, "ukb_z2_agesex.csv"))
 #age, sex, head size, site
-ukb_z4 <- ukb_confounders[, .SD, .SDcols = c('id', 'age', 'head_size', sites, 'sex')]
+ukb_z4 <- ukb_confounders[, .SD, .SDcols = c('id', 'age', 'head_size', 'site', 'sex')]
 data.table::fwrite(ukb_z4, file = paste0(path_to_save_confounders, "ukb_z4_agesexsitesize.csv"))
 #age, sex, head size, site, date, qc-discrepancy
-ukb_z6 <- ukb_confounders[, .SD, .SDcols = c('id', 'age', 'head_size', sites, 'sex', 'date_diff', 'qc_discrepancy')]
+ukb_z6 <- ukb_confounders[, .SD, .SDcols = c('id', 'age', 'head_size', 'site', 'sex', 'date_diff', 'qc_discrepancy')]
 data.table::fwrite(ukb_z6, file = paste0(path_to_save_confounders, "ukb_z6_agesexsitesizedateqc.csv"))
 #age, sex, head size, site, date, qc-discrepancy, 4xhead location
-ukb_z10 <- ukb_confounders[, .SD, .SDcols = c('id', 'age', 'head_size', sites, 'sex', 'date_diff', 'qc_discrepancy', head_locations)]
+ukb_z10 <- ukb_confounders[, .SD, .SDcols = c('id', 'age', 'head_size', 'site', 'sex', 'date_diff', 'qc_discrepancy', head_locations)]
 data.table::fwrite(ukb_z10, file = paste0(path_to_save_confounders, "ukb_z10_agesexsitesizedateqclocation.csv"))
 #age, sex, head size, site, date, qc-discrepancy, 4xhead location, 5xgenes
-ukb_z15 <- ukb_confounders[, .SD, .SDcols = c('id', 'age', 'head_size', sites, 'sex', 'date_diff', 'qc_discrepancy', head_locations, genes)]
+ukb_z15 <- ukb_confounders[, .SD, .SDcols = c('id', 'age', 'head_size', 'site', 'sex', 'date_diff', 'qc_discrepancy', head_locations, genes)]
 data.table::fwrite(ukb_z15, file = paste0(path_to_save_confounders, "ukb_z15_agesexsitesizedateqcgenes.csv"))
