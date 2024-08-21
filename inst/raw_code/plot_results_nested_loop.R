@@ -1,7 +1,7 @@
 ##### Plot rejection rates of CITs in nested loop plots (cf. Rücker et al. 2014)
 ##color palettes for plotting
 palet_discrete <- paletteer::paletteer_d("colorBlindness::Blue2Orange10Steps")
-
+path_to_save_nested_loop_plots <- "C:\\Users\\Marco\\seadrive_root\\Marco Si\\Meine Bibliotheken\\Meine Bibliothek\\CITs\\P1 Deep CITs\\Paper_DNCITs\\Plots_simulation\\"
 
 #### split into CI and No CI
 folder_path <- "M:\\CITs\\Application\\UKB_data\\Results\\No_CI\\rejection_rates"
@@ -156,7 +156,7 @@ print(p_no_ci)
 ## 2) power and T1E together
 # conf relation
 design <- rbind(design_conf_relation_ci, design_conf_relation_no_ci)
-design$'Dependence' <- rep(c('No', 'Yes'), each=24)
+design$'Setting' <- rep(c('No', 'Yes'), each=24)
 design <- design %>%
   mutate(confounder = recode(confounder,
                              'linear' = 1,
@@ -165,64 +165,68 @@ design <- design %>%
                              #'complex' = 4))
 p_conf_relation <- looplot::nested_loop_plot(resdf = design,
                                     x = "sample_sizes",
-                                    grid_rows = 'Dependence',
+                                    grid_rows = 'Setting',
                                     steps = "confounder",
                                     steps_y_base = -0.1, steps_y_height = 0.05,
                                     x_name = "Sample size", y_name = "Rejection rate",
                                     spu_x_shift = 1,
                                     colors = palet_discrete[rep(c(2,9),3)],
-                                    line_linetypes = rep(c(1,2,3), each=2),
-                                    sizes = rep(2,6),
+                                    line_linetypes = rep(c(1,3,6), each=2),
                                     line_size = 1.5,
                                     point_shapes = rep(c(15,19),3),
-                                    steps_values_annotate = TRUE, steps_annotation_size = 4,
+                                    steps_values_annotate = TRUE, steps_annotation_size = 6,
                                     hline_intercept = 0,
                                     y_expand_add = c(0.1,0.15),
                                     legend_name = "DNCIT",
+                                    base_size = 24,
                                     replace_labels = list(
-                                      Dependence = c('No'='T1E',
+                                      Setting = c('No'='T1E',
                                                      'Yes'='Power'),
                                       confounder = c('1'='linear',
                                                      '2'='squared',
-                                                     '3'='realistic')
+                                                     '3'='complex')
                                     ),
                                     post_processing = list(
                                       add_custom_theme = list(
                                         axis.text.x = ggplot2::element_text(angle = -90,
                                                                             vjust = 0.5,
-                                                                            size = 8)
+                                                                            size = 15)
                                       )
                                     ))
+#ggplot2::ggsave(paste0(path_to_save_nested_loop_plots, 'nested_loop_conf_rel_power_T1E.png'), p_conf_relation, width = 16, height = 10, dpi = 300)
 print(p_conf_relation)
 
 # conf dimension
 design <- rbind(design_conf_dim_ci, design_conf_dim_no_ci)
-design$'Dependence' <- rep(c('No', 'Yes'), each=48)
+design$'Setting' <- rep(c('No', 'Yes'), each=48)
 p_conf_dim = looplot::nested_loop_plot(resdf = design,
                                             x = "sample_sizes",
-                                            grid_rows = 'Dependence',
-                                            grid_cols  = "confounder dimension",
+                                            grid_rows = 'Setting',
+                                            steps  = "confounder dimension",
                                             steps_y_base = -0.1, steps_y_height = 0.05,
                                             x_name = "Sample size", y_name = "Rejection rate",
                                             spu_x_shift = 1,
                                             colors = palet_discrete[rep(c(2,9),3)],
-                                            line_linetypes = rep(c(1,2,3), each=2),
-                                            sizes = rep(2,6),
+                                            line_linetypes = rep(c(1,3,6), each=2),
+                                            #sizes = rep(3,6),
                                             line_size = 1.5,
                                             point_shapes = rep(c(15,19),3),
-                                            steps_values_annotate = TRUE, steps_annotation_size = 4,
+                                            steps_values_annotate = TRUE, steps_annotation_size = 6,
                                             hline_intercept = 0,
                                             y_expand_add = c(0.1,0.15),
                                             legend_name = "DNCIT",
+                                       base_size = 24,
                                             replace_labels = list(
-                                              Dependence = c('No'='T1E',
-                                                             'Yes'='Power')
+                                              Setting = c('No'='T1E',
+                                                            'Yes'='Power')
                                             ),
                                             post_processing = list(
                                               add_custom_theme = list(
                                                 axis.text.x = ggplot2::element_text(angle = -90,
                                                                                     vjust = 0.5,
-                                                                                    size = 8)
+                                                                                    size = 15)
                                               )
                                             ))
+#ggplot2::ggsave(paste0(path_to_save_nested_loop_plots, 'nested_loop_conf_dim.png'), p_conf_dim, width = 16, height = 10, dpi = 300)
 print(p_conf_dim)
+

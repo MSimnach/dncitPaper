@@ -105,8 +105,7 @@ data.table::fwrite(ukb_Z_genes10, file = path_to_save_age_sex_10_genes_Z)
 path_to_save_confounders <- "M:\\CITs\\Application\\UKB_data\\"
 # get ids of confounders (load additional fastsurfer features to reduce sample size by removing obs. without fastsurfer)
 ids_confounders <- data.table::fread(file=path_to_confounder_ids,header=TRUE)$ids_confounder
-ids_ukb_brain_mri_confounds <- c(id_eid, ids_confounders,
-                                 ids_IDPs_full_str)
+ids_ukb_brain_mri_confounds <- c(id_eid, ids_confounders)
 ukb_data <- data.table::fread(file=path_to_ukb_data,select = ids_ukb_brain_mri_confounds,  header=TRUE)
 # remove obs. with missing values
 ukb_wo_missing <- stats::na.omit(ukb_data)

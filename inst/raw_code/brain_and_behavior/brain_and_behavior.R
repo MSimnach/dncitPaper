@@ -50,7 +50,45 @@ subset_ukb_data_mri <- as.data.frame(data.table::fread(file=path_to_save_preproc
 ids_ukb_mri_neuroticism_analyis <- c(ids_confounders, ids_brain_structure, ids_personality)
 mri_neuroticism <- stats::na.omit(subset_ukb_data_mri[,ids_ukb_mri_neuroticism_analyis])
 
-###Outputs
+##Standardize Y
+#ids for Y
+## ids big five behavioural traits
+# Neuroticism score (derived in Smith et al. 2013)
+id_neuroticism <- colnames(ukb_whole_columns)[grepl('20127', colnames(ukb_whole_columns), fixed = TRUE)]
+# Sociability
+id_friends_visits <- colnames(ukb_whole_columns)[grepl('1031-2.0', colnames(ukb_whole_columns), fixed = TRUE)]
+id_guilty_feelings <- colnames(ukb_whole_columns)[grepl('\\<2030-2.0\\>', colnames(ukb_whole_columns))]
+id_tired <- colnames(ukb_whole_columns)[grepl('\\<2080-2.0\\>', colnames(ukb_whole_columns))]
+id_leisure <- colnames(ukb_whole_columns)[grepl('\\<6160-2.0\\>', colnames(ukb_whole_columns))]
+ids_social <- c(id_friends_visits, id_guilty_feelings, id_tired, id_leisure)
+# warmth
+id_confide <- colnames(ukb_whole_columns)[grepl('\\<2110-2.0\\>', colnames(ukb_whole_columns))]
+id_irritable <- colnames(ukb_whole_columns)[grepl('\\<1940-2.0\\>', colnames(ukb_whole_columns))]
+id_moody <- colnames(ukb_whole_columns)[grepl('\\<1920-2.0\\>', colnames(ukb_whole_columns))]
+id_tense <- colnames(ukb_whole_columns)[grepl('\\<1990-2.0\\>', colnames(ukb_whole_columns))]
+id_nervous <- colnames(ukb_whole_columns)[grepl('\\<1970-2.0\\>', colnames(ukb_whole_columns))]
+ids_warmth <- c(id_confide, id_irritable, id_moody, id_tense, id_nervous)
+# diligence
+id_no_interest <- colnames(ukb_whole_columns)[grepl('\\<2060-2.0\\>', colnames(ukb_whole_columns))]
+id_fed_up <- colnames(ukb_whole_columns)[grepl('\\<1960-2.0\\>', colnames(ukb_whole_columns))]
+id_risk <- colnames(ukb_whole_columns)[grepl('\\<2040-2.0\\>', colnames(ukb_whole_columns))]
+id_worry_long <- colnames(ukb_whole_columns)[grepl('\\<2000-2.0\\>', colnames(ukb_whole_columns))]
+ids_diligence <- c(id_no_interest, id_fed_up, id_risk, id_worry_long)
+# curiosity
+id_lonely <- colnames(ukb_whole_columns)[grepl('\\<2020-2.0\\>', colnames(ukb_whole_columns))]
+id_nerves <- colnames(ukb_whole_columns)[grepl('\\<2010-2.0\\>', colnames(ukb_whole_columns))]
+id_tense_last_two_weeks <- colnames(ukb_whole_columns)[grepl('\\<2070-2.0\\>', colnames(ukb_whole_columns))]
+ids_curiosity <- c(id_lonely, id_nerves, id_tense_last_two_weeks, id_risk)
+#nervousness
+id_easy_hurt <- colnames(ukb_whole_columns)[grepl('\\<1950-2.0\\>', colnames(ukb_whole_columns))]
+ids_nervousness <- c(id_tense, id_irritable, id_no_interest, id_moody, id_easy_hurt)
+# all
+ids_personality <- c(id_neuroticism,
+                     id_friends_visits,id_guilty_feelings, id_tired, id_leisure,
+                     id_confide, id_irritable, id_moody, id_tense, id_nervous,
+                     id_no_interest, id_fed_up, id_risk, id_worry_long,
+                     id_lonely, id_nerves, id_tense_last_two_weeks,
+                     id_easy_hurt)
 # Neuroticism
 mri_neuroticism$neuroticism <- scale(mri_neuroticism[, id_neuroticism])
 # Sociability score
@@ -151,11 +189,14 @@ ids_surface_area_lr <- ids_freesurfer_atlas[1:68,]
 ids_cortical_thick_lr <- ids_freesurfer_atlas[69:136,]
 ids_gray_matter_vols_lr <- ids_freesurfer_aseg[c(47:50,61:64,67:68,72:73,79:82, 86:87),]
 ids_lr <- rbind(ids_cortical_thick_lr,ids_surface_area_lr, ids_gray_matter_vols_lr, ids_FA_lr)
-ids_brain <- rbind(ids_lr[seq(from = 1, to = nrow(ids_lr), by = 2),], ids_whole_brain_aseg)
-lab_small_p_df <- ids_brain[p_structure_trait[which(p_structure_trait$is_annotate == 'yes'),]$Structure,]
+#ids_brain <- rbind(ids_lr[seq(from = 1, to = nrow(ids_lr), by = 2),], ids_whole_brain_aseg)
+#lab_small_p_df <- ids_brain[p_structure_trait[which(p_structure_trait$is_annotate == 'yes'),]$Structure,]
 labels <- c('medialorbitofrontal', 'rostralanteriorcingulate', 'posterior thalamic radiation',
             'isthmuscingulate', 'Caudate', 'medial lemniscus', 'posterior thalamic radiation',
             'rostralanteriorcingulate', 'pontine crossing tract')
+#bonferroni adjusted significance level for 642 individual tests and significance level of 0.05 (on log-scale)
+log_p_bonferroni_individual <- -log10(0.05/642)
+
 
 # Plotting similar to a Manhattan plot
 plot_each_struc_trait <- ggplot2::ggplot(p_structure_trait, ggplot2::aes(x = X_Axis, y = -log10(p_unadj), color = Trait), alpha=0.8, size=1.3) +
@@ -177,10 +218,10 @@ plot_each_struc_trait <- ggplot2::ggplot(p_structure_trait, ggplot2::aes(x = X_A
     panel.grid.major.x = ggplot2::element_blank(),
     panel.grid.minor.x = ggplot2::element_blank()
   ) +
-  ggplot2::ylim(0,4) +
+  ggplot2::ylim(0,4.2) +
   # add colum separation for each trait
   geom_vline(xintercept = c(0,107, 214, 321, 428, 535, 642), linetype = "dashed", color = "black") +
-  geom_hline(yintercept=0)+
+  geom_hline(yintercept=c(0, log_p_bonferroni_individual), linetype=c("dashed", "solid"))+
   # Add highlighted points
   ggplot2::geom_point(data=subset(p_structure_trait, is_highlight=="yes"), color="black", size=2) +
   # Add highlighted points
@@ -372,18 +413,25 @@ p_joint <- rbind(p_joint_df, p_joint_rcot, p_joint_rcot_fast)%>%
   # Add highlight and annotation information
   mutate( is_annotate=ifelse(-log10(p_unadj)>2.5, "yes", "no"))
 p_joint$X_Axis <- 1:nrow(p_joint)
-plot_joint <- ggplot2::ggplot(p_joint, ggplot2::aes(x = X_Axis, y = -log10(p_unadj), color = Test), alpha=0.8, size=1.4) +
-  ggplot2::geom_point(alpha = 0.5) +
+log_p_bonferroni_joint <- -log10(0.05/6)
+p_joint <- p_joint %>% mutate(Test = recode(Test,
+                                 "Wald"="Freesurfer-Wald",
+                                 "RCoT"="Freesurfer-RCoT",
+                                 "Deep-RCoT"="Fastsurfer-RCoT"))
+p_joint <- p_joint %>% mutate(all_traits = ifelse(Trait == 'all_traits', 'yes', 'no'))
+
+plot_joint <- ggplot2::ggplot(p_joint, ggplot2::aes(x = X_Axis, y = -log10(p_unadj), color = Test)) +
+  ggplot2::geom_point(size=3) +
   ggplot2::scale_x_continuous(labels = unique(p_joint$Test), breaks = seq(3.5, max(p_joint$X_Axis), by = 7)) +
   ggplot2::scale_color_manual(values = rep(c(palet_discrete[9], palet_discrete[2]), 22 )) +
-  ggplot2::labs(x = "Test-Trait(s)-All brain structures",
+  ggplot2::labs(x = "DNCITs-Trait(s)-All brain structures",
                 y = expression("-log"[10] * "(p)"),
                 color = "Test") +
   # Custom the theme:
   ggplot2::theme_bw() +
   # add colum separation for each trait
   geom_vline(xintercept = c(0.5,6.5,13.5,20.5), linetype = "dashed", color = "black") +
-  geom_hline(yintercept=0)+
+  geom_hline(yintercept=c(0, log_p_bonferroni_joint), linetype=c("dashed", "solid"))+
   ggplot2::theme(
     axis.title.x = element_text(size = 20),  # Change x-axis label size
     axis.title.y = element_text(size = 20),  # Change y-axis label size
@@ -394,13 +442,16 @@ plot_joint <- ggplot2::ggplot(p_joint, ggplot2::aes(x = X_Axis, y = -log10(p_una
     panel.grid.major.x = ggplot2::element_blank(),
     panel.grid.minor.x = ggplot2::element_blank()
   )+
-  ggplot2::ylim(0,4)+
+  ggplot2::ylim(0,4.2)+
+  ggplot2::geom_point(data=subset(p_joint, all_traits=="yes"), color=c(palet_discrete[2], palet_discrete[9]), size=3.5, shape=15) +
   ggplot2::geom_point(data=subset(p_joint, is_annotate=="yes"), color=palet_discrete[10], size=2) +
   # Add label using ggrepel to avoid overlapping
   ggrepel::geom_label_repel( data=subset(p_joint, is_annotate=="yes"),  ggplot2::aes(label=Trait), size=4)
 #ggplot2::ggsave(paste0(path_to_save_plots, 'deep_joint_p_values.png'), plot_joint, width = 7, height = 7, dpi = 300)
 
-# all p-values with adjustment
+
+
+##### all p-values with adjustment (not used)
 p_ind <- tibble::as_tibble(p_val_df['p_unadj'], rownames='Trait') %>%
   mutate(Test='Wald_individual')
 p_all <- rbind(p_ind, p_joint[,1:3])
