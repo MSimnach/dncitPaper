@@ -29,15 +29,15 @@ for (cit in cits){
 }
 
 settings_g_z <- data.frame(cit = rep('Rscript'), script=rep('raw_code/sim_ukb_brainmri.R'),
-  dependence = rep(c('/CI/', '/No_CI/'), each = 16),
-  fct_relation = rep('1', 32),
-  eps_sigmaX = rep(c(0, 3, 0, 0), 8),
-  eps_sigmaY = rep(1, 32),
-  eps_sigmaZ = rep(0, 32),
-  embedding_orig = rep('fastsurfer', 32),
-  embedding_obs = rep(c('fastsurfer', 'noisy', 'freesurfer', 'condVAE'), 8),
-  confounder = rep("ukb_z2", 32),
-  response =  rep(rep(c('linear', 'squared', 'realistic', 'breakpoint3'), each=4), 2)
+  dependence = rep(c('/CI/', '/No_CI/'), each = 12),
+  fct_relation = rep('1', 24),
+  eps_sigmaX = rep(c(0, 3, 0, 0), 6),
+  eps_sigmaY = rep(1, 24),
+  eps_sigmaZ = rep(0, 24),
+  embedding_orig = rep('fastsurfer', 24),
+  embedding_obs = rep(c('fastsurfer', 'noisy', 'freesurfer', 'condVAE'), 6),
+  confounder = rep("ukb_z6", 24),
+  response =  rep(rep(c('linear', 'squared', 'realistic'), each=4), 2)
 )
 
 settings_dim_z <- data.frame(cit = rep('Rscript'), script=rep('raw_code/sim_ukb_brainmri.R'),

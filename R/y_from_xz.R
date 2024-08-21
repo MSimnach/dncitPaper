@@ -87,11 +87,16 @@ transform_z <- function(Z, g_z){
     }
     # Add interaction terms for all pairs of confounders
     if ('sex' %in% names(Z)){
-      Z[['sex_x_age']] <- Z[['sex']] * Z[['age']]
+      Z <- fastDummies::dummy_cols(Z, select_columns='sex', remove_first_dummy = TRUE)
+      if (!is_binary(Z[[col]])) {
+        Z[[paste0(col, "_sex")]] <- Z[['sex_1']] * Z[[col]]
+      }
+      Z[['sex_1']] <- NULL
     }
-    # add cubic term for date_diff
+    # add higher order terms for date_diff
     if("date_diff" %in% names(Z)){
       Z[['date_diff_cubed']] <- Z[['date_diff^3']]
+      Z[['date_diff_fourth']] <- Z[['date_diff^4']]
     }
     return(Z)
   } else if (g_z %in% "breakpoint3"){
