@@ -17,6 +17,8 @@ settings <- data.frame(
 
 cits <- c('WALD', 'RCOT 1', 'kpc_graph 2 10', 'FCIT', 'CMIknn')
 settings <- settings#[c(41, 61,81,101,121,141,161),]
+#runtime settings
+settings <- settings_dim_z[c(1:4, seq(7,24,4)),]
 # Run 'sim_ukb_brainmri.R' for all settings
 for (cit in cits){
   for (i in 1:nrow(settings)) {
@@ -71,3 +73,6 @@ write.table(settings_final, file = "raw_code/slurm/settings_wald.txt", sep = " "
 settings_final <- rbind(settings_g_z, settings_dim_z)
 settings_final$CIT <- 'FCIT'
 write.table(settings_final, file = "raw_code/slurm/settings_fcit.txt", sep = " ", row.names = FALSE, col.names = TRUE, quote = FALSE)
+
+
+settings_runtime <-
