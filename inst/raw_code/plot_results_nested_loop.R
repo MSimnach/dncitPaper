@@ -1,5 +1,7 @@
 ##### Plot rejection rates of CITs in nested loop plots (cf. Rücker et al. 2014)
-## For presentations
+library(dplyr)
+library(looplot)
+#### For presentations
 ##color palettes for plotting
 palet_discrete <- paletteer::paletteer_d("colorBlindness::Blue2Orange10Steps")
 path_to_save_nested_loop_plots <- "C:\\Users\\Marco\\seadrive_root\\Marco Si\\Meine Bibliotheken\\Meine Bibliothek\\CITs\\P1 Deep CITs\\Paper_DNCITs\\Plots_simulation\\"
@@ -52,8 +54,8 @@ design$confounder <- rep(c(1,2,4,6,10,15), each=8)
 colnames(design) <- c("sample_sizes", "confounder dimension", "Fastsurfer-RCOT", "Fastsurfer-WALD",
                       "Freesurfer-RCOT", "Freesurfer-WALD", "condVAE-RCOT", "condVAE-WALD")
 
-design_conf_dim_ci <- design
-#design_conf_dim_no_ci <- design
+#design_conf_dim_ci <- design
+design_conf_dim_no_ci <- design
 
 ### 2) Data preparation for nested loop over
 # loop 1: confounder functional relationship g_z ("linear", "squared", "realistic")
@@ -179,7 +181,7 @@ p_conf_relation <- looplot::nested_loop_plot(resdf = design,
                                     hline_intercept = 0,
                                     y_expand_add = c(0.1,0.15),
                                     legend_name = "DNCIT",
-                                    base_size = 24,
+                                    base_size = 34,
                                     replace_labels = list(
                                       Setting = c('No'='T1E',
                                                      'Yes'='Power'),
@@ -191,7 +193,7 @@ p_conf_relation <- looplot::nested_loop_plot(resdf = design,
                                       add_custom_theme = list(
                                         axis.text.x = ggplot2::element_text(angle = -90,
                                                                             vjust = 0.5,
-                                                                            size = 15)
+                                                                            size = 22)
                                       )
                                     ))
 #ggplot2::ggsave(paste0(path_to_save_nested_loop_plots, 'nested_loop_conf_rel_power_T1E.png'), p_conf_relation, width = 16, height = 10, dpi = 300)
@@ -216,7 +218,7 @@ p_conf_dim = looplot::nested_loop_plot(resdf = design,
                                             hline_intercept = 0,
                                             y_expand_add = c(0.1,0.15),
                                             legend_name = "DNCIT",
-                                       base_size = 24,
+                                       base_size = 34,
                                             replace_labels = list(
                                               Setting = c('No'='T1E',
                                                             'Yes'='Power')
@@ -225,14 +227,16 @@ p_conf_dim = looplot::nested_loop_plot(resdf = design,
                                               add_custom_theme = list(
                                                 axis.text.x = ggplot2::element_text(angle = -90,
                                                                                     vjust = 0.5,
-                                                                                    size = 15)
+                                                                                    size = 14)
                                               )
                                             ))
-#ggplot2::ggsave(paste0(path_to_save_nested_loop_plots, 'nested_loop_conf_dim.png'), p_conf_dim, width = 16, height = 10, dpi = 300)
+#ggplot2::ggsave(paste0(path_to_save_nested_loop_plots, 'nested_loop_conf_dim.png'), p_conf_dim, width = 16, height = 10, dpi = 600)
 print(p_conf_dim)
 
 
-## For the paper
+
+
+#### For the paper
 ##color palettes for plotting
 palet_discrete <- paletteer::paletteer_d("colorBlindness::Blue2Orange10Steps")
 path_to_save_nested_loop_plots <- "C:\\Users\\Marco\\seadrive_root\\Marco Si\\Meine Bibliotheken\\Meine Bibliothek\\CITs\\P1 Deep CITs\\Paper_DNCITs\\Plots_simulation\\"
@@ -252,8 +256,11 @@ squared_conf_files <- all_files[grep("squared", all_files)]
 wald_files <- all_files[grep("WALD", all_files)]
 rcot_files <- all_files[grep("RCOT", all_files)]
 kpc_cpt_files <- all_files[grep("kpc_graph", all_files)]
+fcit_files <- all_files[grep("FCIT", all_files)]
+cmiknn_files <- all_files[grep("CMIknn", all_files)]
 files_conf_dim <- c(intersect(squared_conf_files, wald_files), intersect(squared_conf_files, rcot_files),
-                        intersect(squared_conf_files, kpc_cpt_files))
+                    intersect(squared_conf_files, kpc_cpt_files), intersect(squared_conf_files, fcit_files),
+                    intersect(squared_conf_files, cmiknn_files))
 
 # Result tab for each DNCIT
 params <- list(sample_sizes = as.factor(c(145, 256, 350, 460, 825, 1100, 1475, 1964, 5000, 10000)),
@@ -263,15 +270,21 @@ design <- design %>%
   mutate("fastsurfer_fastsurfer-RCOT" = rep(NA, nrow(design)),
          "fastsurfer_fastsurfer-WALD" = rep(NA, nrow(design)),
          "fastsurfer_fastsurfer-kpc_graph" = rep(NA, nrow(design)),
+         "fastsurfer_fastsurfer-FCIT" = rep(NA, nrow(design)),
+         "fastsurfer_fastsurfer-CMIknn" = rep(NA, nrow(design)),
          "freesurfer-RCOT" = rep(NA, nrow(design)),
          "freesurfer-WALD" = rep(NA, nrow(design)),
          "freesurfer-kpc_graph" = rep(NA, nrow(design)),
+         "freesurfer-FCIT" = rep(NA, nrow(design)),
+         "freesurfer-CMIknn" = rep(NA, nrow(design)),
          "condVAE-RCOT" = rep(NA, nrow(design)),
          "condVAE-WALD" = rep(NA, nrow(design)),
-         "condVAE-kpc_graph" = rep(NA, nrow(design)))
+         "condVAE-kpc_graph" = rep(NA, nrow(design)),
+         "condVAE-FCIT" = rep(NA, nrow(design)),
+         "condVAE-CMIknn" = rep(NA, nrow(design)))
 
 embedding_maps <- c('fastsurfer_fastsurfer', 'freesurfer', 'condVAE')
-dncits <- c('RCOT', 'WALD', 'kpc_graph')
+dncits <- c('RCOT', 'WALD', 'kpc_graph', 'FCIT', 'CMIknn')
 confounder <- c('ukb_z1_', 'ukb_z2', 'ukb_z4', 'ukb_z6', 'ukb_z10', 'ukb_z15')
 for(dncit in dncits){
   for (embedding in embedding_maps){
@@ -401,12 +414,7 @@ print(p_no_ci)
 # conf relation
 design <- rbind(design_conf_relation_ci, design_conf_relation_no_ci)
 design$'Setting' <- rep(c('No', 'Yes'), each=30)
-design <- design %>%
-  mutate(confounder = recode(confounder,
-                             'linear' = '1',
-                             'squared' = '2',
-                             'realistic' = '3'))#,
-#'complex' = 4))
+design$confounder <- rep(rep(c(1,2,3),each=10),2)
 p_conf_relation <- looplot::nested_loop_plot(resdf = design,
                                              x = "sample_sizes",
                                              grid_rows = 'Setting',
