@@ -421,9 +421,9 @@ p_joint <- p_joint %>% mutate(Test = recode(Test,
 p_joint <- p_joint %>% mutate(all_traits = ifelse(Trait == 'all_traits', 'yes', 'no'))
 
 plot_joint <- ggplot2::ggplot(p_joint, ggplot2::aes(x = X_Axis, y = -log10(p_unadj), color = Test)) +
-  ggplot2::geom_point(size=3) +
+  ggplot2::geom_point(size=3, color=c(rep(palet_discrete[9], 6), rep(palet_discrete[2], 7), rep(palet_discrete[3], 7))) +
   ggplot2::scale_x_continuous(labels = unique(p_joint$Test), breaks = seq(3.5, max(p_joint$X_Axis), by = 7)) +
-  ggplot2::scale_color_manual(values = rep(c(palet_discrete[9], palet_discrete[2]), 22 )) +
+  #ggplot2::scale_color_manual(values = c(rep(palet_discrete[9], 6), rep(palet_discrete[2], 7), rep(palet_discrete[3], 7))) +
   ggplot2::labs(x = "DNCITs-Trait(s)-All brain structures",
                 y = expression("-log"[10] * "(p)"),
                 color = "Test") +
@@ -443,7 +443,7 @@ plot_joint <- ggplot2::ggplot(p_joint, ggplot2::aes(x = X_Axis, y = -log10(p_una
     panel.grid.minor.x = ggplot2::element_blank()
   )+
   ggplot2::ylim(0,4.2)+
-  ggplot2::geom_point(data=subset(p_joint, all_traits=="yes"), color=c(palet_discrete[2], palet_discrete[9]), size=3.5, shape=15) +
+  ggplot2::geom_point(data=subset(p_joint, all_traits=="yes"), color=c(palet_discrete[2], palet_discrete[3]), size=3.5, shape=15) +
   ggplot2::geom_point(data=subset(p_joint, is_annotate=="yes"), color=palet_discrete[10], size=2) +
   # Add label using ggrepel to avoid overlapping
   ggrepel::geom_label_repel( data=subset(p_joint, is_annotate=="yes"),  ggplot2::aes(label=Trait), size=4)
