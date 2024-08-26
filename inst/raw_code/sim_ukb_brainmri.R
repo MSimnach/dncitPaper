@@ -17,7 +17,7 @@ print(args)
 ####### In parallel #######
 if(cit == 'KCIT' || tail(args,1)=='10' || tail(args,1)=='20' || cit=='CMIknn'){
   n_sample = list(145, 256, 350, 460, 825, 1100)
-}else if(tail(args,1)=='10' || cit=='WALD' || cit=='RCOT'){
+}else if(cit=='WALD' || cit=='RCOT'){
   n_sample = list(350, 460, 825, 1100, 1475, 1964, 5000, 10000)
 }else{
   n_sample = list(145, 256, 350, 460, 825, 1100, 1475, 1964, 5000, 10000)
