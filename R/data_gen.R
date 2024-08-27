@@ -76,8 +76,9 @@ data_gen <- function(seed, idx_sample=NULL, n_sample=NULL, idx_beta2=NULL, beta2
   }
 
   #Standardize
-  # Scale Z column only if more than one unique value in column to avoid NaNs
-  Z <- scale(Z)
+  # scale only continuous confounders
+  Z <- Z %>% dplyr::mutate(dplyr::across(dplyr::where(function(x) !is_binary(x)), scale))
+
   X_orig <- scale(X_orig)
   X_obs <- scale(X_obs)
 

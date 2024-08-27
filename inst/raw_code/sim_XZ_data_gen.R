@@ -65,21 +65,23 @@ cols_subseg <- 1291:1411+n_confounders
 cols_freesurfer_selected <- c(cols_aseg, cols_desikan_pial)
 ukb_freesurfer <- as.data.frame(ukb_pipeline[,c(1, cols_freesurfer_selected), with=FALSE])
 # remove multicolinear columns (stepwise selection: remove columns with highest VIF, test again for VIF, repeat until no variable has vif >5)
-lm_freesurfer <- stats::lm(eid ~ ., data=ukb_freesurfer)
-vif_vals <- car::vif(lm_freesurfer)
-sort(vif_vals)
-ukb_freesurfer_no_colinear <- ukb_freesurfer[ , !(colnames(ukb_freesurfer) %in% c("26514-2.0", "26515-2.0", "26516-2.0", "26517-2.0", "26518-2.0", "26519-2.0", "26520-2.0", "26521-2.0", "26522-2.0"))]
-lm_freesurfer <- stats::lm(eid ~ ., data=ukb_freesurfer_no_colinear)
-vif_vals <- car::vif(lm_freesurfer)
-sort(vif_vals)
-ukb_freesurfer_no_colinear <- ukb_freesurfer_no_colinear[ , !(colnames(ukb_freesurfer_no_colinear) %in% c("26923-2.0", "26956-2.0", "26553-2.0", "26538-2.0", "26569-2.0", "26552-2.0", "26541-2.0", "26565-2.0", "26554-2.0"))]
-lm_freesurfer <- stats::lm(eid ~ ., data=ukb_freesurfer_no_colinear)
-vif_vals <- car::vif(lm_freesurfer)
-sort(vif_vals)
-ukb_freesurfer_no_colinear <- ukb_freesurfer_no_colinear[ , !(colnames(ukb_freesurfer_no_colinear) %in% c("26560-2.0", "26588-2.0", "26584-2.0", "26558-2.0", "26579-2.0", "26573-2.0", "26556-2.0", "26590-2.0", "26583-2.0", "26544-2.0", "26585-2.0", "26501-2.0", "26596-2.0", "26543-2.0", "26950-2.0", "26592-2.0"))]
-lm_freesurfer <- stats::lm(eid ~ ., data=ukb_freesurfer_no_colinear)
-vif_vals <- car::vif(lm_freesurfer)
-sort(vif_vals)
+#lm_freesurfer <- stats::lm(eid ~ ., data=ukb_freesurfer)
+#vif_vals <- car::vif(lm_freesurfer)
+#sort(vif_vals)
+#ukb_freesurfer_no_colinear <- ukb_freesurfer[ , !(colnames(ukb_freesurfer) %in% c("26514-2.0", "26515-2.0", "26516-2.0", "26517-2.0", "26518-2.0", "26519-2.0", "26520-2.0", "26521-2.0", "26522-2.0"))]
+#lm_freesurfer <- stats::lm(eid ~ ., data=ukb_freesurfer_no_colinear)
+#vif_vals <- car::vif(lm_freesurfer)
+#sort(vif_vals)
+#ukb_freesurfer_no_colinear <- ukb_freesurfer_no_colinear[ , !(colnames(ukb_freesurfer_no_colinear) %in% c("26923-2.0", "26956-2.0", "26553-2.0", "26538-2.0", "26569-2.0", "26552-2.0", "26541-2.0", "26565-2.0", "26554-2.0"))]
+#lm_freesurfer <- stats::lm(eid ~ ., data=ukb_freesurfer_no_colinear)
+#vif_vals <- car::vif(lm_freesurfer)
+#sort(vif_vals)
+#ukb_freesurfer_no_colinear <- ukb_freesurfer_no_colinear[ , !(colnames(ukb_freesurfer_no_colinear) %in% c("26560-2.0", "26588-2.0", "26584-2.0", "26558-2.0", "26579-2.0", "26573-2.0", "26556-2.0", "26590-2.0", "26583-2.0", "26544-2.0", "26585-2.0", "26501-2.0", "26596-2.0", "26543-2.0", "26950-2.0", "26592-2.0"))]
+#lm_freesurfer <- stats::lm(eid ~ ., data=ukb_freesurfer_no_colinear)
+#vif_vals <- car::vif(lm_freesurfer)
+#sort(vif_vals)
+
+ukb_freesurfer_no_colinear <- ukb_freesurfer
 # Remove columns leading to perfect multicollinearity when subsampling
 ukb_freesurfer_no_colinear <- ukb_freesurfer_no_colinear[ , !(colnames(ukb_freesurfer_no_colinear) %in% c("26525-2.0", "26503-2.0"))]
 # Remove columns with NAs in subsampling due to only one unique value in respective columns

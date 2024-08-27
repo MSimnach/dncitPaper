@@ -4,6 +4,7 @@ setwd('inst')
 #### args =['/CI/ or /No_CI/', post_non_lin, eps_sigmaX, eps_sigmaY, eps_sigmaZ, embedding_orig, embedding_obs, confounder, g_z, CIT, CIT_params]
 #args <- c("/CI/", "1", "0", "1", "0", "fastsurfer", "fastsurfer", "ukb_z4", "linear", "RCOT", "1")
 #idx_sample=idx_beta2=i=1
+#n_sample = list(350, 460, 825, 1100, 1475, 1964, 5000, 10000)
 settings <- data.frame(
   dependence = rep(c('/CI/', '/No_CI/'), each = 480),
   fct_relation = rep(rep(c('1','2','3','4','5'), each=4), 48),
