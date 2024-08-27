@@ -17,7 +17,7 @@ print(args)
 ####### In parallel #######
 if(cit == 'KCIT' || tail(args,1)=='10' || tail(args,1)=='20' || cit=='CMIknn'){
   n_sample = list(145, 256, 350, 460, 825, 1100)
-}else if(tail(args,1)=='10' || cit=='WALD' || cit=='RCOT'){
+}else if(cit=='WALD' || cit=='RCOT'){
   n_sample = list(350, 460, 825, 1100, 1475, 1964, 5000, 10000)
 }else{
   n_sample = list(145, 256, 350, 460, 825, 1100, 1475, 1964, 5000, 10000)
@@ -133,6 +133,8 @@ res_time <- foreach::foreach (i= n_seeds, .packages = c('DNCIT', 'dncitPaper')) 
                                                       cit_params <- list(cit='cpt_kpc', params_cit=list(k=k, Knn = as.numeric(args[12]), model.formula.YZ=model_formula_YZ))
                                                      }else if(args[10]=='FCIT'){
                                                         cit_params <- list(cit='fcit')
+                                                     }else if(args[10]=='cpi'){
+                                                        cit_params <- list(cit='cpi')
                                                      }else if(args[10]=='WALD'){
                                                         cit_params <- list(cit='wald')
                                                      }
@@ -221,6 +223,8 @@ res_time <- foreach::foreach (i= n_seeds, .packages = c('DNCIT', 'dncitPaper')) 
                                                           cit_params <- list(cit='cpt_kpc', params_cit=list(k=k, Knn = as.numeric(args[12]), model.formula.YZ=model_formula_YZ))
                                                        }else if(args[10]=='FCIT'){
                                                           cit_params <- list(cit='fcit')
+                                                       }else if(args[10]=='cpi'){
+                                                         cit_params <- list(cit='cpi')
                                                        }else if(args[10]=='WALD'){
                                                           cit_params <- list(cit='wald', params_cit=NULL)
                                                        }
