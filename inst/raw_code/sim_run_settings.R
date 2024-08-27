@@ -16,7 +16,7 @@ settings <- data.frame(
   response = rep(rep(c('linear', 'squared', 'realistic', 'breakpoint3'), each=20), 12)
 )
 
-cits <- c('WALD', 'RCOT 1', 'kpc_graph 2 10', 'FCIT', 'CMIknn')
+cits <- c('CMIknn')#'FCIT', 'WALD', 'RCOT 1', 'kpc_graph 2 10',
 settings <- settings#[c(41, 61,81,101,121,141,161),]
 #runtime settings
 settings_dim_z <- data.frame(dependence = rep(c('/CI/', '/No_CI/'), each = 24),
@@ -29,7 +29,7 @@ settings_dim_z <- data.frame(dependence = rep(c('/CI/', '/No_CI/'), each = 24),
                              confounder = rep(rep(c("ukb_z1","ukb_z2", "ukb_z4", "ukb_z6", "ukb_z10", "ukb_z15"), each=4),2),
                              response =  rep('squared', 48)
 )
-settings <- settings_dim_z[c(1:4, seq(7,24,4)),]
+settings <- settings_dim_z[11,]
 # Run 'sim_ukb_brainmri.R' for all settings
 for (cit in cits){
   for (i in 1:nrow(settings)) {
@@ -84,6 +84,3 @@ write.table(settings_final, file = "raw_code/slurm/settings_wald.txt", sep = " "
 settings_final <- rbind(settings_g_z, settings_dim_z)
 settings_final$CIT <- 'FCIT'
 write.table(settings_final, file = "raw_code/slurm/settings_fcit.txt", sep = " ", row.names = FALSE, col.names = TRUE, quote = FALSE)
-
-
-settings_runtime <-
