@@ -30,19 +30,19 @@ term_time_at <- round(exp(4.5)/3)
 # y on x,z
 tsk_yxz <-  as_task_regr(yxz, target = "V1")
 measure <- msr("regr.mse")
-rsmp_holdout <- rsmp("holdout")
-rsmp_cv3 <- rsmp("cv", folds = 3)
+rsmp_inner <- rsmp("cv", folds = 5)
+rsmp_outer <- rsmp("cv", folds = 3)
 learner <- mlr3tuningspaces::lts(lrn("regr.ranger"))
 
 at_yxz <- auto_tuner(
   tuner = tnr("random_search"),
   learner = learner,
-  resampling = rsmp_holdout,
+  resampling = rsmp_inner,
   measure = measure,
   term_time = term_time_at
 )
 
-rr_yxz <- resample(tsk_yxz, at_yxz, rsmp_cv3)
+rr_yxz <- resample(tsk_yxz, at_yxz, rsmp_outer)
 
 
 gen_error_estimate_yxz <- rr_yxz$aggregate()
@@ -51,16 +51,29 @@ gen_error_estimate_yxz <- rr_yxz$aggregate()
 yz <- do.call(cbind, list(Y,Z))
 colnames(yz) <- paste0("V", 1:ncol(yz))
 tsk_yz <-  as_task_regr(yz, target = "V1")
+#same folds as for y on xz
+rsmp_custom = rsmp("custom")
+rr_resampling_yxz <- rr_yxz$resampling$instance
+test_splits <- list()
+train_splits <- list()
+for (i in 1:rsmp_outer$iters) {
+  test_splits[[i]] <- rr_resampling_yxz[rr_resampling_yxz[,fold==i],]$row_id
+  train_splits[[i]] <- rr_resampling_yxz[rr_resampling_yxz[,fold!=i],]$row_id
+}
+rsmp_custom$instantiate(tsk_yz,
+                        train = train_splits,
+                        test = test_splits
+)
 
 at_yz <- auto_tuner(
   tuner = tnr("random_search"),
   learner = learner,
-  resampling = rsmp_holdout,
+  resampling = rsmp_inner,
   measure = measure,
   term_time = term_time_at
 )
 
-rr_yz <- resample(tsk_yxz, at_yz, rsmp_cv3)
+rr_yz <- resample(tsk_yz, at_yz, rsmp_custom)
 
 gen_error_estimate_yz <- rr_yz$aggregate()
 

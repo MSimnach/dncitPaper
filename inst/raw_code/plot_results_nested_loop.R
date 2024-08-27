@@ -300,9 +300,18 @@ for(dncit in dncits){
 }
 
 design$confounder <- rep(c(1,2,4,6,10,15), each=10)
-colnames(design) <- c("sample_sizes", "confounder dimension", "Fastsurfer-RCOT", "Fastsurfer-WALD", "Fastsurfer-CPT_KPC",
-                      "Freesurfer-RCOT", "Freesurfer-WALD", "Freesurfer-CPT_KPC", "condVAE-RCOT", "condVAE-WALD", "condVAE-CPT_KPC")
-
+colnames(design) <- c("sample_sizes", "confounder dimension",
+                      "Fastsurfer-RCOT", "Fastsurfer-WALD", "Fastsurfer-CPT_KPC", "Fastsurfer-FCIT", "Fastsurfer-CMIknn",
+                      "Freesurfer-RCOT", "Freesurfer-WALD", "Freesurfer-CPT_KPC", "Freesurfer-FCIT", "Freesurfer-CMIknn",
+                      "cVAE-RCOT", "cVAE-WALD", "cVAE-CPT_KPC", "cVAE-FCIT", "cVAE-CMIknn")
+custom_order <- c("sample_sizes", "confounder dimension",
+                  "Fastsurfer-RCOT", "Freesurfer-RCOT","cVAE-RCOT",
+                  "Fastsurfer-CPT_KPC", "Freesurfer-CPT_KPC", "cVAE-CPT_KPC",
+                  "Fastsurfer-FCIT", "Freesurfer-FCIT", "cVAE-FCIT",
+                  "Fastsurfer-CMIknn","Freesurfer-CMIknn", "cVAE-CMIknn",
+                  "Fastsurfer-WALD", "Freesurfer-WALD","cVAE-WALD")
+#resort columns
+design <- design[, custom_order]
 #design_conf_dim_ci <- design
 design_conf_dim_no_ci <- design
 
@@ -318,7 +327,8 @@ kpc_cpt_files <- all_files[grep("kpc_graph", all_files)]
 fcit_files <- all_files[grep("FCIT", all_files)]
 cmiknn_files <- all_files[grep("CMIknn", all_files)]
 files_conf_relation <- c(intersect(ukb_z6_conf_files, wald_files), intersect(ukb_z6_conf_files, rcot_files),
-                         intersect(ukb_z6_conf_files, kpc_cpt_files))
+                         intersect(ukb_z6_conf_files, kpc_cpt_files), intersect(ukb_z6_conf_files, fcit_files),
+                         intersect(ukb_z6_conf_files, cmiknn_files))
 
 # Result tab for each DNCIT
 params <- list(sample_sizes = as.factor(c(145, 256, 350, 460, 825, 1100, 1475, 1964, 5000, 10000)),
@@ -328,15 +338,21 @@ design <- design %>%
   mutate("fastsurfer_fastsurfer-RCOT" = rep(NA, nrow(design)),
          "fastsurfer_fastsurfer-WALD" = rep(NA, nrow(design)),
          "fastsurfer_fastsurfer-kpc_graph" = rep(NA, nrow(design)),
+         "fastsurfer_fastsurfer-FCIT" = rep(NA, nrow(design)),
+         "fastsurfer_fastsurfer-CMIknn" = rep(NA, nrow(design)),
          "freesurfer-RCOT" = rep(NA, nrow(design)),
          "freesurfer-WALD" = rep(NA, nrow(design)),
          "freesurfer-kpc_graph" = rep(NA, nrow(design)),
+         "freesurfer-FCIT" = rep(NA, nrow(design)),
+         "freesurfer-CMIknn" = rep(NA, nrow(design)),
          "condVAE-RCOT" = rep(NA, nrow(design)),
          "condVAE-WALD" = rep(NA, nrow(design)),
-         "condVAE-kpc_graph" = rep(NA, nrow(design)))
+         "condVAE-kpc_graph" = rep(NA, nrow(design)),
+         "condVAE-FCIT" = rep(NA, nrow(design)),
+         "condVAE-CMIknn" = rep(NA, nrow(design)))
 
 embedding_maps <- c('fastsurfer_fastsurfer', 'freesurfer', 'condVAE')
-dncits <- c('RCOT', 'WALD', 'kpc_graph')
+dncits <- c('RCOT', 'WALD', 'kpc_graph', 'FCIT', 'CMIknn')
 confounder <- c('linear', 'squared', 'realistic')#, 'breakpoint3')
 for(dncit in dncits){
   for (embedding in embedding_maps){
@@ -351,10 +367,19 @@ for(dncit in dncits){
   }
 }
 
-design$confounder <- rep(c('linear', 'squared', 'realistic'), each=10)
-colnames(design) <- c("sample_sizes", "confounder", "Fastsurfer-RCOT", "Fastsurfer-WALD", "Fastsurfer-CPT_KPC",
-                      "Freesurfer-RCOT", "Freesurfer-WALD", "Freesurfer-CPT_KPC", "condVAE-RCOT", "condVAE-WALD", "condVAE-CPT_KPC")
-
+design$confounder <- rep(c('linear', 'squared', 'complex'), each=10)
+colnames(design) <- c("sample_sizes", "confounder",
+                      "Fastsurfer-RCOT", "Fastsurfer-WALD", "Fastsurfer-CPT_KPC", "Fastsurfer-FCIT", "Fastsurfer-CMIknn",
+                      "Freesurfer-RCOT", "Freesurfer-WALD", "Freesurfer-CPT_KPC", "Freesurfer-FCIT", "Freesurfer-CMIknn",
+                      "cVAE-RCOT", "cVAE-WALD", "cVAE-CPT_KPC", "cVAE-FCIT", "cVAE-CMIknn")
+custom_order <- c("sample_sizes", "confounder",
+                  "Fastsurfer-RCOT", "Freesurfer-RCOT","cVAE-RCOT",
+                  "Fastsurfer-CPT_KPC", "Freesurfer-CPT_KPC", "cVAE-CPT_KPC",
+                  "Fastsurfer-FCIT", "Freesurfer-FCIT", "cVAE-FCIT",
+                  "Fastsurfer-CMIknn","Freesurfer-CMIknn", "cVAE-CMIknn",
+                  "Fastsurfer-WALD", "Freesurfer-WALD","cVAE-WALD")
+#resort columns
+design <- design[, custom_order]
 #design_conf_relation_ci <- design
 design_conf_relation_no_ci <- design
 
@@ -424,12 +449,13 @@ p_conf_relation <- looplot::nested_loop_plot(resdf = design,
                                              steps_y_base = -0.1, steps_y_height = 0.05,
                                              x_name = "Sample size", y_name = "Rejection rate",
                                              spu_x_shift = 1,
-                                             colors = palet_discrete[rep(c(2, 4, 9),3)],
-                                             line_linetypes = rep(c(1,3,6), each=3),
+                                             colors = palet_discrete[c(rep(1,3), rep(3,3), rep(5,3), rep(7,3), rep(9,3))],
+                                             line_linetypes = rep(c(3,1,6), 5),
+                                             point_size = 3,
                                              line_size = 1.5,
-                                             point_shapes = rep(c(15,17,19),3),
+                                             point_shapes = rep(c(15,17,19),5),
                                              steps_values_annotate = TRUE, steps_annotation_size = 6,
-                                             hline_intercept = 0,
+                                             hline_intercept = c(0,0.05),
                                              y_expand_add = c(0.1,0.15),
                                              legend_name = "DNCIT",
                                              base_size = 24,
@@ -460,14 +486,14 @@ p_conf_dim = looplot::nested_loop_plot(resdf = design,
                                        steps_y_base = -0.1, steps_y_height = 0.05,
                                        x_name = "Sample size", y_name = "Rejection rate",
                                        spu_x_shift = 1,
-                                       colors = palet_discrete[rep(c(2,4,9),3)],
-                                       line_linetypes = rep(c(1,3,6), each=3),
-                                       #sizes = rep(3,6),
+                                       colors = palet_discrete[c(rep(1,3), rep(3,3), rep(5,3), rep(7,3), rep(9,3))],
+                                       line_linetypes = rep(c(3,1,6), 5),
+                                       point_size = 3,
                                        line_size = 1.5,
-                                       point_shapes = rep(c(15,17,19),3),
+                                       point_shapes = rep(c(15,17,19),5),
                                        steps_values_annotate = TRUE, steps_annotation_size = 6,
-                                       hline_intercept = 0,
                                        y_expand_add = c(0.1,0.15),
+                                       hline_intercept = c(0,0.05),
                                        legend_name = "DNCIT",
                                        base_size = 24,
                                        replace_labels = list(
