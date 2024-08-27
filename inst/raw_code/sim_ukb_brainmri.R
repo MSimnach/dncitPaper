@@ -133,6 +133,8 @@ res_time <- foreach::foreach (i= n_seeds, .packages = c('DNCIT', 'dncitPaper')) 
                                                       cit_params <- list(cit='cpt_kpc', params_cit=list(k=k, Knn = as.numeric(args[12]), model.formula.YZ=model_formula_YZ))
                                                      }else if(args[10]=='FCIT'){
                                                         cit_params <- list(cit='fcit')
+                                                     }else if(args[10]=='cpi'){
+                                                        cit_params <- list(cit='cpi')
                                                      }else if(args[10]=='WALD'){
                                                         cit_params <- list(cit='wald')
                                                      }
@@ -221,6 +223,8 @@ res_time <- foreach::foreach (i= n_seeds, .packages = c('DNCIT', 'dncitPaper')) 
                                                           cit_params <- list(cit='cpt_kpc', params_cit=list(k=k, Knn = as.numeric(args[12]), model.formula.YZ=model_formula_YZ))
                                                        }else if(args[10]=='FCIT'){
                                                           cit_params <- list(cit='fcit')
+                                                       }else if(args[10]=='cpi'){
+                                                         cit_params <- list(cit='cpi')
                                                        }else if(args[10]=='WALD'){
                                                           cit_params <- list(cit='wald', params_cit=NULL)
                                                        }
