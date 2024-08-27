@@ -25,7 +25,7 @@ cpitest <- do.call(cpi::cpi, updated_parameters)
 ## Auto tuner for hyperparameter optimization
 ## Nested resampling for performance estimation
 # termination time for auto tuner
-term_time_at <- round(exp(4.5)/3)
+term_time_at <- round(exp(2)/3)
 
 # y on x,z
 tsk_yxz <-  as_task_regr(yxz, target = "V1")
@@ -57,8 +57,8 @@ rr_resampling_yxz <- rr_yxz$resampling$instance
 test_splits <- list()
 train_splits <- list()
 for (i in 1:rsmp_outer$iters) {
-  test_splits[[i]] <- rr_resampling_yxz[rr_resampling_yxz[,fold==i],]$row_id
-  train_splits[[i]] <- rr_resampling_yxz[rr_resampling_yxz[,fold!=i],]$row_id
+  test_splits[[i]] <- rr_resampling_yxz[rr_resampling_yxz$"fold"==i,]$row_id
+  train_splits[[i]] <- rr_resampling_yxz[rr_resampling_yxz$"fold"!=i,]$row_id
 }
 rsmp_custom$instantiate(tsk_yz,
                         train = train_splits,
