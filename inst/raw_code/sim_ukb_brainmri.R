@@ -17,12 +17,12 @@ print(args)
 ####### In parallel #######
 if(cit == 'KCIT' || tail(args,1)=='10' || tail(args,1)=='20' || cit=='CMIknn'){
   n_sample = list(145, 256, 350, 460, 825, 1100)
-}else if(cit=='WALD' || cit=='RCOT'){
+}else if(cit=='WALD'){
   n_sample = list(350, 460, 825, 1100, 1475, 1964, 5000, 10000)
 }else{
   n_sample = list(145, 256, 350, 460, 825, 1100, 1475, 1964, 5000, 10000)
 }
-n_seeds = 1:2
+n_seeds = 1:200
 
 #vary also effect sizes -> change also how to save results in for loops
 #beta2s_all <- list()
@@ -45,24 +45,32 @@ if (cit %in% c('cpi', 'pred_cit')) {
    pkgs_for_each <- c('DNCIT', 'dncitPaper')
 }
 
-# if(cit %in% c("FCIT")){
-#   Sys.setenv(OMP_NUM_THREADS = "50")
-#   cl <- parallel::makeCluster(50, outfile="")
-#   doParallel::registerDoParallel(cl)
-# }else if(cit %in% c("CMIknn")){
-#   Sys.setenv(OMP_NUM_THREADS = "50")
-#   cl <- parallel::makeCluster(50, outfile="")
-#   doParallel::registerDoParallel(cl)
-# }else{
-#   Sys.setenv(OMP_NUM_THREADS = "50")
-#   cl <- parallel::makeCluster(50, outfile="")
-#   doParallel::registerDoParallel(cl)
-# }
+if(cit %in% c("FCIT")){
+  Sys.setenv(OMP_NUM_THREADS = "50")
+  cl <- parallel::makeCluster(50, outfile="")
+  doParallel::registerDoParallel(cl)
+}else if(cit %in% c("CMIknn")){
+  Sys.setenv(OMP_NUM_THREADS = "50")
+  cl <- parallel::makeCluster(50, outfile="")
+  doParallel::registerDoParallel(cl)
+}else{
+  Sys.setenv(OMP_NUM_THREADS = "50")
+  cl <- parallel::makeCluster(50, outfile="")
+  doParallel::registerDoParallel(cl)
+}
 
-cl <- parallel::makeCluster(2, outfile="")
-doParallel::registerDoParallel(cl)
+#cl <- parallel::makeCluster(2, outfile="")
+#doParallel::registerDoParallel(cl)
 
 res_time <- foreach::foreach (i= n_seeds, .packages = pkgs_for_each) %dopar% {
+  if(cit %in% c('pred_cit')){
+    # Set the logging level for mlr3
+   lgr::get_logger("mlr3")$set_threshold("warn")
+   # Set the logging level for bbotk
+   lgr::get_logger("bbotk")$set_threshold("warn")
+  }else if (cit %in% c('cpi')){
+    lgr::get_logger("cpi")$set_threshold("fatal")
+  }
                                                  if (grepl('/CI',args[1],fixed=TRUE)){
                                                    cat('CIT:', cit)
                                                    res <- rep(0,length(n_sample))
@@ -141,7 +149,11 @@ res_time <- foreach::foreach (i= n_seeds, .packages = pkgs_for_each) %dopar% {
                                                      }else if(args[10]=='cpi'){
                                                         cit_params <- list(cit='cpi')
                                                      }else if(args[10]=='pred_cit'){
-                                                        cit_params <- list(cit='pred_cit')
+                                                        min_samples <- min(unlist(n_sample))
+                                                        max_samples <- max(unlist(n_sample))
+                                                        current_sample <- n_sample[[idx_sample]]
+                                                        term_time <- round(exp(3)+(current_sample-min_samples)/(max_samples-min_samples)*(exp(4)-exp(3))/3)
+                                                        cit_params <- list(cit='pred_cit', params_cit=list(term_time = term_time))
                                                      }else if(args[10]=='WALD'){
                                                         cit_params <- list(cit='wald')
                                                      }
@@ -233,7 +245,11 @@ res_time <- foreach::foreach (i= n_seeds, .packages = pkgs_for_each) %dopar% {
                                                        }else if(args[10]=='cpi'){
                                                          cit_params <- list(cit='cpi')
                                                        }else if(args[10]=='pred_cit'){
-                                                        cit_params <- list(cit='pred_cit')
+                                                        min_samples <- min(unlist(n_sample))
+                                                        max_samples <- max(unlist(n_sample))
+                                                        current_sample <- n_sample[[idx_sample]]
+                                                        term_time <- round(exp(3)+(current_sample-min_samples)/(max_samples-min_samples)*(exp(4)-exp(3))/3)
+                                                        cit_params <- list(cit='pred_cit', params_cit=list(term_time = term_time))
                                                        }else if(args[10]=='WALD'){
                                                           cit_params <- list(cit='wald', params_cit=NULL)
                                                        }
