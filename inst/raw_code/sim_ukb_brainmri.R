@@ -22,7 +22,7 @@ if(cit == 'KCIT' || tail(args,1)=='10' || tail(args,1)=='20' || cit=='CMIknn'){
 }else{
   n_sample = list(145, 256, 350, 460, 825, 1100, 1475, 1964, 5000, 10000)
 }
-n_seeds = 1:200
+n_seeds = 1:2
 
 #vary also effect sizes -> change also how to save results in for loops
 #beta2s_all <- list()
@@ -39,25 +39,30 @@ n_seeds = 1:200
 
 beta2s <- list(1)
 
-
-if(cit %in% c("FCIT")){
-  Sys.setenv(OMP_NUM_THREADS = "50")
-  cl <- parallel::makeCluster(50, outfile="")
-  doParallel::registerDoParallel(cl)
-}else if(cit %in% c("CMIknn")){
-  Sys.setenv(OMP_NUM_THREADS = "50")
-  cl <- parallel::makeCluster(50, outfile="")
-  doParallel::registerDoParallel(cl)
-}else{
-  Sys.setenv(OMP_NUM_THREADS = "50")
-  cl <- parallel::makeCluster(50, outfile="")
-  doParallel::registerDoParallel(cl)
+if (cit %in% c('cpi', 'pred_cit')) {
+   pkgs_for_each <- c('DNCIT', 'dncitPaper', 'mlr3', 'mlr3learners')
+} else {
+   pkgs_for_each <- c('DNCIT', 'dncitPaper')
 }
 
-#cl <- parallel::makeCluster(2, outfile="")
-#doParallel::registerDoParallel(cl)
+# if(cit %in% c("FCIT")){
+#   Sys.setenv(OMP_NUM_THREADS = "50")
+#   cl <- parallel::makeCluster(50, outfile="")
+#   doParallel::registerDoParallel(cl)
+# }else if(cit %in% c("CMIknn")){
+#   Sys.setenv(OMP_NUM_THREADS = "50")
+#   cl <- parallel::makeCluster(50, outfile="")
+#   doParallel::registerDoParallel(cl)
+# }else{
+#   Sys.setenv(OMP_NUM_THREADS = "50")
+#   cl <- parallel::makeCluster(50, outfile="")
+#   doParallel::registerDoParallel(cl)
+# }
 
-res_time <- foreach::foreach (i= n_seeds, .packages = c('DNCIT', 'dncitPaper')) %dopar% {
+cl <- parallel::makeCluster(2, outfile="")
+doParallel::registerDoParallel(cl)
+
+res_time <- foreach::foreach (i= n_seeds, .packages = pkgs_for_each) %dopar% {
                                                  if (grepl('/CI',args[1],fixed=TRUE)){
                                                    cat('CIT:', cit)
                                                    res <- rep(0,length(n_sample))
@@ -135,6 +140,8 @@ res_time <- foreach::foreach (i= n_seeds, .packages = c('DNCIT', 'dncitPaper')) 
                                                         cit_params <- list(cit='fcit')
                                                      }else if(args[10]=='cpi'){
                                                         cit_params <- list(cit='cpi')
+                                                     }else if(args[10]=='pred_cit'){
+                                                        cit_params <- list(cit='pred_cit')
                                                      }else if(args[10]=='WALD'){
                                                         cit_params <- list(cit='wald')
                                                      }
@@ -225,6 +232,8 @@ res_time <- foreach::foreach (i= n_seeds, .packages = c('DNCIT', 'dncitPaper')) 
                                                           cit_params <- list(cit='fcit')
                                                        }else if(args[10]=='cpi'){
                                                          cit_params <- list(cit='cpi')
+                                                       }else if(args[10]=='pred_cit'){
+                                                        cit_params <- list(cit='pred_cit')
                                                        }else if(args[10]=='WALD'){
                                                           cit_params <- list(cit='wald', params_cit=NULL)
                                                        }
