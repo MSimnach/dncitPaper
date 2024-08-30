@@ -65,18 +65,20 @@ if(cit %in% c("FCIT")){
 res_time <- foreach::foreach (i= n_seeds, .packages = pkgs_for_each) %dopar% {
   if(cit %in% c('pred_cit')){
     # Set the logging level for mlr3
-   lgr::get_logger("mlr3")$set_threshold("warn")
+   lgr::get_logger("mlr3")$set_threshold("fatal")
    # Set the logging level for bbotk
-   lgr::get_logger("bbotk")$set_threshold("warn")
+   lgr::get_logger("bbotk")$set_threshold("fatal")
   }else if (cit %in% c('cpi')){
     lgr::get_logger("cpi")$set_threshold("fatal")
   }
                                                  if (grepl('/CI',args[1],fixed=TRUE)){
-                                                   cat('CIT:', cit)
+                                                   #cat('CIT:', cit)
                                                    res <- rep(0,length(n_sample))
                                                    runtime <- rep(0,length(n_sample))
                                                    for (idx_sample in seq_along(n_sample)){
-                                                     cat(paste("Iteration",i,"for sample size", n_sample[[idx_sample]], "\n"))
+                                                     if(i %% 50 == 1) {
+                                                      cat(paste("Iteration",i,"for sample size", n_sample[[idx_sample]], "\n"))
+                                                     }
                                                      XYZ_list <- dncitPaper::data_gen(seed=i, idx_sample=idx_sample, n_sample=n_sample, idx_beta2=NULL, beta2s=NULL,
                                                                           post_non_lin=as.numeric(args[2]), eps_sigmaX=as.numeric(args[3]), eps_sigmaY=as.numeric(args[4]),
                                                                           eps_sigmaZ=as.numeric(args[5]), embedding_orig=args[6], embedding_obs=args[7],
@@ -152,7 +154,7 @@ res_time <- foreach::foreach (i= n_seeds, .packages = pkgs_for_each) %dopar% {
                                                         min_samples <- min(unlist(n_sample))
                                                         max_samples <- max(unlist(n_sample))
                                                         current_sample <- n_sample[[idx_sample]]
-                                                        term_time <- round(exp(3)+(current_sample-min_samples)/(max_samples-min_samples)*(exp(4)-exp(3))/3)
+                                                        term_time <- round(exp(1.5)+(current_sample-min_samples)/(max_samples-min_samples)*(exp(2.25)-exp(1.5))/3)
                                                         cit_params <- list(cit='pred_cit', params_cit=list(term_time = term_time))
                                                      }else if(args[10]=='WALD'){
                                                         cit_params <- list(cit='wald')
@@ -165,11 +167,13 @@ res_time <- foreach::foreach (i= n_seeds, .packages = pkgs_for_each) %dopar% {
                                                    }
                                                    p_time <- cbind(res, runtime)
                                                  }else if(grepl('/No_CI',args[1],fixed=TRUE)){
-                                                   cat('CIT:', cit)
+                                                   #cat('CIT:', cit)
                                                    res <- rep(0,length(n_sample))
                                                    runtime <- rep(0,length(n_sample))
                                                    for (idx_sample in seq_along(n_sample)){
-                                                     cat(paste("Iteration",i,"for sample size", n_sample[[idx_sample]], "\n"))
+                                                     if(i %% 50 == 1) {
+                                                      cat(paste("Iteration",i,"for sample size", n_sample[[idx_sample]], "\n"))
+                                                     }
                                                      for (idx_beta2 in seq_along(beta2s)){
                                                        #cat(paste("Iteration",i, "for beta2", beta2s[[idx_beta2]], "\n"))
                                                        XYZ_list <- dncitPaper::data_gen(seed=i, idx_sample=idx_sample, n_sample=n_sample,idx_beta2=idx_beta2, beta2s=beta2s,
@@ -248,7 +252,7 @@ res_time <- foreach::foreach (i= n_seeds, .packages = pkgs_for_each) %dopar% {
                                                         min_samples <- min(unlist(n_sample))
                                                         max_samples <- max(unlist(n_sample))
                                                         current_sample <- n_sample[[idx_sample]]
-                                                        term_time <- round(exp(3)+(current_sample-min_samples)/(max_samples-min_samples)*(exp(4)-exp(3))/3)
+                                                        term_time <- round(exp(1.5)+(current_sample-min_samples)/(max_samples-min_samples)*(exp(2.25)-exp(1.5))/3)
                                                         cit_params <- list(cit='pred_cit', params_cit=list(term_time = term_time))
                                                        }else if(args[10]=='WALD'){
                                                           cit_params <- list(cit='wald', params_cit=NULL)
