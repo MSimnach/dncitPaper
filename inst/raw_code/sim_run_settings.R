@@ -96,5 +96,3 @@ settings_final <- rbind(settings_g_z, settings_dim_z)
 settings_final$CIT <- 'FCIT'
 write.table(settings_final, file = "raw_code/slurm/settings_fcit.txt", sep = " ", row.names = FALSE, col.names = TRUE, quote = FALSE)
 
-
-settings_runtime <-
