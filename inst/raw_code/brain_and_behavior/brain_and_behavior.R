@@ -33,7 +33,8 @@ path_to_pval_brain_trait_confounder_control <- 'M:/CITs/Application/UKB_data/Rea
 path_to_save_plots <- 'M:/CITs/Application/UKB_data/Real-world_application/'
 
 ##color palettes for plotting
-palet_discrete <- paletteer::paletteer_d("colorBlindness::Blue2Orange10Steps")
+#palet_discrete <- paletteer::paletteer_d("colorBlindness::Blue2Orange10Steps")
+palet_discrete <- paletteer::paletteer_d("ggthemes::Classic_10_Medium")
 
 ### Subset available UKB to obtain available col names
 ukb_whole_columns <- data.table::fread(file=path_to_ukb_data, header=TRUE, nrows=10)
@@ -202,7 +203,7 @@ log_p_bonferroni_individual <- -log10(0.05/642)
 plot_each_struc_trait <- ggplot2::ggplot(p_structure_trait, ggplot2::aes(x = X_Axis, y = -log10(p_unadj), color = Trait), alpha=0.8, size=1.3) +
   ggplot2::geom_point(alpha = 0.5) +
   ggplot2::scale_x_continuous(labels = unique(p_structure_trait$Trait), breaks = seq(53, max(p_structure_trait$X_Axis), by = 107)) +
-  ggplot2::scale_color_manual(values = rep(c(palet_discrete[10], palet_discrete[9]), 22 )) +
+  ggplot2::scale_color_manual(values = rep(c(palet_discrete[7], palet_discrete[5]), 22 )) +
   ggplot2::labs(x = "Trait - Each brain structure",
        y = expression("-log"[10] * "(p)"),
        color = "Trait") +
@@ -421,7 +422,7 @@ p_joint <- p_joint %>% mutate(Test = recode(Test,
 p_joint <- p_joint %>% mutate(all_traits = ifelse(Trait == 'all_traits', 'yes', 'no'))
 
 plot_joint <- ggplot2::ggplot(p_joint, ggplot2::aes(x = X_Axis, y = -log10(p_unadj), color = Test)) +
-  ggplot2::geom_point(size=3, color=c(rep(palet_discrete[9], 6), rep(palet_discrete[1], 14)),
+  ggplot2::geom_point(size=3, color=c(rep(palet_discrete[7], 6), rep(palet_discrete[1], 14)),
                       shape=c(rep(17, 6), 19, rep(17,6), 19, rep(15,6))) + #, rep(palet_discrete[3], 7))) +
   ggplot2::scale_x_continuous(labels = unique(p_joint$Test), breaks = seq(3.5, max(p_joint$X_Axis), by = 7)) +
   #ggplot2::scale_color_manual(values = c(rep(palet_discrete[9], 6), rep(palet_discrete[2], 7), rep(palet_discrete[3], 7))) +
@@ -444,8 +445,8 @@ plot_joint <- ggplot2::ggplot(p_joint, ggplot2::aes(x = X_Axis, y = -log10(p_una
     panel.grid.minor.x = ggplot2::element_blank()
   )+
   ggplot2::ylim(0,4.2)+
-  ggplot2::geom_point(data=subset(p_joint, all_traits=="yes"), color=c(palet_discrete[2], palet_discrete[2]), size=3.5, shape=19) +
-  ggplot2::geom_point(data=subset(p_joint, is_annotate=="yes"), color="red2", size=2.5) +
+  ggplot2::geom_point(data=subset(p_joint, all_traits=="yes"), color=c(palet_discrete[10], palet_discrete[10]), size=3.5, shape=19) +
+  ggplot2::geom_point(data=subset(p_joint, is_annotate=="yes"), color="red2", size=3.5) +
   # Add label using ggrepel to avoid overlapping
   ggrepel::geom_label_repel( data=subset(p_joint, is_annotate=="yes"),  ggplot2::aes(label=Trait), size=4)
 #ggplot2::ggsave(paste0(path_to_save_plots, 'deep_joint_p_values.png'), plot_joint, width = 7, height = 7, dpi = 300)
