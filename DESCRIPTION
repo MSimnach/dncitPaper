@@ -1,9 +1,9 @@
 Package: dncitPaper
-Title: Code to reproduce the analysis of the paper Deep Nonparametric Conditional Indpendence Tests (DNCIT)
+Title: Reproduction of the analysis of the paper Deep Nonparametric Conditional Indpendence Tests (DNCIT)
 Version: 0.0.0.9000
 Authors@R: 
     person("Marco", "Simnacher", , "marco.simnacher@hu-berlin.de", role = c("aut", "cre"))
-Description: What the package does (one paragraph).
+Description: This repository provides the code to reproduce the results in the paper on DNCITs. The repository can be installed as an R-package. To reproduce the results, access to the UK Biobank brain imaging data and the corresponding meta data is necessary. 
 License: `use_mit_license()`, `use_gpl3_license()` or friends to pick a
     license
 Encoding: UTF-8
