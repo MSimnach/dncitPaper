@@ -1,10 +1,7 @@
+### Parallelisation of the simulation study for the UK Biobank brain MRI data
 library(doParallel)
 library(foreach)
-#devtools::load_all('/dhc/home/marco.simnacher/DNCIT')
-#devtools::install('/home/RDC/simnacma/Coding/DNCIT')
 library(DNCIT)
-#devtools::load_all('/dhc/home/marco.simnacher/dncitPaper')
-#devtools::install('/home/RDC/simnacma/Coding/dncitPaper')
 library('dncitPaper')
 data.table::setDTthreads(1)
 args = commandArgs(trailingOnly=TRUE)

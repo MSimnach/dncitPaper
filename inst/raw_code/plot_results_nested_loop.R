@@ -4,9 +4,10 @@ library(looplot)
 #### For presentations
 ##color palettes for plotting
 palet_discrete <- paletteer::paletteer_d("colorBlindness::Blue2Orange10Steps")
-path_to_save_nested_loop_plots <- "C:\\Users\\Marco\\seadrive_root\\Marco Si\\Meine Bibliotheken\\Meine Bibliothek\\CITs\\P1 Deep CITs\\Paper_DNCITs\\Plots_simulation\\"
+path_to_save_nested_loop_plots <- ""
 
 #### split into CI and No CI
+#path to results (no ci and ci rejection rates)
 folder_path <- "M:\\CITs\\Application\\UKB_data\\Results\\No_CI\\rejection_rates"
 #folder_path <- "M:\\CITs\\Application\\UKB_data\\Results\\CI\\rejection_rates"
 all_files <- list.files(folder_path, full.names = TRUE)

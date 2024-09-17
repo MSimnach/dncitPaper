@@ -1,18 +1,16 @@
-#### Extraction of the brain MRIs together with confounders age and sex as well as together with
-# age, sex and 10 genetic PCs to load them later more easily during the simulation study
+#### Extraction of the brain measures from the brain MRIs together with confounders
 library(data.table)
 library(dplyr)
 library(stringr)
 library(car)
 
 # paths to data repository
-path_to_ukb_data <- 'M:/CITs/Application/UKB_data/ukb49727.csv'
-path_to_fastsurfer_ids <- 'M:/CITs/Application/UKB_data/ids/Ids_IDPs.csv'
-path_to_save_fastsurfer_X <- "M:\\CITs\\Application\\UKB_data\\ukb_fastsurfer.csv"
-path_to_save_freesurfer_X <- "M:\\CITs\\Application\\UKB_data\\ukb_freesurfer.csv"
-path_to_save_age_sex_Z <- "M:\\CITs\\Application\\UKB_data\\ukb_Z_age_sex.csv"
-path_to_save_age_sex_10_genes_Z <- "M:\\CITs\\Application\\UKB_data\\ukb_Z_genes10.csv"
-path_to_confounder_ids <- 'M:/CITs/Application/UKB_data/ids/ids_confounder_avinun.csv'
+path_to_ukb <- ''
+path_to_ukb_data <- paste0(path_to_ukb, 'ukb49727.csv')
+path_to_fastsurfer_ids <- paste0(path_to_ukb, 'ids/Ids_IDPs.csv')
+path_to_save_fastsurfer_X <- paste0(path_to_ukb, "ukb_fastsurfer.csv")
+path_to_save_freesurfer_X <- paste0(path_to_ukb, "ukb_freesurfer.csv")
+path_to_confounder_ids <- paste0(path_to_ukb, 'ids/ids_confounder_avinun.csv')
 
 ### Subset available UKB to obtain available col names
 ukb_whole_columns <- data.table::fread(file=path_to_ukb_data, header=TRUE, nrows=10)
@@ -42,11 +40,6 @@ ukb_data <- data.table::fread(file=path_to_ukb_data,select = ids_ukb_brain_mri, 
 
 ids_confounders <- c(id_eid, id_sex, id_age_assessment_center,id_assessment_center,
                      id_home_location_urban, ids_genetic_pcs)
-
-### Age sex as confounders
-ukb_pipeline <- stats::na.omit(ukb_data)
-ukb_Z <- ukb_pipeline[,1:3]
-data.table::fwrite(ukb_Z, file = path_to_save_age_sex_Z)
 
 ### Embedding map: Fastsurfer
 n_confounders <- length(ids_confounders)
@@ -89,22 +82,15 @@ ukb_freesurfer_no_colinear <- ukb_freesurfer_no_colinear[ , !(colnames(ukb_frees
 data.table::fwrite(ukb_freesurfer_no_colinear, file=path_to_save_freesurfer_X)
 
 ## Freesurfer as in Avinun
-path_to_save_ids_brain_avinun <- 'M:/CITs/Application/UKB_data/ids/ids_brain_avinun.csv'
+path_to_save_ids_brain_avinun <- paste0(path_to_ukb, 'ids/ids_brain_avinun.csv')
 ids_brain_structure <- data.table::fread(file=path_to_save_ids_brain_avinun,header=TRUE)$ids_brain_structure
 ukb_freesurfer <- data.table::fread(file=path_to_save_freesurfer_X, header=TRUE)
 apply(ukb_freesurfer, 2, function(x) length(unique(x)))
 
 ### Embedding from conditional VAE
-#ukb_transfer <- fread(file='M:/CITs/Application/UKB_data/ukb_condVAE.csv',  header=FALSE)
-
-#### ten dimensional confounders of genetic PCs
-ukb_pipeline_ten <- stats::na.omit(ukb_data)
-ukb_Z_genes10 <- ukb_pipeline_ten[,c(1:3, 6:15)]
-data.table::fwrite(ukb_Z_genes10, file = path_to_save_age_sex_10_genes_Z)
-
+#ukb_transfer <- fread(file=paste0(path_to_ukb,'ukb_condVAE.csv'),  header=FALSE)
 
 #### Multiple confounder sets
-path_to_save_confounders <- "M:\\CITs\\Application\\UKB_data\\"
 # get ids of confounders (load additional fastsurfer features to reduce sample size by removing obs. without fastsurfer)
 ids_confounders <- data.table::fread(file=path_to_confounder_ids,header=TRUE)$ids_confounder
 ids_ukb_brain_mri_confounds <- c(id_eid, ids_confounders,
@@ -141,19 +127,34 @@ genes <- c('gene1', 'gene2', 'gene3', 'gene4', 'gene5')
 ## Select confounder sets
 #only age
 ukb_z1 <- confounds_dummy[, .SD, .SDcols = c('id', 'age')]
-data.table::fwrite(ukb_z1, file = paste0(path_to_save_confounders, "ukb_z1_age.csv"))
+data.table::fwrite(ukb_z1, file = paste0(path_to_ukb, "ukb_z1_age.csv"))
 #age, head size
 ukb_z2 <- confounds_dummy[, .SD, .SDcols = c('id', 'age', 'head_size')]
-data.table::fwrite(ukb_z2, file = paste0(path_to_save_confounders, "ukb_z2_agesex.csv"))
+data.table::fwrite(ukb_z2, file = paste0(path_to_ukb, "ukb_z2_agesex.csv"))
 #age, sex, head size, site
 ukb_z4 <- confounds_dummy[, .SD, .SDcols = c('id', 'age', 'head_size', sites, 'sex')]
-data.table::fwrite(ukb_z4, file = paste0(path_to_save_confounders, "ukb_z4_agesexsitesize.csv"))
+data.table::fwrite(ukb_z4, file = paste0(path_to_ukb, "ukb_z4_agesexsitesize.csv"))
 #age, sex, head size, site, date, qc-discrepancy
 ukb_z6 <- confounds_dummy[, .SD, .SDcols = c('id', 'age', 'head_size', sites, 'sex', 'date_diff', 'qc_discrepancy')]
-data.table::fwrite(ukb_z6, file = paste0(path_to_save_confounders, "ukb_z6_agesexsitesizedateqc.csv"))
+data.table::fwrite(ukb_z6, file = paste0(path_to_ukb, "ukb_z6_agesexsitesizedateqc.csv"))
 #age, sex, head size, site, date, qc-discrepancy, 4xhead location
 ukb_z10 <- confounds_dummy[, .SD, .SDcols = c('id', 'age', 'head_size', sites, 'sex', 'date_diff', 'qc_discrepancy', head_locations)]
-data.table::fwrite(ukb_z10, file = paste0(path_to_save_confounders, "ukb_z10_agesexsitesizedateqclocation.csv"))
+data.table::fwrite(ukb_z10, file = paste0(path_to_ukb, "ukb_z10_agesexsitesizedateqclocation.csv"))
 #age, sex, head size, site, date, qc-discrepancy, 4xhead location, 5xgenes
 ukb_z15 <- confounds_dummy[, .SD, .SDcols = c('id', 'age', 'head_size', sites, 'sex', 'date_diff', 'qc_discrepancy', head_locations, genes)]
-data.table::fwrite(ukb_z15, file = paste0(path_to_save_confounders, "ukb_z15_agesexsitesizedateqcgenes.csv"))
+data.table::fwrite(ukb_z15, file = paste0(path_to_ukb, "ukb_z15_agesexsitesizedateqcgenes.csv"))
+
+
+
+### Old code
+#confounders age, sex and age, sex and 10 genetic PCs
+path_to_save_age_sex_Z <- paste0(path_to_ukb, "ukb_Z_age_sex.csv")
+path_to_save_age_sex_10_genes_Z <- paste0(path_to_ukb, "ukb_Z_genes10.csv")
+### Age sex as confounders
+ukb_pipeline <- stats::na.omit(ukb_data)
+ukb_Z <- ukb_pipeline[,1:3]
+data.table::fwrite(ukb_Z, file = path_to_save_age_sex_Z)
+#### ten dimensional confounders of genetic PCs
+ukb_pipeline_ten <- stats::na.omit(ukb_data)
+ukb_Z_genes10 <- ukb_pipeline_ten[,c(1:3, 6:15)]
+data.table::fwrite(ukb_Z_genes10, file = path_to_save_age_sex_10_genes_Z)

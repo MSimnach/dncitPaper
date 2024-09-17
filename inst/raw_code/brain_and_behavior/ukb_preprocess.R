@@ -5,25 +5,24 @@ library(tidyr)
 library(ggplot2)
 library(ggrepel)
 library(paletteer)
-#devtools::install('C:/Users/Marco/seadrive_root/Marco Si/Meine Bibliotheken/Meine Bibliothek/Coding/DNCIT')
-#devtools::install_github('MSimnach/DNCIT', ref='master', auth_token='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')
 library('DNCIT')
 library(fastDummies)
 
 
 ####### Real-world application
 # paths to data repository
-path_to_ukb_data <- 'M:/CITs/Application/UKB_data/ukb49727.csv'
-path_to_fastsurfer_ids <- 'C:\\Users\\Marco\\seadrive_root\\Marco Si\\Meine Bibliotheken\\Meine Bibliothek\\CITs\\P1 Deep CITs\\UK biobank\\Data/IDPs/Ids_IDPs.csv'
-path_to_fractional_anisotropy_ids <- 'M:/CITs/Application/UKB_data/Real-world_application/ids_FA_measures.csv'
-path_to_freesurfer_dk_atlas_ids <- 'M:/CITs/Application/UKB_data/Real-world_application/ids_freesurfer_Desikan-Killiany_atlas.csv'
-path_to_freesurfer_aseg_ids <- 'M:/CITs/Application/UKB_data/Real-world_application/ids_freesurfer_ASEG.csv'
-path_to_save_ids_brain_avinun <- 'M:/CITs/Application/UKB_data/ids/ids_brain_avinun.csv'
-path_to_save_ids_personality <- 'M:/CITs/Application/UKB_data/ids/ids_personality.csv'
-path_to_save_ids_confounder_avinun <- 'M:/CITs/Application/UKB_data/ids/ids_confounder_avinun.csv'
-path_to_save_ids_personality_avinun <- 'M:/CITs/Application/UKB_data/ids/ids_personality_avinun.csv'
+path_to_ukb <- ''
+path_to_ukb_data <- paste0(path_to_ukb, 'ukb49727.csv')
+path_to_fastsurfer_ids <- paste0(path_to_ukb, 'IDPs/Ids_IDPs.csv')
+path_to_fractional_anisotropy_ids <- paste0(path_to_ukb, 'Real-world_application/ids_FA_measures.csv')
+path_to_freesurfer_dk_atlas_ids <- paste0(path_to_ukb, 'Real-world_application/ids_freesurfer_Desikan-Killiany_atlas.csv')
+path_to_freesurfer_aseg_ids <- paste0(path_to_ukb, 'Real-world_application/ids_freesurfer_ASEG.csv')
+path_to_save_ids_brain_avinun <- paste0(path_to_ukb, 'ids/ids_brain_avinun.csv')
+path_to_save_ids_personality <- paste0(path_to_ukb, 'ids/ids_personality.csv')
+path_to_save_ids_confounder_avinun <- paste0(path_to_ukb, 'ids/ids_confounder_avinun.csv')
+path_to_save_ids_personality_avinun <- paste0(path_to_ukb, 'ids/ids_personality_avinun.csv')
 # paths to save results
-path_to_save_preprocessed_data <- 'M:/CITs/Application/UKB_data/ukb_free_fast_behavior_healthy.csv'
+path_to_save_preprocessed_data <- paste0(path_to_ukb, 'ukb_free_fast_behavior_healthy.csv')
 
 ##color palettes for plotting
 palet_discrete <- paletteer::paletteer_d("colorBlindness::Blue2Orange10Steps")
@@ -116,7 +115,7 @@ ids_head_location <- c("25756-2.0", "25757-2.0", "25758-2.0", "25759-2.0")
 ids_genetic_pcs <- colnames(ukb_whole_columns)[grepl('22009', colnames(ukb_whole_columns), fixed = TRUE)][1:5]
 # head motion (for fractional anisotropy)
 #id_head_motion <- colnames(ukb_whole_columns)[grepl('4244-1.9', colnames(ukb_whole_columns), fixed = TRUE)]
-#ukb_data <- data.table::fread(file='M:/CITs/Application/UKB_data/ukb49727.csv',select = id_head_motion,  header=TRUE, nrows=100)
+#ukb_data <- data.table::fread(file=paste0(path_to_ukb, 'ukb49727.csv'),select = id_head_motion,  header=TRUE, nrows=100)
 ids_confounders <- c(id_sex, id_age_assessment_center,
                      id_assessment_center, id_date,
                      id_head_size, ids_head_location, id_qc_discrepancy,
@@ -181,7 +180,7 @@ patients_w_history_mental <- apply(ukb_data_ICD10, 1, function(row) {
 ## 2) use of psychotropic, glucocorticoid, or hypolipidemic (missing currently) medication
 ukb_data_meds <- dplyr::select(ukb_data_mri, dplyr::all_of(ids_medication))
 # psychotropic
-psychotropic_meds_drug_codes <- data.table::fread(file='M:/CITs/Application/UKB_data/Real-world_application/psychotropic_medication_list_codes.csv',select='Drug code',header=TRUE)
+psychotropic_meds_drug_codes <- data.table::fread(file=paste0(path_to_ukb, 'Real-world_application/psychotropic_medication_list_codes.csv'),select='Drug code',header=TRUE)
 psychotropic_meds_drug_codes <- unlist(dplyr::mutate_all(psychotropic_meds_drug_codes, as.character))
 patients_w_psychotropic_meds <- apply(ukb_data_meds, 1, function(row) {
   any(sapply(psychotropic_meds_drug_codes, function(substring) {
@@ -189,8 +188,8 @@ patients_w_psychotropic_meds <- apply(ukb_data_meds, 1, function(row) {
   }))
 })
 # glucocorticoid
-glucocorticoid_meds_drug_codes1 <- data.table::fread(file='M:/CITs/Application/UKB_data/Real-world_application/glucocorticoids_meds_list_codes.csv',select='Code',header=TRUE)
-glucocorticoid_meds_drug_codes2 <- data.table::fread(file='M:/CITs/Application/UKB_data/Real-world_application/glucocorticoids__meds_list_codes2.csv',select='Code',header=TRUE)
+glucocorticoid_meds_drug_codes1 <- data.table::fread(file=paste0(path_to_ukb, 'Real-world_application/glucocorticoids_meds_list_codes.csv'),select='Code',header=TRUE)
+glucocorticoid_meds_drug_codes2 <- data.table::fread(file=paste0(path_to_ukb, 'Real-world_application/glucocorticoids__meds_list_codes2.csv'),select='Code',header=TRUE)
 glucocorticoid_meds_drug_codes <- unlist(dplyr::mutate_all(rbind(glucocorticoid_meds_drug_codes1, glucocorticoid_meds_drug_codes2), as.character))
 patients_w_glucocorticoid_meds <- apply(ukb_data_meds, 1, function(row) {
   any(sapply(glucocorticoid_meds_drug_codes, function(substring) {

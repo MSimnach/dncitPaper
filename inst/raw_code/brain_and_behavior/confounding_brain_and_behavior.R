@@ -5,31 +5,30 @@ library(tidyr)
 library(ggplot2)
 library(ggrepel)
 library(paletteer)
-#devtools::install('C:/Users/Marco/seadrive_root/Marco Si/Meine Bibliotheken/Meine Bibliothek/Coding/DNCIT')
-#devtools::install_github('MSimnach/DNCIT', ref='master', auth_token='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')
 library('DNCIT')
 library(fastDummies)
 
 
 ####### Real-world application
 # paths to data repository
-path_to_ukb_data <- 'M:/CITs/Application/UKB_data/ukb49727.csv'
-path_to_fastsurfer_ids <- 'C:\\Users\\Marco\\seadrive_root\\Marco Si\\Meine Bibliotheken\\Meine Bibliothek\\CITs\\P1 Deep CITs\\UK biobank\\Data/IDPs/Ids_IDPs.csv'
-path_to_fractional_anisotropy_ids <- 'M:/CITs/Application/UKB_data/Real-world_application/ids_FA_measures.csv'
-path_to_freesurfer_dk_atlas_ids <- 'M:/CITs/Application/UKB_data/Real-world_application/ids_freesurfer_Desikan-Killiany_atlas.csv'
-path_to_freesurfer_aseg_ids <- 'M:/CITs/Application/UKB_data/Real-world_application/ids_freesurfer_ASEG.csv'
-path_to_save_ids_brain_avinun <- 'M:/CITs/Application/UKB_data/ids/ids_brain_avinun.csv'
-path_to_save_ids_confounder_avinun <- 'M:/CITs/Application/UKB_data/ids/ids_confounder_avinun.csv'
-path_to_save_ids_personality_avinun <- 'M:/CITs/Application/UKB_data/ids/ids_personality_avinun.csv'
+path_to_ukb <- ''
+path_to_ukb_data <- paste0(path_to_ukb,'ukb49727.csv')
+path_to_fastsurfer_ids <- paste0(path_to_ukb,'IDPs/Ids_IDPs.csv')
+path_to_fractional_anisotropy_ids <- paste0(path_to_ukb,'Real-world_application/ids_FA_measures.csv')
+path_to_freesurfer_dk_atlas_ids <- paste0(path_to_ukb,'Real-world_application/ids_freesurfer_Desikan-Killiany_atlas.csv')
+path_to_freesurfer_aseg_ids <- paste0(path_to_ukb,'Real-world_application/ids_freesurfer_ASEG.csv')
+path_to_save_ids_brain_avinun <- paste0(path_to_ukb,'ids/ids_brain_avinun.csv')
+path_to_save_ids_confounder_avinun <- paste0(path_to_ukb,'ids/ids_confounder_avinun.csv')
+path_to_save_ids_personality_avinun <- paste0(path_to_ukb, 'ids/ids_personality_avinun.csv')
 # paths to save results
-path_to_save_preprocessed_data <- 'M:/CITs/Application/UKB_data/ukb_free_fast_behavior_healthy.csv'
-path_to_save_ukb_avinun <- 'M:/CITs/Application/UKB_data/ukb_avinun.csv'
-path_to_save_ukb_fast_behavior <- 'M:/CITs/Application/UKB_data/ukb_fast_behavior.csv'
-path_to_pval_brain_trait_each <- 'M:/CITs/Application/UKB_data/Real-world_application/p_val_structure_trait.csv'
-path_to_pval_brain_trait_each_w_joint <- 'M:/CITs/Application/UKB_data/Real-world_application/p_val_structure_trait_w_joint_structures.csv'
-path_to_pval_brain_trait_joint_rcot <- 'M:/CITs/Application/UKB_data/Real-world_application/p_val_structures_trait.csv'
-path_to_pval_brain_trait_confounder_control <- 'M:/CITs/Application/UKB_data/Real-world_application/p_val_structures_trait_confounder_control.csv'
-path_to_save_plots <- 'M:/CITs/Application/UKB_data/Real-world_application/'
+path_to_save_preprocessed_data <- paste0(path_to_ukb,'ukb_free_fast_behavior_healthy.csv')
+path_to_save_ukb_avinun <- paste0(path_to_ukb,'ukb_avinun.csv')
+path_to_save_ukb_fast_behavior <- paste0(path_to_ukb,'ukb_fast_behavior.csv')
+path_to_pval_brain_trait_each <- paste0(path_to_ukb,'Real-world_application/p_val_structure_trait.csv')
+path_to_pval_brain_trait_each_w_joint <- paste0(path_to_ukb,'Real-world_application/p_val_structure_trait_w_joint_structures.csv')
+path_to_pval_brain_trait_joint_rcot <- paste0(path_to_ukb,'Real-world_application/p_val_structures_trait.csv')
+path_to_pval_brain_trait_confounder_control <- paste0(path_to_ukb,'Real-world_application/p_val_structures_trait_confounder_control.csv')
+path_to_save_plots <- ''
 
 ##color palettes for plotting
 palet_discrete <- paletteer::paletteer_d("colorBlindness::Blue2Orange10Steps")
