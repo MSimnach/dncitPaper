@@ -19,6 +19,8 @@ if(cit == 'KCIT' || tail(args,1)=='20' || cit=='CMIknn'){
   n_sample = list(145, 256, 350, 460, 825, 1100)
 }else if(cit=='WALD'){
   n_sample = list(350, 460, 825, 1100, 1475, 1964, 5000, 10000)
+}else if(cit=='pred_cit'){
+  n_sample = list(460, 825, 1100)
 }else{
   n_sample = list(145, 256, 350, 460, 825, 1100, 1475, 1964, 5000, 10000)
 }
@@ -45,21 +47,21 @@ if (cit %in% c('cpi', 'pred_cit')) {
    pkgs_for_each <- c('DNCIT', 'dncitPaper')
 }
 
-if(cit %in% c("FCIT")){
-  Sys.setenv(OMP_NUM_THREADS = "50")
-  cl <- parallel::makeCluster(50, outfile="")
-  doParallel::registerDoParallel(cl)
-}else if(cit %in% c("CMIknn")){
-  Sys.setenv(OMP_NUM_THREADS = "50")
-  cl <- parallel::makeCluster(50, outfile="")
-  doParallel::registerDoParallel(cl)
-}else{
-  Sys.setenv(OMP_NUM_THREADS = "50")
-  cl <- parallel::makeCluster(50, outfile="")
-  doParallel::registerDoParallel(cl)
-}
+#if(cit %in% c("FCIT")){
+#  Sys.setenv(OMP_NUM_THREADS = "50")
+#  cl <- parallel::makeCluster(50, outfile="")
+#  doParallel::registerDoParallel(cl)
+#}else if(cit %in% c("CMIknn")){
+#  Sys.setenv(OMP_NUM_THREADS = "50")
+#  cl <- parallel::makeCluster(50, outfile="")
+#  doParallel::registerDoParallel(cl)
+#}else{
+Sys.setenv(OMP_NUM_THREADS = "50")
+cl <- parallel::makeCluster(50, outfile="")
+doParallel::registerDoParallel(cl)
+#}
 
-#cl <- parallel::makeCluster(2, outfile="")
+#cl <- parallel::makeCluster(10, outfile="")
 #doParallel::registerDoParallel(cl)
 
 res_time <- foreach::foreach (i= n_seeds, .packages = pkgs_for_each) %dopar% {
