@@ -9,5 +9,4 @@ inst/raw_code/slurm/
 inst/raw_code/confounder_control/
 inst/raw_code/more_cits/
 inst/raw_code/sim_ukb_brainmri_plots.R
-tests/
 R/create_test_plot.R
