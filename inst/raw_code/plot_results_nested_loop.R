@@ -244,8 +244,8 @@ palet_discrete <- paletteer::paletteer_d("ggthemes::Classic_10_Medium")
 path_to_save_nested_loop_plots <- "C:\\Users\\Marco\\seadrive_root\\Marco Si\\Meine Bibliotheken\\Meine Bibliothek\\CITs\\P1 Deep CITs\\Paper_DNCITs\\Plots_simulation\\"
 
 #### split into CI and No CI
-folder_path <- "M:\\CITs\\Application\\UKB_data\\Results\\No_CI\\rejection_rates"
-#folder_path <- "M:\\CITs\\Application\\UKB_data\\Results\\CI\\rejection_rates"
+folder_path <- "M:\\CITs\\Application\\UKB_data\\Results\\CI\\rejection_rates"
+#folder_path <- "M:\\CITs\\Application\\UKB_data\\Results\\No_CI\\rejection_rates"
 all_files <- list.files(folder_path, full.names = TRUE)
 all_files <- all_files[setdiff(1:length(all_files), grep('2_0_1_0|2_3_1_0|3_0_1_0|3_3_1_0|4_0_1_0|4_3_1_0|5_0_1_0|5_3_1_0', all_files))]
 
@@ -253,15 +253,9 @@ all_files <- all_files[setdiff(1:length(all_files), grep('2_0_1_0|2_3_1_0|3_0_1_
 # loop 1: confounder dimension (1,2,4,6,10,15) [APPENDIX] vs confounder dimension (1,2,10) [MAIN TEXT]
 # loop 2: sample size
 # fixed confounder relationship (squared terms of all continuous confounders)
-squared_conf_files <- all_files[grep("squared", all_files)]
-wald_files <- all_files[grep("WALD", all_files)]
-rcot_files <- all_files[grep("RCOT", all_files)]
-kpc_cpt_files <- all_files[grep("kpc_graph", all_files)]
-fcit_files <- all_files[grep("FCIT", all_files)]
-cmiknn_files <- all_files[grep("CMIknn", all_files)]
-files_conf_dim <- c(intersect(squared_conf_files, wald_files), intersect(squared_conf_files, rcot_files),
-                    intersect(squared_conf_files, kpc_cpt_files), intersect(squared_conf_files, fcit_files),
-                    intersect(squared_conf_files, cmiknn_files))
+cit_patterns <- "WALD|RCOT|kpc_graph|FCIT|CMIknn|comets_pcm"
+cit_files <- grep(cit_patterns, all_files, value=TRUE)
+files_conf_dim <- grep("squared", cit_files, value=TRUE)
 
 # Result tab for each DNCIT
 params <- list(sample_sizes = as.factor(c(145, 256, 350, 460, 825, 1100, 1475, 1964, 5000, 10000)),
@@ -273,19 +267,22 @@ design <- design %>%
          "fastsurfer_fastsurfer-kpc_graph" = rep(NA, nrow(design)),
          "fastsurfer_fastsurfer-FCIT" = rep(NA, nrow(design)),
          "fastsurfer_fastsurfer-CMIknn" = rep(NA, nrow(design)),
+         "fastsurfer_fastsurfer-comets_pcm" = rep(NA, nrow(design)),
          "freesurfer-RCOT" = rep(NA, nrow(design)),
          "freesurfer-WALD" = rep(NA, nrow(design)),
          "freesurfer-kpc_graph" = rep(NA, nrow(design)),
          "freesurfer-FCIT" = rep(NA, nrow(design)),
          "freesurfer-CMIknn" = rep(NA, nrow(design)),
+         "freesurfer-comets_pcm" = rep(NA, nrow(design)),
          "condVAE-RCOT" = rep(NA, nrow(design)),
          "condVAE-WALD" = rep(NA, nrow(design)),
          "condVAE-kpc_graph" = rep(NA, nrow(design)),
          "condVAE-FCIT" = rep(NA, nrow(design)),
-         "condVAE-CMIknn" = rep(NA, nrow(design)))
+         "condVAE-CMIknn" = rep(NA, nrow(design)),
+         "condVAE-comets_pcm" = rep(NA, nrow(design)))
 
 embedding_maps <- c('fastsurfer_fastsurfer', 'freesurfer', 'condVAE')
-dncits <- c('RCOT', 'WALD', 'kpc_graph', 'FCIT', 'CMIknn')
+dncits <- c('RCOT', 'WALD', 'kpc_graph', 'FCIT', 'CMIknn', 'comets_pcm')
 # [APPENDIX]
 confounder <- c('ukb_z1_', 'ukb_z2', 'ukb_z4', 'ukb_z6', 'ukb_z10', 'ukb_z15')
 for(dncit in dncits){
@@ -302,35 +299,32 @@ for(dncit in dncits){
 }
 
 design$confounder <- rep(c(1,2,4,6,10,15), each=10)
-colnames(design) <- c("sample_sizes", "confounder dimension",
-                      "Fastsurfer-RCOT", "Fastsurfer-WALD", "Fastsurfer-CPT_KPC", "Fastsurfer-FCIT", "Fastsurfer-CMIknn",
-                      "Freesurfer-RCOT", "Freesurfer-WALD", "Freesurfer-CPT_KPC", "Freesurfer-FCIT", "Freesurfer-CMIknn",
-                      "cVAE-RCOT", "cVAE-WALD", "cVAE-CPT_KPC", "cVAE-FCIT", "cVAE-CMIknn")
-custom_order <- c("sample_sizes", "confounder dimension",
+colnames(design) <- c("sample_sizes", "confounder",
+                      "Fastsurfer-RCOT", "Fastsurfer-WALD", "Fastsurfer-CPT_KPC", "Fastsurfer-FCIT", "Fastsurfer-CMIknn", "Fastsurfer-PCM",
+                      "Freesurfer-RCOT", "Freesurfer-WALD", "Freesurfer-CPT_KPC", "Freesurfer-FCIT", "Freesurfer-CMIknn", "Freesurfer-PCM",
+                      "cVAE-RCOT", "cVAE-WALD", "cVAE-CPT_KPC", "cVAE-FCIT", "cVAE-CMIknn", "cVAE-PCM")
+custom_order <- c("sample_sizes", "confounder",
                   "Fastsurfer-RCOT", "Freesurfer-RCOT","cVAE-RCOT",
                   "Fastsurfer-CPT_KPC", "Freesurfer-CPT_KPC", "cVAE-CPT_KPC",
                   "Fastsurfer-FCIT", "Freesurfer-FCIT", "cVAE-FCIT",
                   "Fastsurfer-CMIknn","Freesurfer-CMIknn", "cVAE-CMIknn",
+                  "Fastsurfer-PCM","Freesurfer-PCM", "cVAE-PCM",
                   "Fastsurfer-WALD", "Freesurfer-WALD","cVAE-WALD")
 #resort columns
 design <- design[, custom_order]
-#design_conf_dim_ci <- design
-design_conf_dim_no_ci <- design
+design_conf_dim_ci <- design
+#design_conf_dim_no_ci <- design
+
+
 
 ### 2) Data preparation for nested loop over
 # loop 1: confounder functional relationship g_z ("linear", "squared", "realistic")
 # loop 2: sample size
 # fixed confounder dimension 6
 # Deep-WALD and Deep-RCOT for all four embedding maps (freesurfer, fastsurfer, condVAE, noisy fastsurfer)
-ukb_z6_conf_files <- all_files[grep("ukb_z6", all_files)]
-wald_files <- all_files[grep("WALD", all_files)]
-rcot_files <- all_files[grep("RCOT", all_files)]
-kpc_cpt_files <- all_files[grep("kpc_graph", all_files)]
-fcit_files <- all_files[grep("FCIT", all_files)]
-cmiknn_files <- all_files[grep("CMIknn", all_files)]
-files_conf_relation <- c(intersect(ukb_z6_conf_files, wald_files), intersect(ukb_z6_conf_files, rcot_files),
-                         intersect(ukb_z6_conf_files, kpc_cpt_files), intersect(ukb_z6_conf_files, fcit_files),
-                         intersect(ukb_z6_conf_files, cmiknn_files))
+cit_patterns <- "WALD|RCOT|kpc_graph|FCIT|CMIknn|comets_pcm"
+cit_files <- grep(cit_patterns, all_files, value=TRUE)
+files_conf_relation <- grep("ukb_z6", cit_files, value=TRUE)
 
 # Result tab for each DNCIT
 params <- list(sample_sizes = as.factor(c(145, 256, 350, 460, 825, 1100, 1475, 1964, 5000, 10000)),
@@ -342,19 +336,22 @@ design <- design %>%
          "fastsurfer_fastsurfer-kpc_graph" = rep(NA, nrow(design)),
          "fastsurfer_fastsurfer-FCIT" = rep(NA, nrow(design)),
          "fastsurfer_fastsurfer-CMIknn" = rep(NA, nrow(design)),
+         "fastsurfer_fastsurfer-comets_pcm" = rep(NA, nrow(design)),
          "freesurfer-RCOT" = rep(NA, nrow(design)),
          "freesurfer-WALD" = rep(NA, nrow(design)),
          "freesurfer-kpc_graph" = rep(NA, nrow(design)),
          "freesurfer-FCIT" = rep(NA, nrow(design)),
          "freesurfer-CMIknn" = rep(NA, nrow(design)),
+         "freesurfer-comets_pcm" = rep(NA, nrow(design)),
          "condVAE-RCOT" = rep(NA, nrow(design)),
          "condVAE-WALD" = rep(NA, nrow(design)),
          "condVAE-kpc_graph" = rep(NA, nrow(design)),
          "condVAE-FCIT" = rep(NA, nrow(design)),
-         "condVAE-CMIknn" = rep(NA, nrow(design)))
+         "condVAE-CMIknn" = rep(NA, nrow(design)),
+         "condVAE-comets_pcm" = rep(NA, nrow(design)))
 
 embedding_maps <- c('fastsurfer_fastsurfer', 'freesurfer', 'condVAE')
-dncits <- c('RCOT', 'WALD', 'kpc_graph', 'FCIT', 'CMIknn')
+dncits <- c('RCOT', 'WALD', 'kpc_graph', 'FCIT', 'CMIknn', 'comets_pcm')
 confounder <- c('linear', 'squared', 'realistic')#, 'breakpoint3')
 for(dncit in dncits){
   for (embedding in embedding_maps){
@@ -371,19 +368,20 @@ for(dncit in dncits){
 
 design$confounder <- rep(c('linear', 'squared', 'complex'), each=10)
 colnames(design) <- c("sample_sizes", "confounder",
-                      "Fastsurfer-RCOT", "Fastsurfer-WALD", "Fastsurfer-CPT_KPC", "Fastsurfer-FCIT", "Fastsurfer-CMIknn",
-                      "Freesurfer-RCOT", "Freesurfer-WALD", "Freesurfer-CPT_KPC", "Freesurfer-FCIT", "Freesurfer-CMIknn",
-                      "cVAE-RCOT", "cVAE-WALD", "cVAE-CPT_KPC", "cVAE-FCIT", "cVAE-CMIknn")
+                      "Fastsurfer-RCOT", "Fastsurfer-WALD", "Fastsurfer-CPT_KPC", "Fastsurfer-FCIT", "Fastsurfer-CMIknn", "Fastsurfer-PCM",
+                      "Freesurfer-RCOT", "Freesurfer-WALD", "Freesurfer-CPT_KPC", "Freesurfer-FCIT", "Freesurfer-CMIknn", "Freesurfer-PCM",
+                      "cVAE-RCOT", "cVAE-WALD", "cVAE-CPT_KPC", "cVAE-FCIT", "cVAE-CMIknn", "cVAE-PCM")
 custom_order <- c("sample_sizes", "confounder",
                   "Fastsurfer-RCOT", "Freesurfer-RCOT","cVAE-RCOT",
                   "Fastsurfer-CPT_KPC", "Freesurfer-CPT_KPC", "cVAE-CPT_KPC",
                   "Fastsurfer-FCIT", "Freesurfer-FCIT", "cVAE-FCIT",
                   "Fastsurfer-CMIknn","Freesurfer-CMIknn", "cVAE-CMIknn",
+                  "Fastsurfer-PCM","Freesurfer-PCM", "cVAE-PCM",
                   "Fastsurfer-WALD", "Freesurfer-WALD","cVAE-WALD")
 #resort columns
 design <- design[, custom_order]
-#design_conf_relation_ci <- design
-design_conf_relation_no_ci <- design
+design_conf_relation_ci <- design
+#design_conf_relation_no_ci <- design
 
 
 
@@ -444,18 +442,24 @@ print(p_no_ci)
 design <- rbind(design_conf_relation_ci, design_conf_relation_no_ci)
 design$'Setting' <- rep(c('No', 'Yes'), each=30)
 design$confounder <- rep(rep(c(1,2,3),each=10),2)
+## APPENDIX
+# without PCM
+design <- design %>% select(-contains("PCM"))
 p_conf_relation <- looplot::nested_loop_plot(resdf = design,
                                              x = "sample_sizes",
                                              grid_rows = 'Setting',
                                              steps = "confounder",
-                                             steps_y_base = -0.1, steps_y_height = 0.05,
+                                             #methods = methods_depicted,
+                                             steps_y_base = -0.1, steps_y_height = 0.05,,
+                                             #legend_breaks = methods_depicted,  # Specify the desired order
+                                             #legend_labels = methods_depicted,  # Custom labels if needed
                                              x_name = "Sample size", y_name = "Rejection rate",
                                              spu_x_shift = 1,
-                                             colors = palet_discrete[c(rep(1,3), rep(2,3), rep(3,3), rep(4,3), rep(7,3))],
-                                             line_linetypes = rep(c(3,1,6), 5),
+                                             colors = palet_discrete[rep(c(1,2,3,4,7), each=3)],
+                                             line_linetypes = c(6,1,3),
                                              point_size = 3,
                                              line_size = 1.5,
-                                             point_shapes = rep(c(15,17,19),5),
+                                             point_shapes = c(17,19,15),
                                              steps_values_annotate = TRUE, steps_annotation_size = 6,
                                              hline_intercept = c(0,0.05),
                                              y_expand_add = c(0.1,0.15),
@@ -470,6 +474,75 @@ p_conf_relation <- looplot::nested_loop_plot(resdf = design,
                                                               '2'='squared',
                                                               '3'='complex')
                                              ),
+                                             grid_labeller = labeller('No'='T1E', 'Yes'='Power'),
+                                             post_processing = list(
+                                               add_custom_theme = list(
+                                                 axis.text.x = ggplot2::element_text(angle = -90,
+                                                                                     vjust = 0.5,
+                                                                                     size = 15)
+                                               )
+                                             ))
+#ggplot2::ggsave(paste0(path_to_save_nested_loop_plots, 'all_dncits_nested_loop_conf_rel_power_T1E_app.png'), p_conf_relation, width = 16, height = 10, dpi = 300)
+print(p_conf_relation)
+
+## MAIN TEXT
+design_main_text <- design %>%
+  mutate(across(contains("Fastsurfer-") | contains("cVAE-"),
+                ~ ifelse(Setting == "No", NA, .)))
+#remove tests without power from power plots
+set_to_NA_because_no_power <- c()
+for(col in colnames(design_main_text)[3:(ncol(design_main_text)-1)]){
+  for(confounder in c(1,2,3)){
+    if(grepl("CMIknn", col)){
+      max_sample_size <- 1100
+    }else{
+      max_sample_size <- 10000
+    }
+    if(any(design_main_text$confounder == confounder & design_main_text$sample_sizes == max_sample_size & design_main_text[[col]] < 0.15 & design_main_text$Setting == "Yes", na.rm=TRUE)){
+      print(col)
+      print(confounder)
+      design_main_text[which(design_main_text$confounder == confounder & design_main_text$Setting == "Yes"), col] <- NA
+      set_to_NA_because_no_power <- c(set_to_NA_because_no_power, paste(col, confounder))
+    }
+  }
+}
+
+# without PCM
+design_main_text <- design_main_text %>% select(-contains("PCM"))
+#withour Fastsurfer
+design_main_text <- design_main_text %>% select(-contains("Fastsurfer"))
+methods_depicted <- colnames(design_main_text)[-c(1:2, ncol(design_main_text))]
+
+p_conf_relation <- looplot::nested_loop_plot(resdf = design_main_text,
+                                             x = "sample_sizes",
+                                             grid_rows = 'Setting',
+                                             steps = "confounder",
+                                             methods = methods_depicted,
+                                             steps_y_base = -0.1, steps_y_height = 0.05,,
+                                             legend_breaks = methods_depicted,  # Specify the desired order
+                                             legend_labels = methods_depicted,  # Custom labels if needed
+                                             x_name = "Sample size", y_name = "Rejection rate",
+                                             spu_x_shift = 1,
+                                             colors = palet_discrete[rep(c(1,2,3,4,7), each=2)],
+                                             line_linetypes = c(1,3),
+                                             point_size = 3,
+                                             line_size = 1.5,
+                                             point_shapes = c(19,15),
+                                             steps_values_annotate = TRUE, steps_annotation_size = 6,
+                                             hline_intercept = c(0,0.05),
+                                             y_expand_add = c(0.1,0.15),
+                                             line_alpha =0.6,
+                                             point_alpha = 0.8,
+                                             legend_name = "DNCIT",
+                                             base_size = 24,
+                                             replace_labels = list(
+                                               Setting = c('No'='T1E',
+                                                           'Yes'='Power'),
+                                               confounder = c('1'='linear',
+                                                              '2'='squared',
+                                                              '3'='complex')
+                                             ),
+                                             grid_labeller = labeller('No'='T1E', 'Yes'='Power'),
                                              post_processing = list(
                                                add_custom_theme = list(
                                                  axis.text.x = ggplot2::element_text(angle = -90,
@@ -485,18 +558,20 @@ design <- rbind(design_conf_dim_ci, design_conf_dim_no_ci)
 design$'Setting' <- rep(c('No', 'Yes'), each=60)
 # confounder dimension (1,2,4,6,10,15) [APPENDIX] vs confounder dimension (1,2,10) [MAIN TEXT]
 # APPENDIX
+# without PCM
+design <- design %>% select(-contains("PCM"))
 p_conf_dim = looplot::nested_loop_plot(resdf = design,
                                        x = "sample_sizes",
                                        grid_rows = 'Setting',
-                                       steps  = "confounder dimension",
+                                       steps  = "confounder",
                                        steps_y_base = -0.1, steps_y_height = 0.05,
                                        x_name = "Sample size", y_name = "Rejection rate",
                                        spu_x_shift = 1,
                                        colors = palet_discrete[c(rep(1,3), rep(2,3), rep(3,3), rep(4,3), rep(7,3))],
-                                       line_linetypes = rep(c(3,1,6), 5),
+                                       line_linetypes = c(6,1,3),
                                        point_size = 3,
                                        line_size = 1,
-                                       point_shapes = rep(c(15,17,19),5),
+                                       point_shapes = c(17,19,15),
                                        steps_values_annotate = TRUE, steps_annotation_size = 6,
                                        y_expand_add = c(0.1,0.15),
                                        hline_intercept = c(0,0.05),
@@ -508,6 +583,7 @@ p_conf_dim = looplot::nested_loop_plot(resdf = design,
                                          Setting = c('No'='T1E',
                                                      'Yes'='Power')
                                        ),
+                                       grid_labeller = labeller('No'='T1E', 'Yes'='Power'),
                                        post_processing = list(
                                          add_custom_theme = list(
                                            axis.text.x = ggplot2::element_text(angle = -90,
@@ -515,23 +591,54 @@ p_conf_dim = looplot::nested_loop_plot(resdf = design,
                                                                                size = 15)
                                          )
                                        ))
+
 #ggplot2::ggsave(paste0(path_to_save_nested_loop_plots, 'all_dncits_nested_loop_conf_dim.png'), p_conf_dim, width = 16, height = 10, dpi = 300)
 print(p_conf_dim)
 
 # MAIN TEXT:
-# design <- design[design$'confounder dimension' %in% c(1,2,10),]
-p_conf_dim = looplot::nested_loop_plot(resdf = design,
+# design <- design[design$'confounder' %in% c(1,2,10),]
+#set for T1E Fastsurfer an cVAE to NA
+design_main_text <- design %>%
+  mutate(across(contains("Fastsurfer-") | contains("cVAE-"),
+                ~ ifelse(Setting == "No", NA, .)))
+#remove tests without power from power plots
+set_to_NA_because_no_power <- c()
+for(col in colnames(design_main_text)[3:(ncol(design_main_text)-1)]){
+  for(confounder in c(1,2,10)){
+    if(grepl("CMIknn", col)){
+      max_sample_size <- 1100
+    }else{
+      max_sample_size <- 10000
+    }
+    if(any(design_main_text$confounder == confounder & design_main_text$sample_sizes == max_sample_size & design_main_text[[col]] < 0.15 & design_main_text$Setting == "Yes", na.rm=TRUE)){
+      print(col)
+      print(confounder)
+      design_main_text[which(design_main_text$confounder == confounder & design_main_text$Setting == "Yes"), col] <- NA
+      set_to_NA_because_no_power <- c(set_to_NA_because_no_power, paste(col, confounder))
+    }
+  }
+}
+
+# without PCM
+design_main_text <- design_main_text %>% select(-contains("PCM"))
+#withour Fastsurfer
+design_main_text <- design_main_text %>% select(-contains("Fastsurfer"))
+methods_depicted <- colnames(design_main_text)[-c(1:2, ncol(design_main_text))]
+p_conf_dim = looplot::nested_loop_plot(resdf = design_main_text,
                                        x = "sample_sizes",
                                        grid_rows = 'Setting',
-                                       steps  = "confounder dimension",
-                                       steps_y_base = -0.1, steps_y_height = 0.05,
+                                       steps  = "confounder",
+                                       methods = methods_depicted,
+                                       steps_y_base = -0.1, steps_y_height = 0.05,,
+                                       legend_breaks = methods_depicted,  # Specify the desired order
+                                       legend_labels = methods_depicted,  # Custom labels if needed
                                        x_name = "Sample size", y_name = "Rejection rate",
                                        spu_x_shift = 1,
-                                       colors = palet_discrete[c(rep(1,3), rep(2,3), rep(3,3), rep(4,3), rep(7,3))],
-                                       line_linetypes = rep(c(3,1,6), 5),
+                                       colors = palet_discrete[rep(c(1,2,3,4,7), each=2)],
+                                       line_linetypes = rep(c(1,3),4),
                                        point_size = 3,
-                                       line_size = 1.5,
-                                       point_shapes = rep(c(15,17,19),5),
+                                       line_size = 1,
+                                       point_shapes = c(19,15),
                                        steps_values_annotate = TRUE, steps_annotation_size = 6,
                                        y_expand_add = c(0.1,0.15),
                                        hline_intercept = c(0,0.05),
@@ -543,6 +650,7 @@ p_conf_dim = looplot::nested_loop_plot(resdf = design,
                                          Setting = c('No'='T1E',
                                                      'Yes'='Power')
                                        ),
+                                       grid_labeller = labeller('No'='T1E', 'Yes'='Power'),
                                        post_processing = list(
                                          add_custom_theme = list(
                                            axis.text.x = ggplot2::element_text(angle = -90,
@@ -563,15 +671,9 @@ folder_path_reject <- "M:\\CITs\\Application\\UKB_data\\Results\\CI\\rejection_r
 all_files_cit <- list.files(folder_path_reject, full.names = TRUE)
 all_files_cit <- all_files_cit[setdiff(1:length(all_files_cit), grep('2_0_1_0|2_3_1_0|3_0_1_0|3_3_1_0|4_0_1_0|4_3_1_0|5_0_1_0|5_3_1_0', all_files_cit))]
 
-squared_conf_files <- all_files_cit[grep("squared", all_files_cit)]
-wald_files <- all_files_cit[grep("WALD", all_files_cit)]
-rcot_files <- all_files_cit[grep("RCOT", all_files_cit)]
-kpc_cpt_files <- all_files_cit[grep("kpc_graph", all_files_cit)]
-fcit_files <- all_files_cit[grep("FCIT", all_files_cit)]
-cmiknn_files <- all_files_cit[grep("CMIknn", all_files_cit)]
-files_conf_dim <- c(intersect(squared_conf_files, wald_files), intersect(squared_conf_files, rcot_files),
-                    intersect(squared_conf_files, kpc_cpt_files), intersect(squared_conf_files, fcit_files),
-                    intersect(squared_conf_files, cmiknn_files))
+cit_patterns <- "WALD|RCOT|kpc_graph|FCIT|CMIknn|comets_pcm"
+cit_files <- grep(cit_patterns, all_files, value=TRUE)
+files_conf_dim <- grep("squared", cit_files, value=TRUE)
 
 # Result tab for each DNCIT
 params <- list(sample_sizes = as.factor(c(145, 256, 350, 460, 825, 1100, 1475, 1964, 5000, 10000)),
@@ -583,19 +685,22 @@ design <- design %>%
          "fastsurfer_fastsurfer-kpc_graph" = rep(NA, nrow(design)),
          "fastsurfer_fastsurfer-FCIT" = rep(NA, nrow(design)),
          "fastsurfer_fastsurfer-CMIknn" = rep(NA, nrow(design)),
+         "fastsurfer_fastsurfer-comets_pcm" = rep(NA, nrow(design)),
          "freesurfer-RCOT" = rep(NA, nrow(design)),
          "freesurfer-WALD" = rep(NA, nrow(design)),
          "freesurfer-kpc_graph" = rep(NA, nrow(design)),
          "freesurfer-FCIT" = rep(NA, nrow(design)),
          "freesurfer-CMIknn" = rep(NA, nrow(design)),
+         "freesurfer-comets_pcm" = rep(NA, nrow(design)),
          "condVAE-RCOT" = rep(NA, nrow(design)),
          "condVAE-WALD" = rep(NA, nrow(design)),
          "condVAE-kpc_graph" = rep(NA, nrow(design)),
          "condVAE-FCIT" = rep(NA, nrow(design)),
-         "condVAE-CMIknn" = rep(NA, nrow(design)))
+         "condVAE-CMIknn" = rep(NA, nrow(design)),
+         "condVAE-comets_pcm" = rep(NA, nrow(design)))
 
 embedding_maps <- c('fastsurfer_fastsurfer', 'freesurfer', 'condVAE')
-dncits <- c('RCOT', 'WALD', 'kpc_graph', 'FCIT', 'CMIknn')
+dncits <- c('RCOT', 'WALD', 'kpc_graph', 'FCIT', 'CMIknn', 'comets_pcm')
 confounder <- c('ukb_z1_', 'ukb_z2', 'ukb_z4', 'ukb_z6', 'ukb_z10', 'ukb_z15')
 for(dncit in dncits){
   for (embedding in embedding_maps){
@@ -608,7 +713,7 @@ for(dncit in dncits){
 
         df_runtimes <- colMeans(df_runtimes)
 
-        files_dncit <- grep(dncit, files_conf_dim, value = TRUE)
+        files_dncit <- grep(dncit, all_files_cit, value = TRUE)
         files_dncit_conf <- grep(embedding, files_dncit, value = TRUE)
         #files <- grep(conf, files_dncit_conf, value=TRUE)
         df_cit <- read.csv(files_dncit_conf[1], header = TRUE, sep = ",")
@@ -627,7 +732,7 @@ for(dncit in dncits){
 
           df_runtimes <- colMeans(df_runtimes)
 
-          files_dncit <- grep(dncit, files_conf_dim, value = TRUE)
+          files_dncit <- grep(dncit, all_files_cit, value = TRUE)
           files_dncit_conf <- grep(embedding, files_dncit, value = TRUE)
           #files <- grep(conf, files_dncit_conf, value=TRUE)
           df_cit <- read.csv(files_dncit_conf[1], header = TRUE, sep = ",")
@@ -648,29 +753,38 @@ design_runtime <- design
 
 design$confounder <- rep(c(1,2,4,6,10,15), each=10)
 colnames(design) <- c("sample_sizes", "confounder dimension",
-                      "Fastsurfer-RCOT", "Fastsurfer-WALD", "Fastsurfer-CPT_KPC", "Fastsurfer-FCIT", "Fastsurfer-CMIknn",
-                      "Freesurfer-RCOT", "Freesurfer-WALD", "Freesurfer-CPT_KPC", "Freesurfer-FCIT", "Freesurfer-CMIknn",
-                      "cVAE-RCOT", "cVAE-WALD", "cVAE-CPT_KPC", "cVAE-FCIT", "cVAE-CMIknn")
+                      "Fastsurfer-RCOT", "Fastsurfer-WALD", "Fastsurfer-CPT_KPC", "Fastsurfer-FCIT", "Fastsurfer-CMIknn", "Fastsurfer-PCM",
+                      "Freesurfer-RCOT", "Freesurfer-WALD", "Freesurfer-CPT_KPC", "Freesurfer-FCIT", "Freesurfer-CMIknn", "Freesurfer-PCM",
+                      "cVAE-RCOT", "cVAE-WALD", "cVAE-CPT_KPC", "cVAE-FCIT", "cVAE-CMIknn", "cVAE-PCM")
 custom_order <- c("sample_sizes", "confounder dimension",
                   "Fastsurfer-RCOT", "Freesurfer-RCOT","cVAE-RCOT",
                   "Fastsurfer-CPT_KPC", "Freesurfer-CPT_KPC", "cVAE-CPT_KPC",
                   "Fastsurfer-FCIT", "Freesurfer-FCIT", "cVAE-FCIT",
                   "Fastsurfer-CMIknn","Freesurfer-CMIknn", "cVAE-CMIknn",
+                  "Fastsurfer-PCM", "Freesurfer-PCM","cVAE-PCM",
                   "Fastsurfer-WALD", "Freesurfer-WALD","cVAE-WALD")
 #resort columns
 design <- design[, custom_order]
+design <- design[design$'confounder' %in% c(1,2,10),]
+design <- design %>% select(-contains("Fastsurfer"))
+# without PCM
+design <- design %>% select(-contains("PCM"))
+methods_depicted <- colnames(design)[-c(1:2)]
 y_lims = c(min(design[,-c(1,2)], na.rm = TRUE)-0.8, max(design[,-c(1,2)], na.rm = TRUE)+0.2)
 p_conf_dim_runtime <- looplot::nested_loop_plot(resdf = design,
                                        x = "sample_sizes",
                                        steps  = "confounder dimension",
+                                       methods = methods_depicted,
+                                       legend_breaks = methods_depicted,  # Specify the desired order
+                                       legend_labels = methods_depicted,  # Custom labels if needed
                                        steps_y_base = y_lims[1]+0.6, steps_y_height = 0.05,
                                        x_name = "Sample size", y_name = expression("log"[10] * "(Runtime in s)"),
                                        spu_x_shift = 1,
-                                       colors = palet_discrete[c(rep(1,3), rep(2,3), rep(3,3), rep(4,3), rep(7,3))],
-                                       line_linetypes = rep(c(3,1,6), 5),
+                                       colors = palet_discrete[rep(c(1,2,3,4,7), each=2)],
+                                       line_linetypes = rep(c(1,3), 5),
                                        point_size = 3,
                                        line_size = 1.5,
-                                       point_shapes = rep(c(15,17,19),5),
+                                       point_shapes = rep(c(19,15),5),
                                        steps_values_annotate = TRUE, steps_annotation_size = 6,
                                        hline_intercept = y_lims[1]+0.8,
                                        y_expand_add = c(0.1,0.15),
@@ -689,3 +803,11 @@ p_conf_dim_runtime <- looplot::nested_loop_plot(resdf = design,
                                        ))
 #ggplot2::ggsave(paste0(path_to_save_nested_loop_plots, 'all_dncits_nested_loop_conf_dim_runtime.png'), p_conf_dim_runtime, width = 16, height = 10, dpi = 300)
 print(p_conf_dim_runtime)
+
+
+
+##### Tables for detailed results
+library(xtable)
+rownames(design) <- NULL
+xtable(design[,-c(ncol(design))], align=c("lll|rrrrrrrrrrrrrrrrrr"))
+heatmap(as.matrix(design[,-c(1,2,ncol(design))]))
