@@ -6,3 +6,4 @@ inst/logs
 inst/Results
 inst/old_results
 inst/raw_code/slurm/
+inst/raw_code/confounder_control/
