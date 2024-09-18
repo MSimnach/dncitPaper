@@ -8,9 +8,10 @@ library(car)
 path_to_ukb <- ''
 path_to_ukb_data <- paste0(path_to_ukb, 'ukb49727.csv')
 path_to_fastsurfer_ids <- paste0(path_to_ukb, 'ids/Ids_IDPs.csv')
+path_to_confounder_ids <- paste0(path_to_ukb, 'ids/ids_confounder_avinun.csv')
+# paths to save constructed data
 path_to_save_fastsurfer_X <- paste0(path_to_ukb, "ukb_fastsurfer.csv")
 path_to_save_freesurfer_X <- paste0(path_to_ukb, "ukb_freesurfer.csv")
-path_to_confounder_ids <- paste0(path_to_ukb, 'ids/ids_confounder_avinun.csv')
 
 ### Subset available UKB to obtain available col names
 ukb_whole_columns <- data.table::fread(file=path_to_ukb_data, header=TRUE, nrows=10)

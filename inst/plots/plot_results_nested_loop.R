@@ -8,8 +8,8 @@ path_to_save_nested_loop_plots <- ""
 
 #### split into CI and No CI
 #path to results (no ci and ci rejection rates)
-folder_path <- "M:\\CITs\\Application\\UKB_data\\Results\\No_CI\\rejection_rates"
-#folder_path <- "M:\\CITs\\Application\\UKB_data\\Results\\CI\\rejection_rates"
+folder_path <- "Results\\No_CI\\rejection_rates"
+#folder_path <- "Results\\CI\\rejection_rates"
 all_files <- list.files(folder_path, full.names = TRUE)
 all_files <- all_files[setdiff(1:length(all_files), grep('2_0_1_0|2_3_1_0|3_0_1_0|3_3_1_0|4_0_1_0|4_3_1_0|5_0_1_0|5_3_1_0', all_files))]
 
@@ -242,11 +242,11 @@ print(p_conf_dim)
 #palet_discrete <- paletteer::paletteer_d("colorBlindness::Blue2Orange10Steps")
 palet_discrete <- paletteer::paletteer_d("ggthemes::Classic_10_Medium")
 #palet_discrete <- palet_discrete[seq(1,15, length.out=12)]
-path_to_save_nested_loop_plots <- "C:\\Users\\Marco\\seadrive_root\\Marco Si\\Meine Bibliotheken\\Meine Bibliothek\\CITs\\P1 Deep CITs\\Paper_DNCITs\\Plots_simulation\\"
+path_to_save_nested_loop_plots <- ""
 
 #### split into CI and No CI
-folder_path <- "M:\\CITs\\Application\\UKB_data\\Results\\CI\\rejection_rates"
-#folder_path <- "M:\\CITs\\Application\\UKB_data\\Results\\No_CI\\rejection_rates"
+folder_path <- "Results\\CI\\rejection_rates"
+#folder_path <- "Results\\No_CI\\rejection_rates"
 all_files <- list.files(folder_path, full.names = TRUE)
 all_files <- all_files[setdiff(1:length(all_files), grep('2_0_1_0|2_3_1_0|3_0_1_0|3_3_1_0|4_0_1_0|4_3_1_0|5_0_1_0|5_3_1_0', all_files))]
 
@@ -664,11 +664,11 @@ print(p_conf_dim)
 
 ### 3) Runtime
 # only relevant files for runtime plot should be in folder!
-folder_path <- "M:\\CITs\\Application\\UKB_data\\Runtime"
+folder_path <- "Runtime"
 all_files <- list.files(folder_path, full.names = TRUE)
 
 ## for sample sizes
-folder_path_reject <- "M:\\CITs\\Application\\UKB_data\\Results\\CI\\rejection_rates"
+folder_path_reject <- "Results\\CI\\rejection_rates"
 all_files_cit <- list.files(folder_path_reject, full.names = TRUE)
 all_files_cit <- all_files_cit[setdiff(1:length(all_files_cit), grep('2_0_1_0|2_3_1_0|3_0_1_0|3_3_1_0|4_0_1_0|4_3_1_0|5_0_1_0|5_3_1_0', all_files_cit))]
 
