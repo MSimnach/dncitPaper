@@ -172,9 +172,8 @@ structure_trait_significant_avinun <- c(temporal_gyrus_dilligence, thalamus_dill
 p_structure_trait <- p_df_adj_plot %>%
   mutate(Structure = as.numeric(Structure),
          Trait = as.factor(Trait)) %>%
-  arrange(Trait, Structure) %>%
+  arrange(Trait, p_unadj) %>%
   mutate(X_Axis=1:nrow(p_df_adj_plot)) %>%
-
   # Add highlight and annotation information
   mutate( is_annotate=ifelse(-log10(p_unadj)>2.5, "yes", "no"))
 p_structure_trait$combined <- with(p_structure_trait, paste("brain_structure_", Structure, Trait, sep = ""))
@@ -191,12 +190,11 @@ ids_gray_matter_vols_lr <- ids_freesurfer_aseg[c(47:50,61:64,67:68,72:73,79:82, 
 ids_lr <- rbind(ids_cortical_thick_lr,ids_surface_area_lr, ids_gray_matter_vols_lr, ids_FA_lr)
 #ids_brain <- rbind(ids_lr[seq(from = 1, to = nrow(ids_lr), by = 2),], ids_whole_brain_aseg)
 #lab_small_p_df <- ids_brain[p_structure_trait[which(p_structure_trait$is_annotate == 'yes'),]$Structure,]
-labels <- c('medialorbitofrontal', 'rostralanteriorcingulate', 'posterior thalamic radiation',
-            'isthmuscingulate', 'Caudate', 'medial lemniscus', 'posterior thalamic radiation',
-            'rostralanteriorcingulate', 'pontine crossing tract')
+labels <- c('medialorbitofrontal', 'rostralanteriorcingulate', 'thalamic radiation',
+            'thalamic radiation', 'isthmuscingulate', 'medial lemniscus', 'Caudate',
+            'pontine crossing tract', 'rostralanteriorcingulate')
 #bonferroni adjusted significance level for 642 individual tests and significance level of 0.05 (on log-scale)
 log_p_bonferroni_individual <- -log10(0.05/642)
-
 
 # Plotting similar to a Manhattan plot
 plot_each_struc_trait <- ggplot2::ggplot(p_structure_trait, ggplot2::aes(x = X_Axis, y = -log10(p_unadj), color = Trait), alpha=0.8, size=1.3) +
@@ -227,7 +225,7 @@ plot_each_struc_trait <- ggplot2::ggplot(p_structure_trait, ggplot2::aes(x = X_A
   # Add highlighted points
   ggplot2::geom_point(data=subset(p_structure_trait, is_annotate=="yes"), color="red2", size=2.5) +
   # Add label using ggrepel to avoid overlapping
-  ggrepel::geom_label_repel( data=subset(p_structure_trait, is_annotate=="yes"),  ggplot2::aes(label=labels), size=4)
+  ggrepel::geom_label_repel( data=subset(p_structure_trait, is_annotate=="yes"),  ggplot2::aes(label=labels), size=4, max.overlaps = 11)
 #ggplot2::ggsave(paste0(path_to_save_plots, 'individual_p_values_wald.png'), plot_each_struc_trait, width = 7, height = 7, dpi = 300)
 
 #### joint significance of brain structures
@@ -420,9 +418,14 @@ p_joint <- p_joint %>% mutate(Test = recode(Test,
                                  "Deep-RCoT"="Fastsurfer-RCoT"))
 p_joint <- p_joint %>% mutate(all_traits = ifelse(Trait == 'all_traits', 'yes', 'no'))
 
+#Fastsurfer-RCoT fill color for points
+rgb_vals <- col2rgb(palet_discrete[1])
+new_rgb_vals <- pmin(rgb_vals + 90, 255)  # Making the color slightly lighter
+fastsurfer_rcot_fill_col <- rgb(new_rgb_vals[1], new_rgb_vals[2], new_rgb_vals[3], maxColorValue = 255)
+
 plot_joint <- ggplot2::ggplot(p_joint, ggplot2::aes(x = X_Axis, y = -log10(p_unadj), color = Test)) +
-  ggplot2::geom_point(size=3, color=c(rep(palet_discrete[7], 6), rep(palet_discrete[1], 14)),
-                      shape=c(rep(17, 6), 19, rep(17,6), 19, rep(15,6))) + #, rep(palet_discrete[3], 7))) +
+  ggplot2::geom_point(size=3, color=c(rep(palet_discrete[7], 6), rep(palet_discrete[1], 14)), fill='grey',
+                      shape=c(rep(19, 6), 19, rep(19,6), 17, rep(17,6))) + #, rep(palet_discrete[3], 7))) +
   ggplot2::scale_x_continuous(labels = unique(p_joint$Test), breaks = seq(3.5, max(p_joint$X_Axis), by = 7)) +
   #ggplot2::scale_color_manual(values = c(rep(palet_discrete[9], 6), rep(palet_discrete[2], 7), rep(palet_discrete[3], 7))) +
   ggplot2::labs(x = "DNCITs - Trait(s) - All brain structures",
@@ -444,7 +447,7 @@ plot_joint <- ggplot2::ggplot(p_joint, ggplot2::aes(x = X_Axis, y = -log10(p_una
     panel.grid.minor.x = ggplot2::element_blank()
   )+
   ggplot2::ylim(0,4.2)+
-  ggplot2::geom_point(data=subset(p_joint, all_traits=="yes"), color=c(palet_discrete[10], palet_discrete[10]), size=3.5, shape=19) +
+  ggplot2::geom_point(data=subset(p_joint, all_traits=="yes"), color=c(palet_discrete[1], palet_discrete[1]), fill ='grey', stroke=1.8,size=3.3, shape=c(21,24)) +
   ggplot2::geom_point(data=subset(p_joint, is_annotate=="yes"), color="red2", size=3.5) +
   # Add label using ggrepel to avoid overlapping
   ggrepel::geom_label_repel( data=subset(p_joint, is_annotate=="yes"),  ggplot2::aes(label=Trait), size=4)
@@ -462,7 +465,8 @@ p_all <- p_all %>%
 
 ## qq-plots to compare to uniform p-values
 p_all$log_p_unadj = -log10(p_all$p_unadj)
-tests <- c('Wald_individual', 'Wald', 'RCoT', 'Deep-RCoT')
+p_all <- p_all[!p_all$Trait == 'all_traits',]
+tests <- c('Wald_individual', 'Freesurfer-Wald', 'Freesurfer-RCoT', 'Fastsurfer-RCoT')
 qqplots <- list()
 ks_tests <- list()
 for(test in tests){
@@ -470,9 +474,9 @@ for(test in tests){
   # Generate the expected theoretical quantiles for a uniform distribution
   n = nrow(p_all_test)
   theoretical_quantiles = (1:n - 0.5) / n
-  theoretical_quantiles = sort(-log10(theoretical_quantiles))
+  theoretical_quantiles = sort(theoretical_quantiles)
   # Sort the observed -log10(p_unadj) values
-  observed_quantiles = sort(p_all_test$log_p_unadj)
+  observed_quantiles = sort(p_all_test$p_unadj)
   # Create the QQ plot
   qqplots[[test]] <- ggplot2::ggplot(data = data.frame(x = theoretical_quantiles, y = observed_quantiles),
                            ggplot2::aes(x = x, y = y)) +
