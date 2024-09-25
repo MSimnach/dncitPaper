@@ -706,7 +706,7 @@ p_conf_relation_ci <- looplot::nested_loop_plot(resdf = design_main_text_ci,
                                              point_size = 4,
                                              line_size = 1.5,
                                              point_shapes = c(19,15),
-                                             steps_values_annotate = TRUE, steps_annotation_size = 6, steps_color='grey31',steps_annotation_color='grey31',
+                                             steps_values_annotate = TRUE, steps_annotation_size = 8, steps_color='grey31',steps_annotation_color='grey31',
                                              hline_intercept = c(0,0.05),
                                              hline_linetype =c(1),
                                              hline_size = c(0.5,1.5),
@@ -715,7 +715,7 @@ p_conf_relation_ci <- looplot::nested_loop_plot(resdf = design_main_text_ci,
                                              line_alpha =0.6,
                                              point_alpha = 0.8,
                                              legend_name = "DNCIT",
-                                             base_size = 24,
+                                             base_size = 30,
                                              replace_labels = list(
                                                Setting = c('No'='T1E'),
                                                confounder = c('1'='linear',
@@ -726,8 +726,7 @@ p_conf_relation_ci <- looplot::nested_loop_plot(resdf = design_main_text_ci,
                                              post_processing = list(
                                                add_custom_theme = list(
                                                  axis.text.x = ggplot2::element_text(angle = -90,
-                                                                                     vjust = 0.5,
-                                                                                     size = 15)
+                                                                                     vjust = 0.5)
                                                )
                                              ))
 ##No CI
@@ -747,7 +746,7 @@ p_conf_relation_no_ci <- looplot::nested_loop_plot(resdf = design_main_text_no_c
                                              point_size = 4,
                                              line_size = 1.5,
                                              point_shapes = c(19,15),
-                                             steps_values_annotate = TRUE, steps_annotation_size = 6, steps_color='grey31',steps_annotation_color='grey31',
+                                             steps_values_annotate = TRUE, steps_annotation_size = 8, steps_color='grey31',steps_annotation_color='grey31',
                                              hline_intercept = c(0),
                                              hline_linetype =1,
                                              hline_size = c(0.5),
@@ -757,7 +756,7 @@ p_conf_relation_no_ci <- looplot::nested_loop_plot(resdf = design_main_text_no_c
                                              line_alpha =0.6,
                                              point_alpha = 0.8,
                                              legend_name = "DNCIT",
-                                             base_size = 24,
+                                             base_size = 30,
                                              replace_labels = list(
                                                Setting = c(#'No'='T1E',
                                                  'Yes'='Power'),
@@ -770,8 +769,7 @@ p_conf_relation_no_ci <- looplot::nested_loop_plot(resdf = design_main_text_no_c
                                              post_processing = list(
                                                add_custom_theme = list(
                                                  axis.text.x = ggplot2::element_text(angle = -90,
-                                                                                     vjust = 0.5,
-                                                                                     size = 15)
+                                                                                     vjust = 0.5)
                                                )
                                              ))
 
@@ -799,14 +797,14 @@ p_conf_relation_legend <- looplot::nested_loop_plot(resdf = design_legend,
                                                    point_size = 4,
                                                    line_size = 1.5,
                                                    point_shapes = c(19,15),
-                                                   steps_values_annotate = TRUE, steps_annotation_size = 6, steps_color='grey31',steps_annotation_color='grey31',
+                                                   steps_values_annotate = TRUE, steps_annotation_size = 7, steps_color='grey31',steps_annotation_color='grey31',
                                                    hline_intercept = c(0,0.05),
                                                    y_expand_add = c(0.1,0.15/2),
                                                    y_breaks = seq(0,1,0.2),
                                                    line_alpha =0.6,
                                                    point_alpha = 0.8,
                                                    legend_name = "DNCIT",
-                                                   base_size = 24,
+                                                   base_size = 28,
                                                    replace_labels = list(
                                                      Setting = c(#'No'='T1E',
                                                        'Yes'='Power'),
@@ -819,8 +817,7 @@ p_conf_relation_legend <- looplot::nested_loop_plot(resdf = design_legend,
                                                    post_processing = list(
                                                      add_custom_theme = list(
                                                        axis.text.x = ggplot2::element_text(angle = -90,
-                                                                                           vjust = 0.5,
-                                                                                           size = 15)
+                                                                                           vjust = 0.5)
                                                      )
                                                    ))
 p_conf_relation_ci_mod <- p_conf_relation_ci +
@@ -848,7 +845,7 @@ combined_plot <- plot_grid(
   rel_heights = c(1, 1.2)  # Adjust relative heights if needed
 )
 y_axis_label <- ggdraw() +
-    draw_label("Rejection Rate", x = 0.5, y = 0.6, angle = 90, vjust = 0.5, size = 24)  # Add y-axis label
+    draw_label("Rejection Rate", x = 0.5, y = 0.6, angle = 90, vjust = 0.5, size = 28)  # Add y-axis label
 combined_plot <- plot_grid(
   y_axis_label,  # Y-axis label on the left
   combined_plot,  # The stacked plots
@@ -867,7 +864,7 @@ p_conf_relation <- plot_grid(
   ncol = 1,  # Legend below, so keep 1 column
   rel_heights = c(1, 0.1)  # Adjust height ratios if needed
 )
-#ggplot2::ggsave(paste0(path_to_save_nested_loop_plots, 'all_dncits_nested_loop_conf_rel_power_T1E.png'), p_conf_relation, width = 16, height = 16, dpi = 300)
+#ggplot2::ggsave(paste0(path_to_save_nested_loop_plots, 'all_dncits_nested_loop_conf_rel_power_T1E.png'), p_conf_relation, width = 18, height = 16, dpi = 300)
 print(p_conf_relation)
 
 ############ conf dimension
@@ -1171,7 +1168,7 @@ p_conf_dim_ci <- looplot::nested_loop_plot(resdf = design_main_text_ci,
                                                 point_size = 4,
                                                 line_size = 1.5,
                                                 point_shapes = c(19,15),
-                                                steps_values_annotate = TRUE, steps_annotation_size = 6, steps_color='grey31',steps_annotation_color='grey31',
+                                                steps_values_annotate = TRUE, steps_annotation_size = 8, steps_color='grey31',steps_annotation_color='grey31',
                                                 hline_intercept = c(0,0.05),
                                                 hline_linetype =c(1),
                                                 hline_size = c(0.5,1.5),
@@ -1180,15 +1177,14 @@ p_conf_dim_ci <- looplot::nested_loop_plot(resdf = design_main_text_ci,
                                                 line_alpha =0.6,
                                                 point_alpha = 0.8,
                                                 legend_name = "DNCIT",
-                                                base_size = 24,
+                                                base_size = 30,
                                                 replace_labels = list(Setting = c('No'='T1E')
                                                 ),
                                                 grid_labeller = labeller('No'='T1E'),
                                                 post_processing = list(
                                                   add_custom_theme = list(
                                                     axis.text.x = ggplot2::element_text(angle = -90,
-                                                                                        vjust = 0.5,
-                                                                                        size = 15)
+                                                                                        vjust = 0.5)
                                                   )
                                                 ))
 ##No CI
@@ -1208,7 +1204,7 @@ p_conf_dim_no_ci <- looplot::nested_loop_plot(resdf = design_main_text_no_ci,
                                                    point_size = 4,
                                                    line_size = 1.5,
                                                    point_shapes = c(19,15),
-                                                   steps_values_annotate = TRUE, steps_annotation_size = 6, steps_color='grey31',steps_annotation_color='grey31',
+                                                   steps_values_annotate = TRUE, steps_annotation_size = 8, steps_color='grey31',steps_annotation_color='grey31',
                                                    hline_intercept = c(0),
                                                    hline_linetype =1,
                                                    hline_size = c(0.5),
@@ -1218,7 +1214,7 @@ p_conf_dim_no_ci <- looplot::nested_loop_plot(resdf = design_main_text_no_ci,
                                                    line_alpha =0.6,
                                                    point_alpha = 0.8,
                                                    legend_name = "DNCIT",
-                                                   base_size = 24,
+                                                   base_size = 30,
                                                    replace_labels = list(
                                                      Setting = c('Yes'='Power')
                                                    ),
@@ -1226,8 +1222,7 @@ p_conf_dim_no_ci <- looplot::nested_loop_plot(resdf = design_main_text_no_ci,
                                                    post_processing = list(
                                                      add_custom_theme = list(
                                                        axis.text.x = ggplot2::element_text(angle = -90,
-                                                                                           vjust = 0.5,
-                                                                                           size = 15)
+                                                                                           vjust = 0.5)
                                                      )
                                                    ))
 
@@ -1243,7 +1238,7 @@ methods_depicted <- colnames(design_legend)[-c(1:2, ncol(design_legend))]
 p_conf_dim_legend <- looplot::nested_loop_plot(resdf = design_legend,
                                                     x = "sample_sizes",
                                                     grid_rows = 'Setting',
-                                                    steps = "confounder",
+                                                    steps = "confounder dimension",
                                                     methods = methods_depicted,
                                                     steps_y_base = -0.1, steps_y_height = 0.05,,
                                                     legend_breaks = methods_depicted,  # Specify the desired order
@@ -1255,14 +1250,14 @@ p_conf_dim_legend <- looplot::nested_loop_plot(resdf = design_legend,
                                                     point_size = 4,
                                                     line_size = 1.5,
                                                     point_shapes = c(19,15),
-                                                    steps_values_annotate = TRUE, steps_annotation_size = 6, steps_color='grey31',steps_annotation_color='grey31',
+                                                    steps_values_annotate = TRUE, steps_annotation_size = 8, steps_color='grey31',steps_annotation_color='grey31',
                                                     hline_intercept = c(0,0.05),
                                                     y_expand_add = c(0.1,0.15/2),
                                                     y_breaks = seq(0,1,0.2),
                                                     line_alpha =0.6,
                                                     point_alpha = 0.8,
                                                     legend_name = "DNCIT",
-                                                    base_size = 24,
+                                                    base_size = 28,
                                                     replace_labels = list(
                                                       Setting = c(#'No'='T1E',
                                                         'Yes'='Power')
@@ -1272,8 +1267,7 @@ p_conf_dim_legend <- looplot::nested_loop_plot(resdf = design_legend,
                                                     post_processing = list(
                                                       add_custom_theme = list(
                                                         axis.text.x = ggplot2::element_text(angle = -90,
-                                                                                            vjust = 0.5,
-                                                                                            size = 15)
+                                                                                            vjust = 0.5)
                                                       )
                                                     ))
 p_conf_dim_ci_mod <- p_conf_dim_ci +
@@ -1301,7 +1295,7 @@ combined_plot <- plot_grid(
   rel_heights = c(1, 1.2)  # Adjust relative heights if needed
 )
 y_axis_label <- ggdraw() +
-  draw_label("Rejection Rate", x = 0.5, y = 0.6, angle = 90, vjust = 0.5, size = 24)  # Add y-axis label
+  draw_label("Rejection Rate", x = 0.5, y = 0.6, angle = 90, vjust = 0.5, size = 28)  # Add y-axis label
 combined_plot <- plot_grid(
   y_axis_label,  # Y-axis label on the left
   combined_plot,  # The stacked plots
@@ -1320,7 +1314,7 @@ p_conf_dim <- plot_grid(
   ncol = 1,  # Legend below, so keep 1 column
   rel_heights = c(1, 0.1)  # Adjust height ratios if needed
 )
-#ggplot2::ggsave(paste0(path_to_save_nested_loop_plots, 'all_dncits_nested_loop_conf_dim_main_text.png'), p_conf_dim, width = 16, height = 16, dpi = 300)
+#ggplot2::ggsave(paste0(path_to_save_nested_loop_plots, 'all_dncits_nested_loop_conf_dim_main_text.png'), p_conf_dim, width = 18, height = 16, dpi = 300)
 print(p_conf_dim)
 
 
@@ -1418,8 +1412,8 @@ design_runtime <- design
 
 ##nested loop plot
 
-design$confounder <- rep(c(1,2,4,6,10,15), each=10)
-colnames(design) <- c("sample_sizes", "confounder dimension",
+design_runtime$confounder <- rep(c(1,2,4,6,10,15), each=10)
+colnames(design_runtime) <- c("sample_sizes", "confounder dimension",
                       "Fastsurfer-RCOT", "Fastsurfer-WALD", "Fastsurfer-CPT_KPC", "Fastsurfer-FCIT", "Fastsurfer-CMIknn", "Fastsurfer-PCM",
                       "Freesurfer-RCOT", "Freesurfer-WALD", "Freesurfer-CPT_KPC", "Freesurfer-FCIT", "Freesurfer-CMIknn", "Freesurfer-PCM",
                       "cVAE-RCOT", "cVAE-WALD", "cVAE-CPT_KPC", "cVAE-FCIT", "cVAE-CMIknn", "cVAE-PCM")
@@ -1431,14 +1425,14 @@ custom_order <- c("sample_sizes", "confounder dimension",
                   "Fastsurfer-PCM", "Freesurfer-PCM","cVAE-PCM",
                   "Fastsurfer-WALD", "Freesurfer-WALD","cVAE-WALD")
 #resort columns
-design <- design[, custom_order]
-design <- design[design$'confounder' %in% c(1,10),]
-design <- design %>% select(-contains("Fastsurfer"))
+design_runtime <- design_runtime[, custom_order]
+design_runtime <- design_runtime[design_runtime$'confounder' %in% c(1,10),]
+design_runtime <- design_runtime %>% select(-contains("Fastsurfer"))
 # without PCM
-design <- design %>% select(-contains("PCM"))
-methods_depicted <- colnames(design)[-c(1:2)]
-y_lims = c(min(design[,-c(1,2)], na.rm = TRUE)-0.4, max(design[,-c(1,2)], na.rm = TRUE)+0.2)
-p_conf_dim_runtime <- looplot::nested_loop_plot(resdf = design,
+design_runtime <- design_runtime %>% select(-contains("PCM"))
+methods_depicted <- colnames(design_runtime)[-c(1:2)]
+y_lims = c(min(design_runtime[,-c(1,2)], na.rm = TRUE)-0.4, max(design_runtime[,-c(1,2)], na.rm = TRUE)+0.2)
+p_conf_dim_runtime <- looplot::nested_loop_plot(resdf = design_runtime,
                                        x = "sample_sizes",
                                        steps  = "confounder dimension",
                                        methods = methods_depicted,
@@ -1452,7 +1446,7 @@ p_conf_dim_runtime <- looplot::nested_loop_plot(resdf = design,
                                        point_size = 4,
                                        line_size = 1.5,
                                        point_shapes = rep(c(19,15),5),
-                                       steps_values_annotate = TRUE, steps_annotation_size = 6, steps_color='grey31',steps_annotation_color='grey31',
+                                       steps_values_annotate = TRUE, steps_annotation_size = 8, steps_color='grey31',steps_annotation_color='grey31',
                                        hline_intercept = y_lims[1]+0.4,
                                        y_expand_add = c(0.4,0.15),
                                        line_alpha =0.6,
@@ -1460,23 +1454,62 @@ p_conf_dim_runtime <- looplot::nested_loop_plot(resdf = design,
                                        ylim = y_lims,
                                        na_rm = FALSE,
                                        legend_name = "DNCIT",
-                                       base_size = 24,
+                                       base_size = 38,
                                        post_processing = list(
                                          add_custom_theme = list(
                                            axis.text.x = ggplot2::element_text(angle = -90,
-                                                                               vjust = 0.5,
-                                                                               size = 15)
+                                                                               vjust = 0.5)
                                          )
                                        ))
-p_conf_dim_runtime <- p_conf_dim_runtime + theme(legend.position = 'none') # Customize the legend
-  #guides(colour = guide_legend(nrow = 2, keywidth = 3, keyheight=1.5, override.aes = list(size = 4)))
+p_conf_dim_legend <- looplot::nested_loop_plot(resdf = design_legend,
+                                               x = "sample_sizes",
+                                               grid_rows = 'Setting',
+                                               steps = "confounder dimension",
+                                               methods = methods_depicted,
+                                               steps_y_base = -0.1, steps_y_height = 0.05,,
+                                               legend_breaks = methods_depicted,  # Specify the desired order
+                                               legend_labels = methods_depicted,  # Custom labels if needed
+                                               x_name = "Sample size", y_name = "Rejection rate",
+                                               spu_x_shift = 1,
+                                               colors = palet_discrete[rep(c(1,2,3,4,7), each=2)],
+                                               line_linetypes = c(1,3),
+                                               point_size = 4,
+                                               line_size = 1.5,
+                                               point_shapes = c(19,15),
+                                               steps_values_annotate = TRUE, steps_annotation_size = 8, steps_color='grey31',steps_annotation_color='grey31',
+                                               hline_intercept = c(0,0.05),
+                                               y_expand_add = c(0.1,0.15/2),
+                                               y_breaks = seq(0,1,0.2),
+                                               line_alpha =0.6,
+                                               point_alpha = 0.8,
+                                               legend_name = "DNCIT",
+                                               base_size = 31,
+                                               replace_labels = list(
+                                                 Setting = c(#'No'='T1E',
+                                                   'Yes'='Power')
+                                               ),
+                                               grid_labeller = labeller(#'No'='T1E',
+                                                 'Yes'='Power'),
+                                               post_processing = list(
+                                                 add_custom_theme = list(
+                                                   axis.text.x = ggplot2::element_text(angle = -90,
+                                                                                       vjust = 0.5)
+                                                 )
+                                               ))
+# Apply guides() to modify the legend appearance (e.g., number of rows, key size)
+p_conf_dim_no_ci_legend <- p_conf_dim_legend +  # Customize the legend
+  guides(colour = guide_legend(nrow = 2, keywidth = 3, keyheight=1.5, override.aes = list(size = 4)))
+
+# Use cowplot's get_legend() to extract the modified legend
+legend <- get_legend(p_conf_dim_no_ci_legend)
+p_conf_dim_runtime <- p_conf_dim_runtime + theme(legend.position = 'none')
 p_conf_dim_runtime <- plot_grid(
   p_conf_dim_runtime,  # Stacked plots
   legend,  # Legend below the plots
   ncol = 1,  # Legend below, so keep 1 column
   rel_heights = c(1, 0.1)  # Adjust height ratios if needed
 )
-#ggplot2::ggsave(paste0(path_to_save_nested_loop_plots, 'all_dncits_nested_loop_conf_dim_runtime.png'), p_conf_dim_runtime, width = 16, height = 13, dpi = 300)
+#ggplot2::ggsave(paste0(path_to_save_nested_loop_plots, 'all_dncits_nested_loop_conf_dim_runtime.png'), p_conf_dim_runtime, width = 20, height = 16, dpi = 300)
 print(p_conf_dim_runtime)
 
 
