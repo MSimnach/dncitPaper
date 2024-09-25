@@ -62,7 +62,7 @@ settings <- settings[c(25:28, 31, 35, 7, 39, 43),]
 for (cit in cits){
   for (i in 1:nrow(settings)) {
     setting <- paste(settings[i,], collapse = " ")
-    command <- paste("Rscript raw_code/sim_ukb_brainmri.R", setting, cit)
+    command <- paste("Rscript simulation_study/sim_ukb_brainmri.R", setting, cit)
 
     # Execute the command
     system(command)
@@ -71,7 +71,7 @@ for (cit in cits){
 
 
 #### To obtain .txt files which can be copied into the .sh files
-settings_g_z <- data.frame(cit = rep('Rscript'), script=rep('raw_code/sim_ukb_brainmri.R'),
+settings_g_z <- data.frame(cit = rep('Rscript'), script=rep('simulation_study/sim_ukb_brainmri.R'),
   dependence = rep(c('/CI/', '/No_CI/'), each = 12),
   fct_relation = rep('1', 24),
   eps_sigmaX = rep(c(0, 3, 0, 0), 6),
@@ -83,7 +83,7 @@ settings_g_z <- data.frame(cit = rep('Rscript'), script=rep('raw_code/sim_ukb_br
   response =  rep(rep(c('linear', 'squared', 'realistic'), each=4), 2)
 )
 
-settings_dim_z <- data.frame(cit = rep('Rscript'), script=rep('raw_code/sim_ukb_brainmri.R'),
+settings_dim_z <- data.frame(cit = rep('Rscript'), script=rep('simulation_study/sim_ukb_brainmri.R'),
   dependence = rep(c('/CI/', '/No_CI/'), each = 24),
   fct_relation = rep('1', 48),
   eps_sigmaX = rep(c(0, 3, 0, 0), 12),

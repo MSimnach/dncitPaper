@@ -5,4 +5,5 @@
 inst/logs
 inst/Results
 inst/old_results
-inst/raw_code/slurm/
+inst/raw_code/
+R/create_test_plot.R
