@@ -153,6 +153,8 @@ res_time <- foreach::foreach (i= n_seeds, .packages = pkgs_for_each) %dopar% {
                                                        cit_params <- list(cit='comets')
                                                      }else if(args[10]=='comets_gcm'){
                                                        cit_params <- list(cit='comets', params_cit=list(method='gcm', alternative='less'))
+                                                     }else if(args[10]=='ccit'){
+                                                       cit_params <- list(cit='ccit', params_cit=list(n_estimators = list(as.integer(100))))
                                                      }else if(args[10]=='pred_cit'){
                                                         min_samples <- min(unlist(n_sample))
                                                         max_samples <- max(unlist(n_sample))
@@ -255,6 +257,8 @@ res_time <- foreach::foreach (i= n_seeds, .packages = pkgs_for_each) %dopar% {
                                                          cit_params <- list(cit='comets')
                                                        }else if(args[10]=='comets_gcm'){
                                                          cit_params <- list(cit='comets', params_cit=list(method='gcm', alternative='less'))
+                                                       }else if(args[10]=='ccit'){
+                                                         cit_params <- list(cit='ccit', params_cit=list(n_estimators = list(as.integer(100))))
                                                        }else if(args[10]=='pred_cit'){
                                                         min_samples <- min(unlist(n_sample))
                                                         max_samples <- max(unlist(n_sample))
