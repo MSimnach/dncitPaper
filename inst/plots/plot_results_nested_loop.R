@@ -2,6 +2,9 @@
 library(dplyr)
 library(looplot)
 library(cowplot)
+library(ggplot2)
+library(gridExtra)
+library(grid)
 #### For presentations
 ##color palettes for plotting
 palet_discrete <- paletteer::paletteer_d("colorBlindness::Blue2Orange10Steps")
@@ -1513,6 +1516,324 @@ p_conf_dim_runtime <- plot_grid(
 print(p_conf_dim_runtime)
 
 
+
+#####QQ plots
+palet_discrete <- paletteer::paletteer_d("ggthemes::Classic_10_Medium")
+## conf dim 6, conf relationship complex
+folder_path_qq <- "Results\\CI\\p-values"
+#folder_path_qq <- "Results\\No_CI\\p-values"
+all_files_qq <- list.files(folder_path_qq, full.names = TRUE)
+all_files_qq <- all_files_qq[setdiff(1:length(all_files_qq), grep('2_0_1_0|2_3_1_0|3_0_1_0|3_3_1_0|4_0_1_0|4_3_1_0|5_0_1_0|5_3_1_0', all_files_qq))]
+
+### 1) Data preparation for nested loop over
+# loop 1: confounder dimension (1,2,4,6,10,15) [APPENDIX] vs confounder dimension (1,2,10) [MAIN TEXT]
+# loop 2: sample size
+# fixed confounder relationship (squared terms of all continuous confounders)
+cit_patterns <- "WALD|RCOT|kpc_graph|FCIT|CMIknn|comets_pcm"
+cit_files <- grep(cit_patterns, all_files_qq, value=TRUE)
+files_qq_squared <- grep("squared", cit_files, value=TRUE)
+files_qq_dim_6 <- grep("ukb_z6", files_qq_squared, value=TRUE)
+files_qq <- grep("freesurfer", files_qq_dim_6, value=TRUE)
+#files_qq_squared <- grep("squared", cit_files, value=TRUE)
+#files_qq_dim_6 <- grep("ukb_z1_", files_qq_squared, value=TRUE)
+#files_qq <- grep("freesurfer", files_qq_dim_6, value=TRUE)
+
+dncits <- c('RCOT', 'kpc_graph', 'FCIT', 'CMIknn', 'WALD')#, 'comets_pcm')
+p_values <- list()
+for(dncit in dncits){
+    files_dncit <- grep(dncit, files_qq, value = TRUE)
+    df <- read.csv(files_dncit, header = TRUE, sep = ",")
+    df <- df[,-c(4,6,8,9)]
+    p_values[[dncit]] <- df
+}
+
+sample_sizes <- c(145, 256, 460, 1100, 5000, 10000)
+
+
+# Determine the maximum number of columns (excluding the first column) across all data frames
+max_cols <- max(sapply(p_values, function(df) ncol(df) - 1))
+# Calculate the number of rows (number of dncits) and columns (maximum columns in data frames)
+n_rows <- length(p_values)
+n_cols <- max_cols
+# List to store all the plots
+plot_list <- list()
+
+# Generate a palette with enough colors
+colors <- setNames(palet_discrete[c(1,2,3,4,7)], dncits)
+
+# Loop over each data frame in p_values
+for (dncit_name in names(p_values)) {
+  df <- p_values[[dncit_name]]
+  num_cols <- ncol(df) - 1  # Exclude the first column
+  plots_row <- list()       # Store plots for the current row
+
+  # Loop over the maximum number of columns
+  for (col_idx in 2:(max_cols + 1)) {
+    if (dncit_name == "WALD"){
+      if (col_idx == 2){
+        # Create an empty plot
+        p <- ggplot() +
+          ggtitle(paste(dncit_name, "- Column", col_idx - 1)) +
+          theme_void() +
+          annotate("text", x = 0.5, y = 0.5, label = "Theoretically inapplicable", size = 5, hjust = 0.5)
+        p <- p + theme(
+          axis.title.x = element_blank(),
+          axis.text.x = element_blank(),
+          axis.ticks.x = element_blank(),
+          axis.title.y = element_blank(),
+          axis.text.y = element_blank(),
+          axis.ticks.y = element_blank(),
+          plot.title = element_blank(),
+          text = element_text(size = 14)
+        )
+        p <- p + theme(
+          axis.title.y = element_blank(),
+          axis.title.x = element_blank(),
+          plot.title = element_blank(),
+          text = element_text(size = 14)
+        )
+
+        plots_row[[length(plots_row) + 1]] <- p
+        # Create an empty plot
+        p <- ggplot() +
+          ggtitle(paste(dncit_name, "- Column", col_idx)) +
+          theme_void() +
+          annotate("text", x = 0.5, y = 0.5, label = "Theoretically inapplicable", size = 5, hjust = 0.5)
+        p <- p + theme(
+          axis.title.x = element_blank(),
+          axis.text.x = element_blank(),
+          axis.ticks.x = element_blank(),
+          axis.title.y = element_blank(),
+          axis.text.y = element_blank(),
+          axis.ticks.y = element_blank(),
+          plot.title = element_blank(),
+          text = element_text(size = 14)
+        )
+        p <- p + theme(
+          axis.title.y = element_blank(),
+          axis.title.x = element_blank(),
+          plot.title = element_blank(),
+          text = element_text(size = 14)
+        )
+
+        plots_row[[length(plots_row) + 1]] <- p
+
+        # Extract p-values from the current column
+        p_vals <- df[[col_idx]]
+        # Remove NA values
+        p_vals <- p_vals[!is.na(p_vals)]
+        ks <- round(ks.test(p_vals, "punif")[1]$statistic,3)
+
+        # Create a data frame for plotting
+        plot_df <- data.frame(
+          Observed = sort(p_vals),
+          Theoretical = qunif(ppoints(length(p_vals)))
+        )
+
+        # Create the QQ plot
+        p <- ggplot(plot_df, aes(sample = Observed)) +
+          stat_qq(distribution = stats::qunif, color = colors[dncit_name]) +
+          geom_abline(slope = 1, intercept = 0, color = "black") +
+          ggtitle(paste(dncit_name, "- Column", col_idx + 1)) +
+          xlab(ks) +
+          ylab("Sample Quantiles") +
+          theme_minimal() +
+          coord_cartesian(xlim = c(0, 1), ylim = c(0, 1))
+        p <- p + theme(
+          #axis.title.x = element_blank(),
+          axis.text.x = element_blank(),
+          axis.ticks.x = element_blank(),
+          axis.title.y = element_blank(),
+          axis.text.y = element_blank(),
+          axis.ticks.y = element_blank(),
+          plot.title = element_blank(),
+          text = element_text(size = 14)
+        )
+
+        plots_row[[length(plots_row) + 1]] <- p
+      }else{
+        if (col_idx <= ncol(df)) {
+          # Extract p-values from the current column
+          p_vals <- df[[col_idx]]
+          # Remove NA values
+          p_vals <- p_vals[!is.na(p_vals)]
+          ks <- round(ks.test(p_vals, "punif")[1]$statistic,3)
+
+          # Create a data frame for plotting
+          plot_df <- data.frame(
+            Observed = sort(p_vals),
+            Theoretical = qunif(ppoints(length(p_vals)))
+          )
+
+          # Create the QQ plot
+          p <- ggplot(plot_df, aes(sample = Observed)) +
+            stat_qq(distribution = stats::qunif, color = colors[dncit_name]) +
+            geom_abline(slope = 1, intercept = 0, color = "black") +
+            ggtitle(paste(dncit_name, "- Column", col_idx + 1)) +
+            xlab(ks) +
+            ylab("Sample Quantiles") +
+            theme_minimal() +
+            coord_cartesian(xlim = c(0, 1), ylim = c(0, 1))
+          p <- p + theme(
+            axis.title.y = element_blank(),
+            #axis.title.x = element_blank(),
+            plot.title = element_blank(),
+            text = element_text(size = 14)
+          )
+          if(col_idx!=ncol(df)){
+            p <- p + theme(
+              #axis.title.x = element_blank(),
+              axis.text.x = element_blank(),
+              axis.ticks.x = element_blank(),
+              axis.title.y = element_blank(),
+              axis.text.y = element_blank(),
+              axis.ticks.y = element_blank(),
+              plot.title = element_blank(),
+              text = element_text(size = 14)
+            )
+          }else{
+            p <- p + theme(
+              axis.title.y = element_blank(),
+              axis.text.y = element_blank(),
+              axis.ticks.y = element_blank(),
+              plot.title = element_blank(),
+              text = element_text(size = 14)
+            )
+          }
+          plots_row[[length(plots_row) + 1]] <- p
+        }
+      }
+    }else{
+      if (col_idx <= ncol(df)) {
+        # Extract p-values from the current column
+        p_vals <- df[[col_idx]]
+        # Remove NA values
+        p_vals <- p_vals[!is.na(p_vals)]
+        ks <- round(ks.test(p_vals, "punif")[1]$statistic,3)
+
+        # Create a data frame for plotting
+        plot_df <- data.frame(
+          Observed = sort(p_vals),
+          Theoretical = qunif(ppoints(length(p_vals)))
+        )
+
+        # Create the QQ plot
+        p <- ggplot(plot_df, aes(sample = Observed)) +
+          stat_qq(distribution = stats::qunif, color = colors[dncit_name]) +
+          geom_abline(slope = 1, intercept = 0, color = "black") +
+          ggtitle(paste(dncit_name, "- Column", col_idx - 1)) +
+          xlab(ks) +
+          ylab(sample_sizes[col_idx-1]) +
+          theme_minimal()+
+          coord_cartesian(xlim = c(0, 1), ylim = c(0, 1))
+        p <- p + theme(
+          axis.title.y = element_blank(),
+          #axis.title.x = element_blank(),
+          plot.title = element_blank(),
+          text = element_text(size = 14)
+        )
+        if(col_idx!=(max_cols+1) & dncit_name!='RCOT'){
+          p <- p + theme(
+            #axis.title.x = element_blank(),
+            axis.text.x = element_blank(),
+            axis.ticks.x = element_blank(),
+            axis.title.y = element_blank(),
+            axis.text.y = element_blank(),
+            axis.ticks.y = element_blank(),
+            plot.title = element_blank(),
+            text = element_text(size = 14)
+          )
+        }else if(col_idx == (max_cols+1) & dncit_name!='RCOT'){
+            p <- p + theme(
+              axis.title.y = element_blank(),
+              axis.text.y = element_blank(),
+              axis.ticks.y = element_blank(),
+              plot.title = element_blank(),
+              text = element_text(size = 14)
+            )
+        }else if(col_idx != (max_cols+1) & dncit_name=='RCOT'){
+          p <- p + theme(
+            #axis.title.x = element_blank(),
+            axis.text.x = element_blank(),
+            axis.ticks.x = element_blank(),
+            plot.title = element_blank(),
+            text = element_text(size = 14)
+          )
+        }
+        if(dncit_name=='RCOT'){
+          p <- p + theme(
+            axis.title.y = element_text(angle=90,margin = margin(t = 0, r = 5, b = 0, l = 0))
+          )
+        }
+        plots_row[[length(plots_row) + 1]] <- p
+      } else {
+        # Create an empty plot
+        p <- ggplot() +
+          ggtitle(paste(dncit_name, "- Column", col_idx - 1)) +
+          theme_void() +
+          annotate("text", x = 0.5, y = 0.5, label = "Computational restrictions", size = 5, hjust = 0.5)
+        p <- p + theme(
+          axis.title.y = element_blank(),
+          axis.title.x = element_blank(),
+          plot.title = element_blank(),
+          text = element_text(size = 14)
+        )
+        if(col_idx!=max_cols){
+          p <- p + theme(
+            axis.title.x = element_blank(),
+            axis.text.x = element_blank(),
+            axis.ticks.x = element_blank(),
+            axis.title.y = element_blank(),
+            axis.text.y = element_blank(),
+            axis.ticks.y = element_blank(),
+            plot.title = element_blank(),
+            text = element_text(size = 14)
+          )
+        }else{
+          p <- p + theme(
+            axis.title.y = element_blank(),
+            axis.text.y = element_blank(),
+            axis.ticks.y = element_blank(),
+            plot.title = element_blank(),
+            text = element_text(size = 14)
+          )
+        }
+
+        plots_row[[length(plots_row) + 1]] <- p
+      }
+  }
+  # Add the row of plots to the main plot list
+  }
+  plot_list <- c(plot_list, plots_row)
+}
+
+col_names <- c('Freesurfer-RCOT', 'Freesurfer-CPT-KPC', 'Freesurfer-FCIT', 'Freesurfer-CMIknn', 'Freesurfer-WALD')
+# Create text grobs for the titles
+title_grobs <- lapply(col_names, function(title) {
+  textGrob(title, gp = gpar(fontsize = 18, fontface="bold"), just = "center")
+})
+
+# Combine the title grobs and plot list
+grob_list <- c(title_grobs, plot_list)
+
+# Create a layout matrix to arrange plots row-wise
+layout_matrix <- rbind(matrix(1:n_rows, nrow=1, ncol=n_rows),matrix(c((n_rows + 1):(n_rows + n_rows * n_cols)), nrow=n_cols, byrow=FALSE))
+
+
+# Arrange all the plots into a grid using the layout matrix
+grid_plots <- gridExtra::grid.arrange(
+  grobs = grob_list,
+  layout_matrix = layout_matrix,
+  bottom = "Theoretical Quantiles",
+  left = "Sample Quantiles",
+  heights = unit.c(unit(1, "lines"), unit(1.1,"null"), rep(unit(1, "null"), n_cols-1))
+)
+# Display the grid of plots
+grid::grid.newpage()
+grid::grid.draw(grid_plots)
+
+# ggsave(paste0(path_to_save_nested_loop_plots,"qq_plot_dim6_squared_freesurfer_ci.png"), grid_plots, width = 12, height = 12)
+# ggsave(paste0(path_to_save_nested_loop_plots,"qq_plot_dim1_squared_freesurfer_no_ci.png"), grid_plots, width = 12, height = 12)
 
 ##### Tables for detailed results
 library(xtable)
