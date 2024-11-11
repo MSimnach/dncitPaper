@@ -133,10 +133,3 @@ to_latex_text <- function(lst) {
   return(latex_str)
 }
 to_latex_text(rcots_p_mean)
-
-
-### 2) Additional confounders
-X <- as.matrix(mri_neuroticism_dummy[, brain_structures])
-confounder <- as.matrix(mri_neuroticism_dummy[, personality_traits])
-Z <- sapply(as.data.frame(mri_neuroticism_dummy[, names(mri_neuroticism_dummy) %in% confounders[confounders!='age']]), as.numeric)
-age <- mri_neuroticism_dummy[,'age']
