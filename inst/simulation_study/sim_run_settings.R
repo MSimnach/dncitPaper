@@ -28,7 +28,7 @@ if(FALSE){
   )
 }
 
-cits <- c('RCOT 1')#'FCIT', 'WALD', 'cpi', CMIknn', 'comets_gcm', 'comets_pcm', 'pred_cit','kpc_graph 2 10'
+cits <- c('ccit')#'RCOT 1', 'FCIT', 'WALD', 'cpi', CMIknn', 'comets_gcm', 'comets_pcm', 'pred_cit','kpc_graph 2 10'
 #settings <- settings#[c(41, 61,81,101,121,141,161),]
 #runtime settings
 settings_dim_z <- data.frame(dependence = rep(c('/CI/', '/No_CI/'), each = 24),
