@@ -20,6 +20,7 @@ path_to_freesurfer_aseg_ids <- paste0(path_to_ukb,'ids/ids_freesurfer_ASEG.csv')
 path_to_save_ids_brain_avinun <- paste0(path_to_ukb,'ids/ids_brain_avinun.csv')
 path_to_save_ids_confounder_avinun <- paste0(path_to_ukb,'ids/ids_confounder_avinun.csv')
 path_to_save_ids_personality_avinun <- paste0(path_to_ukb, 'ids/ids_personality_avinun.csv')
+path_to_save_ids_personality <- paste0(path_to_ukb,'ids/ids_personality.csv')
 # paths to save results
 path_to_save_preprocessed_data <- paste0(path_to_ukb,'ukb_free_fast_behavior_healthy.csv')
 path_to_save_ukb_avinun <- paste0(path_to_ukb,'ukb_avinun.csv')
@@ -47,6 +48,10 @@ ids_all <- c(ids_confounders, ids_brain_structure, ids_personality)
 
 ### 1.1) Confounder control: test if nonlinear relationships with confounders are satisfactory addressed in Wald tests (Avinun+RCoT)
 confounders_short <- c('age', 'sex', 'genes', 'head_size', 'head_position', 'date_diff', 'site')
+confounders <- c(grep("^site_", colnames(ukb_avinun), value=TRUE),
+                 'sex', 'age', 'date_diff',
+                 'head_size', 'head_location1', 'head_location2','head_location3','head_location4',
+                 'qc_discrepancy', 'gene1', 'gene2', 'gene3', 'gene4', 'gene5')
 brain_structures_lin_unconfounded <- list()
 # for each confounder compute linearly unconfounded brain structure measurements
 for(confounder in confounders_short){
@@ -128,10 +133,3 @@ to_latex_text <- function(lst) {
   return(latex_str)
 }
 to_latex_text(rcots_p_mean)
-
-
-### 2) Additional confounders
-X <- as.matrix(mri_neuroticism_dummy[, brain_structures])
-confounder <- as.matrix(mri_neuroticism_dummy[, personality_traits])
-Z <- sapply(as.data.frame(mri_neuroticism_dummy[, names(mri_neuroticism_dummy) %in% confounders[confounders!='age']]), as.numeric)
-age <- mri_neuroticism_dummy[,'age']

@@ -2,6 +2,9 @@
 library(dplyr)
 library(looplot)
 library(cowplot)
+library(ggplot2)
+library(gridExtra)
+library(grid)
 #### For presentations
 ##color palettes for plotting
 palet_discrete <- paletteer::paletteer_d("colorBlindness::Blue2Orange10Steps")
@@ -706,7 +709,7 @@ p_conf_relation_ci <- looplot::nested_loop_plot(resdf = design_main_text_ci,
                                              point_size = 4,
                                              line_size = 1.5,
                                              point_shapes = c(19,15),
-                                             steps_values_annotate = TRUE, steps_annotation_size = 6, steps_color='grey31',steps_annotation_color='grey31',
+                                             steps_values_annotate = TRUE, steps_annotation_size = 8, steps_color='grey31',steps_annotation_color='grey31',
                                              hline_intercept = c(0,0.05),
                                              hline_linetype =c(1),
                                              hline_size = c(0.5,1.5),
@@ -715,7 +718,7 @@ p_conf_relation_ci <- looplot::nested_loop_plot(resdf = design_main_text_ci,
                                              line_alpha =0.6,
                                              point_alpha = 0.8,
                                              legend_name = "DNCIT",
-                                             base_size = 24,
+                                             base_size = 30,
                                              replace_labels = list(
                                                Setting = c('No'='T1E'),
                                                confounder = c('1'='linear',
@@ -726,8 +729,7 @@ p_conf_relation_ci <- looplot::nested_loop_plot(resdf = design_main_text_ci,
                                              post_processing = list(
                                                add_custom_theme = list(
                                                  axis.text.x = ggplot2::element_text(angle = -90,
-                                                                                     vjust = 0.5,
-                                                                                     size = 15)
+                                                                                     vjust = 0.5)
                                                )
                                              ))
 ##No CI
@@ -747,7 +749,7 @@ p_conf_relation_no_ci <- looplot::nested_loop_plot(resdf = design_main_text_no_c
                                              point_size = 4,
                                              line_size = 1.5,
                                              point_shapes = c(19,15),
-                                             steps_values_annotate = TRUE, steps_annotation_size = 6, steps_color='grey31',steps_annotation_color='grey31',
+                                             steps_values_annotate = TRUE, steps_annotation_size = 8, steps_color='grey31',steps_annotation_color='grey31',
                                              hline_intercept = c(0),
                                              hline_linetype =1,
                                              hline_size = c(0.5),
@@ -757,7 +759,7 @@ p_conf_relation_no_ci <- looplot::nested_loop_plot(resdf = design_main_text_no_c
                                              line_alpha =0.6,
                                              point_alpha = 0.8,
                                              legend_name = "DNCIT",
-                                             base_size = 24,
+                                             base_size = 30,
                                              replace_labels = list(
                                                Setting = c(#'No'='T1E',
                                                  'Yes'='Power'),
@@ -770,8 +772,7 @@ p_conf_relation_no_ci <- looplot::nested_loop_plot(resdf = design_main_text_no_c
                                              post_processing = list(
                                                add_custom_theme = list(
                                                  axis.text.x = ggplot2::element_text(angle = -90,
-                                                                                     vjust = 0.5,
-                                                                                     size = 15)
+                                                                                     vjust = 0.5)
                                                )
                                              ))
 
@@ -799,14 +800,14 @@ p_conf_relation_legend <- looplot::nested_loop_plot(resdf = design_legend,
                                                    point_size = 4,
                                                    line_size = 1.5,
                                                    point_shapes = c(19,15),
-                                                   steps_values_annotate = TRUE, steps_annotation_size = 6, steps_color='grey31',steps_annotation_color='grey31',
+                                                   steps_values_annotate = TRUE, steps_annotation_size = 7, steps_color='grey31',steps_annotation_color='grey31',
                                                    hline_intercept = c(0,0.05),
                                                    y_expand_add = c(0.1,0.15/2),
                                                    y_breaks = seq(0,1,0.2),
                                                    line_alpha =0.6,
                                                    point_alpha = 0.8,
                                                    legend_name = "DNCIT",
-                                                   base_size = 24,
+                                                   base_size = 28,
                                                    replace_labels = list(
                                                      Setting = c(#'No'='T1E',
                                                        'Yes'='Power'),
@@ -819,8 +820,7 @@ p_conf_relation_legend <- looplot::nested_loop_plot(resdf = design_legend,
                                                    post_processing = list(
                                                      add_custom_theme = list(
                                                        axis.text.x = ggplot2::element_text(angle = -90,
-                                                                                           vjust = 0.5,
-                                                                                           size = 15)
+                                                                                           vjust = 0.5)
                                                      )
                                                    ))
 p_conf_relation_ci_mod <- p_conf_relation_ci +
@@ -848,7 +848,7 @@ combined_plot <- plot_grid(
   rel_heights = c(1, 1.2)  # Adjust relative heights if needed
 )
 y_axis_label <- ggdraw() +
-    draw_label("Rejection Rate", x = 0.5, y = 0.6, angle = 90, vjust = 0.5, size = 24)  # Add y-axis label
+    draw_label("Rejection Rate", x = 0.5, y = 0.6, angle = 90, vjust = 0.5, size = 28)  # Add y-axis label
 combined_plot <- plot_grid(
   y_axis_label,  # Y-axis label on the left
   combined_plot,  # The stacked plots
@@ -867,7 +867,7 @@ p_conf_relation <- plot_grid(
   ncol = 1,  # Legend below, so keep 1 column
   rel_heights = c(1, 0.1)  # Adjust height ratios if needed
 )
-#ggplot2::ggsave(paste0(path_to_save_nested_loop_plots, 'all_dncits_nested_loop_conf_rel_power_T1E.png'), p_conf_relation, width = 16, height = 16, dpi = 300)
+#ggplot2::ggsave(paste0(path_to_save_nested_loop_plots, 'all_dncits_nested_loop_conf_rel_power_T1E.png'), p_conf_relation, width = 18, height = 16, dpi = 300)
 print(p_conf_relation)
 
 ############ conf dimension
@@ -1171,7 +1171,7 @@ p_conf_dim_ci <- looplot::nested_loop_plot(resdf = design_main_text_ci,
                                                 point_size = 4,
                                                 line_size = 1.5,
                                                 point_shapes = c(19,15),
-                                                steps_values_annotate = TRUE, steps_annotation_size = 6, steps_color='grey31',steps_annotation_color='grey31',
+                                                steps_values_annotate = TRUE, steps_annotation_size = 8, steps_color='grey31',steps_annotation_color='grey31',
                                                 hline_intercept = c(0,0.05),
                                                 hline_linetype =c(1),
                                                 hline_size = c(0.5,1.5),
@@ -1180,15 +1180,14 @@ p_conf_dim_ci <- looplot::nested_loop_plot(resdf = design_main_text_ci,
                                                 line_alpha =0.6,
                                                 point_alpha = 0.8,
                                                 legend_name = "DNCIT",
-                                                base_size = 24,
+                                                base_size = 30,
                                                 replace_labels = list(Setting = c('No'='T1E')
                                                 ),
                                                 grid_labeller = labeller('No'='T1E'),
                                                 post_processing = list(
                                                   add_custom_theme = list(
                                                     axis.text.x = ggplot2::element_text(angle = -90,
-                                                                                        vjust = 0.5,
-                                                                                        size = 15)
+                                                                                        vjust = 0.5)
                                                   )
                                                 ))
 ##No CI
@@ -1208,7 +1207,7 @@ p_conf_dim_no_ci <- looplot::nested_loop_plot(resdf = design_main_text_no_ci,
                                                    point_size = 4,
                                                    line_size = 1.5,
                                                    point_shapes = c(19,15),
-                                                   steps_values_annotate = TRUE, steps_annotation_size = 6, steps_color='grey31',steps_annotation_color='grey31',
+                                                   steps_values_annotate = TRUE, steps_annotation_size = 8, steps_color='grey31',steps_annotation_color='grey31',
                                                    hline_intercept = c(0),
                                                    hline_linetype =1,
                                                    hline_size = c(0.5),
@@ -1218,7 +1217,7 @@ p_conf_dim_no_ci <- looplot::nested_loop_plot(resdf = design_main_text_no_ci,
                                                    line_alpha =0.6,
                                                    point_alpha = 0.8,
                                                    legend_name = "DNCIT",
-                                                   base_size = 24,
+                                                   base_size = 30,
                                                    replace_labels = list(
                                                      Setting = c('Yes'='Power')
                                                    ),
@@ -1226,8 +1225,7 @@ p_conf_dim_no_ci <- looplot::nested_loop_plot(resdf = design_main_text_no_ci,
                                                    post_processing = list(
                                                      add_custom_theme = list(
                                                        axis.text.x = ggplot2::element_text(angle = -90,
-                                                                                           vjust = 0.5,
-                                                                                           size = 15)
+                                                                                           vjust = 0.5)
                                                      )
                                                    ))
 
@@ -1243,7 +1241,7 @@ methods_depicted <- colnames(design_legend)[-c(1:2, ncol(design_legend))]
 p_conf_dim_legend <- looplot::nested_loop_plot(resdf = design_legend,
                                                     x = "sample_sizes",
                                                     grid_rows = 'Setting',
-                                                    steps = "confounder",
+                                                    steps = "confounder dimension",
                                                     methods = methods_depicted,
                                                     steps_y_base = -0.1, steps_y_height = 0.05,,
                                                     legend_breaks = methods_depicted,  # Specify the desired order
@@ -1255,14 +1253,14 @@ p_conf_dim_legend <- looplot::nested_loop_plot(resdf = design_legend,
                                                     point_size = 4,
                                                     line_size = 1.5,
                                                     point_shapes = c(19,15),
-                                                    steps_values_annotate = TRUE, steps_annotation_size = 6, steps_color='grey31',steps_annotation_color='grey31',
+                                                    steps_values_annotate = TRUE, steps_annotation_size = 8, steps_color='grey31',steps_annotation_color='grey31',
                                                     hline_intercept = c(0,0.05),
                                                     y_expand_add = c(0.1,0.15/2),
                                                     y_breaks = seq(0,1,0.2),
                                                     line_alpha =0.6,
                                                     point_alpha = 0.8,
                                                     legend_name = "DNCIT",
-                                                    base_size = 24,
+                                                    base_size = 28,
                                                     replace_labels = list(
                                                       Setting = c(#'No'='T1E',
                                                         'Yes'='Power')
@@ -1272,8 +1270,7 @@ p_conf_dim_legend <- looplot::nested_loop_plot(resdf = design_legend,
                                                     post_processing = list(
                                                       add_custom_theme = list(
                                                         axis.text.x = ggplot2::element_text(angle = -90,
-                                                                                            vjust = 0.5,
-                                                                                            size = 15)
+                                                                                            vjust = 0.5)
                                                       )
                                                     ))
 p_conf_dim_ci_mod <- p_conf_dim_ci +
@@ -1301,7 +1298,7 @@ combined_plot <- plot_grid(
   rel_heights = c(1, 1.2)  # Adjust relative heights if needed
 )
 y_axis_label <- ggdraw() +
-  draw_label("Rejection Rate", x = 0.5, y = 0.6, angle = 90, vjust = 0.5, size = 24)  # Add y-axis label
+  draw_label("Rejection Rate", x = 0.5, y = 0.6, angle = 90, vjust = 0.5, size = 28)  # Add y-axis label
 combined_plot <- plot_grid(
   y_axis_label,  # Y-axis label on the left
   combined_plot,  # The stacked plots
@@ -1320,7 +1317,7 @@ p_conf_dim <- plot_grid(
   ncol = 1,  # Legend below, so keep 1 column
   rel_heights = c(1, 0.1)  # Adjust height ratios if needed
 )
-#ggplot2::ggsave(paste0(path_to_save_nested_loop_plots, 'all_dncits_nested_loop_conf_dim_main_text.png'), p_conf_dim, width = 16, height = 16, dpi = 300)
+#ggplot2::ggsave(paste0(path_to_save_nested_loop_plots, 'all_dncits_nested_loop_conf_dim_main_text.png'), p_conf_dim, width = 18, height = 16, dpi = 300)
 print(p_conf_dim)
 
 
@@ -1418,8 +1415,8 @@ design_runtime <- design
 
 ##nested loop plot
 
-design$confounder <- rep(c(1,2,4,6,10,15), each=10)
-colnames(design) <- c("sample_sizes", "confounder dimension",
+design_runtime$confounder <- rep(c(1,2,4,6,10,15), each=10)
+colnames(design_runtime) <- c("sample_sizes", "confounder dimension",
                       "Fastsurfer-RCOT", "Fastsurfer-WALD", "Fastsurfer-CPT_KPC", "Fastsurfer-FCIT", "Fastsurfer-CMIknn", "Fastsurfer-PCM",
                       "Freesurfer-RCOT", "Freesurfer-WALD", "Freesurfer-CPT_KPC", "Freesurfer-FCIT", "Freesurfer-CMIknn", "Freesurfer-PCM",
                       "cVAE-RCOT", "cVAE-WALD", "cVAE-CPT_KPC", "cVAE-FCIT", "cVAE-CMIknn", "cVAE-PCM")
@@ -1431,14 +1428,14 @@ custom_order <- c("sample_sizes", "confounder dimension",
                   "Fastsurfer-PCM", "Freesurfer-PCM","cVAE-PCM",
                   "Fastsurfer-WALD", "Freesurfer-WALD","cVAE-WALD")
 #resort columns
-design <- design[, custom_order]
-design <- design[design$'confounder' %in% c(1,10),]
-design <- design %>% select(-contains("Fastsurfer"))
+design_runtime <- design_runtime[, custom_order]
+design_runtime <- design_runtime[design_runtime$'confounder' %in% c(1,10),]
+design_runtime <- design_runtime %>% select(-contains("Fastsurfer"))
 # without PCM
-design <- design %>% select(-contains("PCM"))
-methods_depicted <- colnames(design)[-c(1:2)]
-y_lims = c(min(design[,-c(1,2)], na.rm = TRUE)-0.4, max(design[,-c(1,2)], na.rm = TRUE)+0.2)
-p_conf_dim_runtime <- looplot::nested_loop_plot(resdf = design,
+design_runtime <- design_runtime %>% select(-contains("PCM"))
+methods_depicted <- colnames(design_runtime)[-c(1:2)]
+y_lims = c(min(design_runtime[,-c(1,2)], na.rm = TRUE)-0.4, max(design_runtime[,-c(1,2)], na.rm = TRUE)+0.2)
+p_conf_dim_runtime <- looplot::nested_loop_plot(resdf = design_runtime,
                                        x = "sample_sizes",
                                        steps  = "confounder dimension",
                                        methods = methods_depicted,
@@ -1452,7 +1449,7 @@ p_conf_dim_runtime <- looplot::nested_loop_plot(resdf = design,
                                        point_size = 4,
                                        line_size = 1.5,
                                        point_shapes = rep(c(19,15),5),
-                                       steps_values_annotate = TRUE, steps_annotation_size = 6, steps_color='grey31',steps_annotation_color='grey31',
+                                       steps_values_annotate = TRUE, steps_annotation_size = 8, steps_color='grey31',steps_annotation_color='grey31',
                                        hline_intercept = y_lims[1]+0.4,
                                        y_expand_add = c(0.4,0.15),
                                        line_alpha =0.6,
@@ -1460,26 +1457,383 @@ p_conf_dim_runtime <- looplot::nested_loop_plot(resdf = design,
                                        ylim = y_lims,
                                        na_rm = FALSE,
                                        legend_name = "DNCIT",
-                                       base_size = 24,
+                                       base_size = 38,
                                        post_processing = list(
                                          add_custom_theme = list(
                                            axis.text.x = ggplot2::element_text(angle = -90,
-                                                                               vjust = 0.5,
-                                                                               size = 15)
+                                                                               vjust = 0.5)
                                          )
                                        ))
-p_conf_dim_runtime <- p_conf_dim_runtime + theme(legend.position = 'none') # Customize the legend
-  #guides(colour = guide_legend(nrow = 2, keywidth = 3, keyheight=1.5, override.aes = list(size = 4)))
+p_conf_dim_legend <- looplot::nested_loop_plot(resdf = design_legend,
+                                               x = "sample_sizes",
+                                               grid_rows = 'Setting',
+                                               steps = "confounder dimension",
+                                               methods = methods_depicted,
+                                               steps_y_base = -0.1, steps_y_height = 0.05,,
+                                               legend_breaks = methods_depicted,  # Specify the desired order
+                                               legend_labels = methods_depicted,  # Custom labels if needed
+                                               x_name = "Sample size", y_name = "Rejection rate",
+                                               spu_x_shift = 1,
+                                               colors = palet_discrete[rep(c(1,2,3,4,7), each=2)],
+                                               line_linetypes = c(1,3),
+                                               point_size = 4,
+                                               line_size = 1.5,
+                                               point_shapes = c(19,15),
+                                               steps_values_annotate = TRUE, steps_annotation_size = 8, steps_color='grey31',steps_annotation_color='grey31',
+                                               hline_intercept = c(0,0.05),
+                                               y_expand_add = c(0.1,0.15/2),
+                                               y_breaks = seq(0,1,0.2),
+                                               line_alpha =0.6,
+                                               point_alpha = 0.8,
+                                               legend_name = "DNCIT",
+                                               base_size = 31,
+                                               replace_labels = list(
+                                                 Setting = c(#'No'='T1E',
+                                                   'Yes'='Power')
+                                               ),
+                                               grid_labeller = labeller(#'No'='T1E',
+                                                 'Yes'='Power'),
+                                               post_processing = list(
+                                                 add_custom_theme = list(
+                                                   axis.text.x = ggplot2::element_text(angle = -90,
+                                                                                       vjust = 0.5)
+                                                 )
+                                               ))
+# Apply guides() to modify the legend appearance (e.g., number of rows, key size)
+p_conf_dim_no_ci_legend <- p_conf_dim_legend +  # Customize the legend
+  guides(colour = guide_legend(nrow = 2, keywidth = 3, keyheight=1.5, override.aes = list(size = 4)))
+
+# Use cowplot's get_legend() to extract the modified legend
+legend <- get_legend(p_conf_dim_no_ci_legend)
+p_conf_dim_runtime <- p_conf_dim_runtime + theme(legend.position = 'none')
 p_conf_dim_runtime <- plot_grid(
   p_conf_dim_runtime,  # Stacked plots
   legend,  # Legend below the plots
   ncol = 1,  # Legend below, so keep 1 column
   rel_heights = c(1, 0.1)  # Adjust height ratios if needed
 )
-#ggplot2::ggsave(paste0(path_to_save_nested_loop_plots, 'all_dncits_nested_loop_conf_dim_runtime.png'), p_conf_dim_runtime, width = 16, height = 13, dpi = 300)
+#ggplot2::ggsave(paste0(path_to_save_nested_loop_plots, 'all_dncits_nested_loop_conf_dim_runtime.png'), p_conf_dim_runtime, width = 20, height = 16, dpi = 300)
 print(p_conf_dim_runtime)
 
 
+
+#####QQ plots
+palet_discrete <- paletteer::paletteer_d("ggthemes::Classic_10_Medium")
+## conf dim 6, conf relationship complex
+folder_path_qq <- "Results\\CI\\p-values"
+#folder_path_qq <- "Results\\No_CI\\p-values"
+all_files_qq <- list.files(folder_path_qq, full.names = TRUE)
+all_files_qq <- all_files_qq[setdiff(1:length(all_files_qq), grep('2_0_1_0|2_3_1_0|3_0_1_0|3_3_1_0|4_0_1_0|4_3_1_0|5_0_1_0|5_3_1_0', all_files_qq))]
+
+### 1) Data preparation for nested loop over
+# loop 1: confounder dimension (1,2,4,6,10,15) [APPENDIX] vs confounder dimension (1,2,10) [MAIN TEXT]
+# loop 2: sample size
+# fixed confounder relationship (squared terms of all continuous confounders)
+cit_patterns <- "WALD|RCOT|kpc_graph|FCIT|CMIknn|comets_pcm"
+cit_files <- grep(cit_patterns, all_files_qq, value=TRUE)
+files_qq_squared <- grep("squared", cit_files, value=TRUE)
+files_qq_dim_6 <- grep("ukb_z6", files_qq_squared, value=TRUE)
+files_qq <- grep("freesurfer", files_qq_dim_6, value=TRUE)
+#files_qq_squared <- grep("squared", cit_files, value=TRUE)
+#files_qq_dim_6 <- grep("ukb_z1_", files_qq_squared, value=TRUE)
+#files_qq <- grep("freesurfer", files_qq_dim_6, value=TRUE)
+
+dncits <- c('RCOT', 'kpc_graph', 'FCIT', 'CMIknn', 'WALD')#, 'comets_pcm')
+p_values <- list()
+for(dncit in dncits){
+    files_dncit <- grep(dncit, files_qq, value = TRUE)
+    df <- read.csv(files_dncit, header = TRUE, sep = ",")
+    df <- df[,-c(4,6,8,9)]
+    p_values[[dncit]] <- df
+}
+
+sample_sizes <- c(145, 256, 460, 1100, 5000, 10000)
+
+
+# Determine the maximum number of columns (excluding the first column) across all data frames
+max_cols <- max(sapply(p_values, function(df) ncol(df) - 1))
+# Calculate the number of rows (number of dncits) and columns (maximum columns in data frames)
+n_rows <- length(p_values)
+n_cols <- max_cols
+# List to store all the plots
+plot_list <- list()
+
+# Generate a palette with enough colors
+colors <- setNames(palet_discrete[c(1,2,3,4,7)], dncits)
+
+# Loop over each data frame in p_values
+for (dncit_name in names(p_values)) {
+  df <- p_values[[dncit_name]]
+  num_cols <- ncol(df) - 1  # Exclude the first column
+  plots_row <- list()       # Store plots for the current row
+
+  # Loop over the maximum number of columns
+  for (col_idx in 2:(max_cols + 1)) {
+    if (dncit_name == "WALD"){
+      if (col_idx == 2){
+        # Create an empty plot
+        p <- ggplot() +
+          ggtitle(paste(dncit_name, "- Column", col_idx - 1)) +
+          theme_void() +
+          annotate("text", x = 0.5, y = 0.5, label = "Theoretically inapplicable", size = 5, hjust = 0.5)
+        p <- p + theme(
+          axis.title.x = element_blank(),
+          axis.text.x = element_blank(),
+          axis.ticks.x = element_blank(),
+          axis.title.y = element_blank(),
+          axis.text.y = element_blank(),
+          axis.ticks.y = element_blank(),
+          plot.title = element_blank(),
+          text = element_text(size = 14)
+        )
+        p <- p + theme(
+          axis.title.y = element_blank(),
+          axis.title.x = element_blank(),
+          plot.title = element_blank(),
+          text = element_text(size = 14)
+        )
+
+        plots_row[[length(plots_row) + 1]] <- p
+        # Create an empty plot
+        p <- ggplot() +
+          ggtitle(paste(dncit_name, "- Column", col_idx)) +
+          theme_void() +
+          annotate("text", x = 0.5, y = 0.5, label = "Theoretically inapplicable", size = 5, hjust = 0.5)
+        p <- p + theme(
+          axis.title.x = element_blank(),
+          axis.text.x = element_blank(),
+          axis.ticks.x = element_blank(),
+          axis.title.y = element_blank(),
+          axis.text.y = element_blank(),
+          axis.ticks.y = element_blank(),
+          plot.title = element_blank(),
+          text = element_text(size = 14)
+        )
+        p <- p + theme(
+          axis.title.y = element_blank(),
+          axis.title.x = element_blank(),
+          plot.title = element_blank(),
+          text = element_text(size = 14)
+        )
+
+        plots_row[[length(plots_row) + 1]] <- p
+
+        # Extract p-values from the current column
+        p_vals <- df[[col_idx]]
+        # Remove NA values
+        p_vals <- p_vals[!is.na(p_vals)]
+        ks <- round(ks.test(p_vals, "punif")[1]$statistic,3)
+
+        # Create a data frame for plotting
+        plot_df <- data.frame(
+          Observed = sort(p_vals),
+          Theoretical = qunif(ppoints(length(p_vals)))
+        )
+
+        # Create the QQ plot
+        p <- ggplot(plot_df, aes(sample = Observed)) +
+          stat_qq(distribution = stats::qunif, color = colors[dncit_name]) +
+          geom_abline(slope = 1, intercept = 0, color = "black") +
+          ggtitle(paste(dncit_name, "- Column", col_idx + 1)) +
+          xlab(ks) +
+          ylab("Sample Quantiles") +
+          theme_minimal() +
+          coord_cartesian(xlim = c(0, 1), ylim = c(0, 1))
+        p <- p + theme(
+          #axis.title.x = element_blank(),
+          axis.text.x = element_blank(),
+          axis.ticks.x = element_blank(),
+          axis.title.y = element_blank(),
+          axis.text.y = element_blank(),
+          axis.ticks.y = element_blank(),
+          plot.title = element_blank(),
+          text = element_text(size = 14)
+        )
+
+        plots_row[[length(plots_row) + 1]] <- p
+      }else{
+        if (col_idx <= ncol(df)) {
+          # Extract p-values from the current column
+          p_vals <- df[[col_idx]]
+          # Remove NA values
+          p_vals <- p_vals[!is.na(p_vals)]
+          ks <- round(ks.test(p_vals, "punif")[1]$statistic,3)
+
+          # Create a data frame for plotting
+          plot_df <- data.frame(
+            Observed = sort(p_vals),
+            Theoretical = qunif(ppoints(length(p_vals)))
+          )
+
+          # Create the QQ plot
+          p <- ggplot(plot_df, aes(sample = Observed)) +
+            stat_qq(distribution = stats::qunif, color = colors[dncit_name]) +
+            geom_abline(slope = 1, intercept = 0, color = "black") +
+            ggtitle(paste(dncit_name, "- Column", col_idx + 1)) +
+            xlab(ks) +
+            ylab("Sample Quantiles") +
+            theme_minimal() +
+            coord_cartesian(xlim = c(0, 1), ylim = c(0, 1))
+          p <- p + theme(
+            axis.title.y = element_blank(),
+            #axis.title.x = element_blank(),
+            plot.title = element_blank(),
+            text = element_text(size = 14)
+          )
+          if(col_idx!=ncol(df)){
+            p <- p + theme(
+              #axis.title.x = element_blank(),
+              axis.text.x = element_blank(),
+              axis.ticks.x = element_blank(),
+              axis.title.y = element_blank(),
+              axis.text.y = element_blank(),
+              axis.ticks.y = element_blank(),
+              plot.title = element_blank(),
+              text = element_text(size = 14)
+            )
+          }else{
+            p <- p + theme(
+              axis.title.y = element_blank(),
+              axis.text.y = element_blank(),
+              axis.ticks.y = element_blank(),
+              plot.title = element_blank(),
+              text = element_text(size = 14)
+            )
+          }
+          plots_row[[length(plots_row) + 1]] <- p
+        }
+      }
+    }else{
+      if (col_idx <= ncol(df)) {
+        # Extract p-values from the current column
+        p_vals <- df[[col_idx]]
+        # Remove NA values
+        p_vals <- p_vals[!is.na(p_vals)]
+        ks <- round(ks.test(p_vals, "punif")[1]$statistic,3)
+
+        # Create a data frame for plotting
+        plot_df <- data.frame(
+          Observed = sort(p_vals),
+          Theoretical = qunif(ppoints(length(p_vals)))
+        )
+
+        # Create the QQ plot
+        p <- ggplot(plot_df, aes(sample = Observed)) +
+          stat_qq(distribution = stats::qunif, color = colors[dncit_name]) +
+          geom_abline(slope = 1, intercept = 0, color = "black") +
+          ggtitle(paste(dncit_name, "- Column", col_idx - 1)) +
+          xlab(ks) +
+          ylab(sample_sizes[col_idx-1]) +
+          theme_minimal()+
+          coord_cartesian(xlim = c(0, 1), ylim = c(0, 1))
+        p <- p + theme(
+          axis.title.y = element_blank(),
+          #axis.title.x = element_blank(),
+          plot.title = element_blank(),
+          text = element_text(size = 14)
+        )
+        if(col_idx!=(max_cols+1) & dncit_name!='RCOT'){
+          p <- p + theme(
+            #axis.title.x = element_blank(),
+            axis.text.x = element_blank(),
+            axis.ticks.x = element_blank(),
+            axis.title.y = element_blank(),
+            axis.text.y = element_blank(),
+            axis.ticks.y = element_blank(),
+            plot.title = element_blank(),
+            text = element_text(size = 14)
+          )
+        }else if(col_idx == (max_cols+1) & dncit_name!='RCOT'){
+            p <- p + theme(
+              axis.title.y = element_blank(),
+              axis.text.y = element_blank(),
+              axis.ticks.y = element_blank(),
+              plot.title = element_blank(),
+              text = element_text(size = 14)
+            )
+        }else if(col_idx != (max_cols+1) & dncit_name=='RCOT'){
+          p <- p + theme(
+            #axis.title.x = element_blank(),
+            axis.text.x = element_blank(),
+            axis.ticks.x = element_blank(),
+            plot.title = element_blank(),
+            text = element_text(size = 14)
+          )
+        }
+        if(dncit_name=='RCOT'){
+          p <- p + theme(
+            axis.title.y = element_text(angle=90,margin = margin(t = 0, r = 5, b = 0, l = 0))
+          )
+        }
+        plots_row[[length(plots_row) + 1]] <- p
+      } else {
+        # Create an empty plot
+        p <- ggplot() +
+          ggtitle(paste(dncit_name, "- Column", col_idx - 1)) +
+          theme_void() +
+          annotate("text", x = 0.5, y = 0.5, label = "Computational restrictions", size = 5, hjust = 0.5)
+        p <- p + theme(
+          axis.title.y = element_blank(),
+          axis.title.x = element_blank(),
+          plot.title = element_blank(),
+          text = element_text(size = 14)
+        )
+        if(col_idx!=max_cols){
+          p <- p + theme(
+            axis.title.x = element_blank(),
+            axis.text.x = element_blank(),
+            axis.ticks.x = element_blank(),
+            axis.title.y = element_blank(),
+            axis.text.y = element_blank(),
+            axis.ticks.y = element_blank(),
+            plot.title = element_blank(),
+            text = element_text(size = 14)
+          )
+        }else{
+          p <- p + theme(
+            axis.title.y = element_blank(),
+            axis.text.y = element_blank(),
+            axis.ticks.y = element_blank(),
+            plot.title = element_blank(),
+            text = element_text(size = 14)
+          )
+        }
+
+        plots_row[[length(plots_row) + 1]] <- p
+      }
+  }
+  # Add the row of plots to the main plot list
+  }
+  plot_list <- c(plot_list, plots_row)
+}
+
+col_names <- c('Freesurfer-RCOT', 'Freesurfer-CPT-KPC', 'Freesurfer-FCIT', 'Freesurfer-CMIknn', 'Freesurfer-WALD')
+# Create text grobs for the titles
+title_grobs <- lapply(col_names, function(title) {
+  textGrob(title, gp = gpar(fontsize = 18, fontface="bold"), just = "center")
+})
+
+# Combine the title grobs and plot list
+grob_list <- c(title_grobs, plot_list)
+
+# Create a layout matrix to arrange plots row-wise
+layout_matrix <- rbind(matrix(1:n_rows, nrow=1, ncol=n_rows),matrix(c((n_rows + 1):(n_rows + n_rows * n_cols)), nrow=n_cols, byrow=FALSE))
+
+
+# Arrange all the plots into a grid using the layout matrix
+grid_plots <- gridExtra::grid.arrange(
+  grobs = grob_list,
+  layout_matrix = layout_matrix,
+  bottom = "Theoretical Quantiles",
+  left = "Sample Quantiles",
+  heights = unit.c(unit(1, "lines"), unit(1.1,"null"), rep(unit(1, "null"), n_cols-1))
+)
+# Display the grid of plots
+grid::grid.newpage()
+grid::grid.draw(grid_plots)
+
+# ggsave(paste0(path_to_save_nested_loop_plots,"qq_plot_dim6_squared_freesurfer_ci.png"), grid_plots, width = 12, height = 12)
+# ggsave(paste0(path_to_save_nested_loop_plots,"qq_plot_dim1_squared_freesurfer_no_ci.png"), grid_plots, width = 12, height = 12)
 
 ##### Tables for detailed results
 library(xtable)
