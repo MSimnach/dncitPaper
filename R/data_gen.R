@@ -20,7 +20,11 @@
 #' @export
 data_gen <- function(seed, idx_sample=NULL, n_sample=NULL, idx_beta2=NULL, beta2s=NULL, post_non_lin=4, eps_sigmaX=0, eps_sigmaY=1, eps_sigmaZ=0, embedding_orig='fastsurfer',
                      embedding_obs='fastsurfer', confounder='AS', g_z='linear'){
-  #path_to_ukb_data <- ""
+  path_to_ukb_data <- Sys.getenv("UKB_PATH", unset = NA)
+
+  if (is.na(path_to_ukb_data) || path_to_ukb_data == "") {
+    stop("❌ Environment variable UKB_PATH is not set. Please define it in your .Renviron.")
+  }
   set.seed(seed)
 
   X_orig <- load_X_orig(path_to_ukb_data,embedding_orig)

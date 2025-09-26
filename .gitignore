@@ -2,8 +2,10 @@
 .Rhistory
 .RData
 .Ruserdata
+.Renviron
 inst/logs
 inst/Results
 inst/old_results
 inst/raw_code/
+inst/simulation_study/test_run.R
 R/create_test_plot.R
