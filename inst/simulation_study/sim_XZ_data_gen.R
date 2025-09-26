@@ -128,3 +128,46 @@ data.table::fwrite(ukb_z10, file = paste0(path_to_ukb, "ukb_z10_agesexsitesizeda
 #age, sex, head size, site, date, qc-discrepancy, 4xhead location, 5xgenes
 ukb_z15 <- confounds_dummy[, .SD, .SDcols = c('id', 'age', 'head_size', sites, 'sex', 'date_diff', 'qc_discrepancy', head_locations, genes)]
 data.table::fwrite(ukb_z15, file = paste0(path_to_ukb, "ukb_z15_agesexsitesizedateqcgenes.csv"))
+
+
+##### Data to train DNCIT-specific embedding maps
+##### Testing for simulation  
+library(devtools)
+load_all()
+# set up as in sim_run_settings.R and sim_ukb_brainmri.R
+args <- c("/CI/", "1", "0", "1", "0", "fastsurfer", "fastsurfer", "ukb_z4", "linear", "ccit")
+
+embedding_orig=args[6]
+embedding_obs=args[7]
+confounder=args[8]                                        
+eps_sigmaX <- NULL
+
+##### Test DNCIT-specific embedding maps
+path_to_ukb_data <- Sys.getenv("UKB_PATH", unset = NA)
+
+if (is.na(path_to_ukb_data) || path_to_ukb_data == "") {
+  stop("❌ Environment variable UKB_PATH is not set. Please define it in your .Renviron.")
+}
+X_orig <- load_X_orig(path_to_ukb_data,embedding_orig)
+X_obs <- load_X_obs(path_to_ukb_data,embedding_obs, embedding_orig, X_orig, eps_sigmaX)
+Z <- load_Z(path_to_ukb_data,confounder)
+
+# take only common IDs of X, Z
+colnames(X_orig)[1] <- 'id'
+colnames(X_obs)[1] <- 'id'
+colnames(Z)[1] <- 'id'
+X_orig <- as.data.frame(X_orig)
+X_obs <- as.data.frame(X_obs)
+Z <- as.data.frame(Z)
+
+common_ids <- Reduce(intersect, list(X_orig$id, X_obs$id, Z$id))
+
+subset_X_obs <- X_obs[X_obs$id %in% common_ids, ]
+subset_X_orig <-  X_orig[X_orig$id %in% common_ids, ]
+subset_Z <- Z[Z$id %in% common_ids, ]
+#check if ids are equal
+stopifnot(all.equal(subset_X_orig[,1], subset_Z[,1]))
+
+# subjects data with ids and path to brain MRI scans
+subjects_data <- data.frame(id = subset_X_orig[,1], path = paste0(path_to_ukb_data, "/", subset_X_orig[,1], ".csv"))
+data.table::fwrite(subjects_data, file = paste0(path_to_ukb_data, "/ukb_path_images.csv"))

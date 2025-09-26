@@ -7,5 +7,13 @@ inst/logs
 inst/Results
 inst/old_results
 inst/raw_code/
-inst/simulation_study/test_run.R
-R/create_test_plot.R
+
+
+inst/withdraws_ukb.R
+inst/learn_embedding/*
+inst/python/*
+inst/simulation_study/test_dncit_embedding.R
+inst/simulation_study/test_ixi_embedding.R
+R/zzz.R
+R/python_env.R
+
