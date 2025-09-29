@@ -3,6 +3,7 @@
 .RData
 .Ruserdata
 .Renviron
+.Rprofile
 inst/logs
 inst/Results
 inst/old_results
