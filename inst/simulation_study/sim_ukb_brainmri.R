@@ -87,7 +87,11 @@ res_time <- foreach::foreach (i= n_seeds, .packages = pkgs_for_each) %dopar% {
                                                      Z <- as.matrix(XYZ_list[[3]])
 
                                                      if (args[10] == 'RCOT'){
-                                                       cit_params <- list(cit='RCOT', params_cit=list(seed=as.numeric(args[11])))
+                                                      if(n_sample[[idx_sample]] < 500){
+                                                        cit_params <- list(cit='RCOT', params_cit=list(seed=as.numeric(args[11]), approx="perm", num_fz=200, num_fy=3, num_fx=7))
+                                                      }else{
+                                                        cit_params <- list(cit='RCOT', params_cit=list(seed=as.numeric(args[11]), num_fz=200, num_fy=3, num_fx=7))
+                                                      }
                                                      }else if(args[10] == 'CMIknn'){
                                                        cit_params <- list(cit='cmiknn', params_cit=list())
                                                      }else if(args[10] == 'kpc_graph'){
@@ -155,6 +159,8 @@ res_time <- foreach::foreach (i= n_seeds, .packages = pkgs_for_each) %dopar% {
                                                        cit_params <- list(cit='comets', params_cit=list(method='gcm', alternative='less'))
                                                      }else if(args[10]=='ccit'){
                                                        cit_params <- list(cit='ccit', params_cit=list(nthread=as.integer(1)))
+                                                     }else if(args[10]=='ccit'){
+                                                       cit_params <- list(cit='ccit', params_cit=list(nthread=as.integer(1)))
                                                      }else if(args[10]=='pred_cit'){
                                                         min_samples <- min(unlist(n_sample))
                                                         max_samples <- max(unlist(n_sample))
@@ -191,7 +197,11 @@ res_time <- foreach::foreach (i= n_seeds, .packages = pkgs_for_each) %dopar% {
                                                        #XYZ <- data.frame(XYZ_list)
 
                                                        if (args[10] == 'RCOT'){
-                                                         cit_params <- list(cit='RCOT', params_cit=list(seed=as.numeric(args[11])))
+                                                        if(n_sample[[idx_sample]] < 500){
+                                                          cit_params <- list(cit='RCOT', params_cit=list(seed=as.numeric(args[11]), approx="perm", num_fz=50, num_fy=3, num_fx=20))
+                                                        }else{
+                                                          cit_params <- list(cit='RCOT', params_cit=list(seed=as.numeric(args[11]), num_fz=50, num_fy=3, num_fx=20))
+                                                        }
                                                        }else if(args[10] == 'CMIknn'){
                                                          cit_params <- list(cit='cmiknn', params_cit=list())
                                                        }else if(args[10] == 'kpc_graph'){
