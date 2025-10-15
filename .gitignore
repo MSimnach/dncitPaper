@@ -11,10 +11,10 @@ inst/raw_code/
 
 
 inst/withdraws_ukb.R
-inst/learn_embedding/*
-inst/python/*
+inst/learn_embedding/back_up
+inst/learn_embedding/__pycache__
+#inst/python/*
 inst/simulation_study/test_dncit_embedding.R
-inst/simulation_study/test_ixi_embedding.R
-R/zzz.R
-R/python_env.R
+/home/RDC/simnacma/Coding/dncitPaper/inst/simulation_study/run_python_with_conda_libs.sh
+
 

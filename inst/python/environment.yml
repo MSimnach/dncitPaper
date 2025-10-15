@@ -1,0 +1,19 @@
+name: dncit-paper
+channels:
+  - conda-forge
+dependencies:
+  - python>=3.10
+  - pip
+  - numpy>=1.26
+  - pandas>=2.1
+  - scipy
+  - scikit-learn
+  - nibabel
+  - tqdm
+  - pillow
+  - matplotlib
+  - simpleitk
+  - xlrd
+  - openpyxl
+  - pip:
+      - monai>=1.3
