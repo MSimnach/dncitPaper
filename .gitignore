@@ -14,5 +14,6 @@ inst/withdraws_ukb.R
 inst/learn_embedding/back_up
 inst/learn_embedding/__pycache__
 #inst/python/*
-
+inst/learn_embedding/ukb/prep_ukb_id_path_csv.py
+inst/learn_embedding/ukb/audit_nifti_orientation_spacing.py
 

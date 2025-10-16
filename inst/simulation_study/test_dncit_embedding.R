@@ -1,6 +1,41 @@
 ##### Testing for simulation  
 library(devtools)
 load_all()
+
+# Load embeddings using reticulate (numpy only - should work fine)
+library(reticulate)
+np <- import("numpy")
+
+######### Data checking #########
+# load IXI image_path.csv after running prepare_ixi_from_tar_xls.py
+readRenviron(".Renviron")
+Sys.getenv(c("UKB_PATH","IXI_PATH"))
+ukb_path <- Sys.getenv("UKB_PATH", unset = NA)
+script_dir <- "/home/RDC/simnacma/Coding/dncitPaper/inst/learn_embedding"
+
+ukb_data <- read.csv(paste0(ukb_path, "t1_paths.csv"))
+### Example brain MRI plot
+library(RNifti)  
+idx <- 1
+nii_path <- ixi_data$path[idx]
+nii <- RNifti::readNifti(nii_path)
+# Choose a mid axial slice
+d   <- dim(nii)
+z   <- ceiling(d[3]/2)
+# Output file name
+id <- ixi_data$id[idx]
+outfile <- file.path(ixi_path, sprintf("t1/example/%s_axial_z%03d.png", id, z))
+# Extract slice, normalize for display, flip for conventional orientation, and save
+sl <- nii[,,z, drop = TRUE]
+sl <- sl - min(sl, na.rm = TRUE)
+sl <- if (max(sl, na.rm = TRUE) > 0) sl / max(sl, na.rm = TRUE) else sl
+png(outfile, width = 1200, height = 1200, res = 150)
+par(mar = c(0,0,0,0), bg = "white")
+image(t(apply(sl, 2, rev)), axes = FALSE, col = gray.colors(256), useRaster = TRUE, asp = 1)
+dev.off()
+
+
+
 # set up as in sim_run_settings.R and sim_ukb_brainmri.R
 args <- c("/CI/", "1", "0", "1", "0", "fastsurfer", "fastsurfer", "ukb_z4", "linear", "ccit")
 n_cits <- 1
