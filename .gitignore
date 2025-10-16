@@ -14,7 +14,5 @@ inst/withdraws_ukb.R
 inst/learn_embedding/back_up
 inst/learn_embedding/__pycache__
 #inst/python/*
-inst/simulation_study/test_dncit_embedding.R
-/home/RDC/simnacma/Coding/dncitPaper/inst/simulation_study/run_python_with_conda_libs.sh
 
 
