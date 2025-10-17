@@ -11,7 +11,7 @@ np <- import("numpy")
 readRenviron(".Renviron")
 Sys.getenv(c("UKB_PATH","IXI_PATH"))
 ukb_path <- Sys.getenv("UKB_PATH", unset = NA)
-script_dir <- "/home/RDC/simnacma/Coding/dncitPaper/inst/learn_embedding"
+script_dir <- "inst/learn_embedding"
 
 ukb_data <- read.csv(paste0(ukb_path, "/t1_paths.csv"))
 ### Example brain MRI plot
@@ -228,14 +228,8 @@ if(embedding_obs %in% c('fastsurfer', 'condVAE', 'latentDiffusion', 'freesurfer'
     # Save configuration as JSON for easy reading
     config_path <- file.path(embedding_dir, 'config.json')
     jsonlite::write_json(config, config_path, pretty = TRUE, auto_unbox = TRUE)
-    # Save Y values
-    Y_path <- file.path(embedding_dir, 'Y.csv')
-    Y_df <- data.frame(
-      id = X_orig$id,
-      Y = Y[,1]
-    )
-    write.csv(Y_df, Y_path, row.names = FALSE)
 
+    # save image paths and Y values
     train_csv <- paste0(embedding_dir, '/x_obs_for_train.csv')
     write.csv(X_obs, train_csv, row.names = FALSE)
     
@@ -244,8 +238,8 @@ if(embedding_obs %in% c('fastsurfer', 'condVAE', 'latentDiffusion', 'freesurfer'
       # For 'scratch': train from scratch first, then use trained model
       cat("🏗️  Training model from scratch...\n")
         # Run training pipeline
-      train_script <- "/home/RDC/simnacma/Coding/dncitPaper/inst/learn_embedding/run_train_test_pipeline.py"
-      train_args <- sprintf("--input_csv %s --id_col id --output_dir %s --script_dir %s --model_name resnet18 --task regression --epochs 30 --batch_size 16 --test_size 0.5 --val_frac 0.2 --amp --num_workers 4 --lr 8e-4",
+      train_script <- "inst/learn_embedding/run_train_test_pipeline.py"
+      train_args <- sprintf("--input_csv %s --id_col id --output_dir %s --script_dir %s --model_name resnet18 --task regression --epochs 30 --batch_size 16 --test_size 0.5 --val_frac 0.2 --amp --num_workers 4 --lr 8e-4 --no-reorient",
                           train_csv, train_output_dir, script_dir)
       
       cat("Training with args:", train_args, "\n")
