@@ -460,7 +460,12 @@ class BrainMRIDataModule(pl.LightningDataModule):
             p = str(r[img_col])
             sid = str(r[id_col]) if id_col and id_col in df.columns else Path(p).stem
             y = r[y_col]
-            
+            if len(items) < 5:  # Only print for first 5 samples to avoid spam
+                print(f"[DEBUG] Sample {len(items)}:")
+                print(f"  Image path: {p}")
+                print(f"  Subject ID: {sid}")
+                print(f"  Raw y value: {y} (type: {type(y)})")
+                print(f"  ID column exists: {id_col in df.columns if id_col else 'No id_col specified'}")
             if task == "regression":
                 y = float(y)
             elif task == "binary":
@@ -471,6 +476,11 @@ class BrainMRIDataModule(pl.LightningDataModule):
             items.append({"image": p, "y": y, "subject_id": sid})
             ys.append(y)
         
+        # ADD SUMMARY DEBUG CODE HERE (before return)
+        print(f"[DEBUG] Data loading summary:")
+        print(f"  Total samples loaded: {len(items)}")
+        print(f"  Y values - Mean: {np.mean(ys):.4f}, Std: {np.std(ys):.4f}")
+        print(f"  Y values - Min: {np.min(ys):.4f}, Max: {np.max(ys):.4f}")
         return items, np.array(ys)
     
     def setup(self, stage=None):
@@ -498,12 +508,16 @@ class BrainMRIDataModule(pl.LightningDataModule):
         # Store for logging
         self.num_train = len(self.train_items)
         self.num_val = len(self.val_items)
-        self.target_stats = {
-            'mean': float(np.mean(ys)),
-            'std': float(np.std(ys)),
-            'min': float(np.min(ys)),
-            'max': float(np.max(ys))
-        } if self.args.task == "regression" else None
+        # Compute stats from training set only (after train/val split)
+        if self.args.task == "regression":
+            self.target_stats = {
+                'mean': float(np.mean(self.train_ys)),  # Use training set only
+                'std': float(np.std(self.train_ys)),    # Use training set only
+                'min': float(np.min(ys)),               # Keep full range for reference
+                'max': float(np.max(ys))                # Keep full range for reference
+            }
+        else:
+            self.target_stats = None
     
     def train_dataloader(self):
         if self.args.task != "regression" and self.args.balanced_sampler:
@@ -588,7 +602,7 @@ def parse_args():
                     help="Use simple Linear(512->1) head instead of 2-layer MLP")
     
     # Preprocessing
-    ap.add_argument("--pixdim", type=float, nargs=3, default=[2.0,2.0,2.0], help="Target spacing")
+    ap.add_argument("--pixdim", type=float, nargs=3, default=[1.0,1.0,1.0], help="Target spacing")
     ap.add_argument("--roi", type=int, nargs=3, default=[128,128,128], help="Target size D,H,W")
     ap.add_argument("--no_reorient", action="store_true")
     ap.add_argument("--no_resample", action="store_true")
@@ -693,6 +707,10 @@ def main():
     if data_module.target_stats:
         stats = data_module.target_stats
         print(f"📈 Target stats: μ={stats['mean']:.2f}, σ={stats['std']:.2f}, range=[{stats['min']:.2f}, {stats['max']:.2f}]")
+        # Debug: Check if bias initialization will work
+        if abs(stats['mean']) > 10:
+            print(f"⚠️  WARNING: Target mean is {stats['mean']:.2f}, which is far from 0!")
+            print(f"   This suggests the target statistics computation might be wrong.")
     
     # Setup model
     model = BrainMRIModule(args)

@@ -1,3 +1,25 @@
+run_python_safe <- function(script_path, args = character(), python = NULL) {
+  stopifnot(file.exists(script_path))
+  if (length(args) == 1) args <- strsplit(args, " +")[[1]]  # optional: allow single string
+
+  # Prefer current conda env's python
+  if (is.null(python) || !nzchar(python)) {
+    cp <- Sys.getenv("CONDA_PREFIX", unset = "")
+    if (nzchar(cp) && file.exists(file.path(cp, "bin", "python"))) {
+      python <- file.path(cp, "bin", "python")
+    } else {
+      python <- Sys.which("python"); if (!nzchar(python)) python <- "python"
+    }
+  }
+
+  # In case a previous helper script polluted the session:
+  if (nzchar(Sys.getenv("LD_PRELOAD", ""))) Sys.unsetenv("LD_PRELOAD")
+
+  out <- system2(python, c(normalizePath(script_path), args), stdout = TRUE, stderr = TRUE)
+  status <- attr(out, "status"); if (is.null(status)) status <- 0L
+  if (status != 0L) stop(sprintf("Python exited with status %s\n%s", status, paste(out, collapse = "\n")))
+  out
+}
 ##### Testing for simulation  
 library(devtools)
 load_all()
@@ -37,7 +59,7 @@ dev.off()
 
 
 # set up as in sim_run_settings.R and sim_ukb_brainmri.R
-args <- c("/CI/", "1", "0", "1", "0", "fastsurfer", "scratch", "ukb_z4", "linear", "RCOT", "1")
+args <- c("/No_CI/", "1", "0", "1", "0", "fastsurfer", "scratch", "ukb_z4", "linear", "RCOT", "1")
 n_cits <- 1
 cit <- c(args[10])
 print(args)
@@ -52,8 +74,8 @@ embedding_orig=args[6]
 embedding_obs=args[7]
 confounder=args[8]                                        
 g_z=args[9]
-beta2s=NULL
-idx_beta2=NULL
+beta2s=list(1)
+idx_beta2=1
 idx_sample = 1
 seed=1
 n_sample = list(550)
@@ -180,7 +202,7 @@ X_orig[,c(-1)] <- scale(X_orig[,c(-1)])
 if(is.null(beta2s)){
   Y <- y_from_xz(Z[,c(-1)], eps_sigmaY, post_non_lin=post_non_lin, g_z=g_z)
 }else{
-  Y <- y_from_xz(Z[,c(-1)], eps_sigmaY, X=X_orig[,c(-1)], beta2s=beta2s, idx_beta2=idx_beta2, post_non_lin=post_non_lin, g_z=g_z)
+  Y <- y_from_xz(Z[,c(-1)], eps_sigmaY, X=as.matrix(X_orig[,c(-1)]), beta2s=beta2s, idx_beta2=idx_beta2, post_non_lin=post_non_lin, g_z=g_z)
 }
 
 
@@ -195,8 +217,8 @@ if(embedding_obs %in% c('fastsurfer', 'condVAE', 'latentDiffusion', 'freesurfer'
 
   # Setup paths for train results and embeddings
   input_csv <- paste0(path_to_ukb_data, '/t1_paths.csv')
-  embedding_dir <- paste0(path_to_ukb_data, '/t1/embeddings/', embedding_obs, '_', confounder, '_', g_z, '/', seed)
-  train_output_dir <- paste0(path_to_ukb_data, '/t1/results/', embedding_obs, '_', confounder, '_', g_z)
+  embedding_dir <- paste0(path_to_ukb_data, '/t1/embeddings/', n_sample[[idx_sample]], '_', embedding_obs, '_', confounder, '_', g_z, '/', seed)
+  train_output_dir <- paste0(path_to_ukb_data, '/t1/results/', n_sample[[idx_sample]], '_', embedding_obs, '_', confounder, '_', g_z)
 
   embeddings_path <- file.path(embedding_dir, 'test_embeddings.npy')
   index_path <- file.path(embedding_dir, 'test_embeddings_index.csv')
@@ -230,20 +252,41 @@ if(embedding_obs %in% c('fastsurfer', 'condVAE', 'latentDiffusion', 'freesurfer'
     jsonlite::write_json(config, config_path, pretty = TRUE, auto_unbox = TRUE)
 
     # save image paths and Y values
-    train_csv <- paste0(embedding_dir, '/x_obs_for_train.csv')
+    train_csv <- paste0(embedding_dir, '/train_labeled.csv')
     write.csv(X_obs, train_csv, row.names = FALSE)
-    
+
     # generate X_obs
     if (embedding_obs == 'scratch') {
       # For 'scratch': train from scratch first, then use trained model
       cat("🏗️  Training model from scratch...\n")
         # Run training pipeline
       train_script <- "inst/learn_embedding/run_train_test_pipeline.py"
-      train_args <- sprintf("--input_csv %s --id_col id --output_dir %s --script_dir %s --model_name resnet18 --task regression --epochs 30 --batch_size 16 --test_size 0.5 --val_frac 0.2 --amp --num_workers 4 --lr 8e-4 --no-reorient",
-                          train_csv, train_output_dir, script_dir)
+      train_args <- sprintf("--input_csv %s --id_col id --output_dir %s --script_dir %s --model_name resnet18 --task regression --epochs 30 --batch_size 8 --test_size 0.5 --val_frac 0.2 --amp --num_workers 4 --lr 8e-4 --use_tensorboard",
+                          train_csv, embedding_dir, script_dir)
       
       cat("Training with args:", train_args, "\n")
-      result <- run_python_safe(train_script, train_args)
+      result <- run_python_safe(train_script, train_args, conda_env = 'dncit-paper')
+      head(read.csv(train_csv))
+      # Build args as a vector (safer than one big string)
+      args_vec <- c("--input_csv", normalizePath(train_csv),
+                    "--id_col", "id",
+                    "--output_dir", normalizePath(embedding_dir),
+                    "--script_dir", normalizePath(script_dir),
+                    "--model_name", "resnet18",
+                    "--task", "regression",
+                    "--epochs", "30",
+                    "--batch_size", "8",
+                    "--test_size", "0.5",
+                    "--val_frac", "0.2",
+                    "--amp",
+                    "--num_workers", "8",
+                    "--lr", "1e-2",
+                    "--use_tensorboard",
+                    "--pretrained","--simple_head")
+
+      # Use the python from the active env (auto-detected via CONDA_PREFIX)
+      res <- run_python_safe(train_script, args_vec)
+      cat(res, sep = "\n")  
       
     } else if (embedding_obs == 'medicalnet_ft'){
       # For 'medicalnet_ft': fine-tune pretrained medicalnet weights, then use fine-tuned model
@@ -294,7 +337,7 @@ if(embedding_obs %in% c('fastsurfer', 'condVAE', 'latentDiffusion', 'freesurfer'
   embedding_df <- as.data.frame(embeddings)
   X_obs <- data.frame(id = index_df[['subject_id']], embedding_df)
   # Create numeric ids for X_obs
-  X_obs$id <- as.integer(sub("^IXI", "", X_obs$id, ignore.case = TRUE))
+  X_obs$id <- as.integer(X_obs$id) 
   
   #reorder X_orig, Z, Y_df to match X_obs$id (since ids now potentially only from test set of network fit)
   id_order <- match(X_obs$id, X_orig$id)

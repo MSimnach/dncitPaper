@@ -134,7 +134,7 @@ def main():
     # Step 2: Train model with embedding extraction
     # Set environment to use GPU 1 (GPU 0 is often occupied)
     import os
-    os.environ["CUDA_VISIBLE_DEVICES"] = "0"
+    #os.environ["CUDA_VISIBLE_DEVICES"] = "0"
     
     train_cmd = [
         sys.executable, str(script_dir / "train_resnet3d_lightning.py"),
@@ -175,7 +175,7 @@ def main():
     
     # Set environment variable for the subprocess
     env = os.environ.copy()
-    env["CUDA_VISIBLE_DEVICES"] = "0"
+    #env["CUDA_VISIBLE_DEVICES"] = "0"
     
     # Add optional flags
     if args.amp:
