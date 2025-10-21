@@ -29,13 +29,13 @@ library(reticulate)
 np <- import("numpy")
 
 ######### Data checking #########
-# load IXI image_path.csv after running prepare_ixi_from_tar_xls.py
+# load UKB image_path.csv 
 readRenviron(".Renviron")
 Sys.getenv(c("UKB_PATH","IXI_PATH"))
 ukb_path <- Sys.getenv("UKB_PATH", unset = NA)
 script_dir <- "inst/learn_embedding"
 
-ukb_data <- read.csv(paste0(ukb_path, "/t1_paths.csv"))
+ukb_data <- read.csv(paste0(ukb_path, "/t1_paths_cit.csv"))
 ### Example brain MRI plot
 library(RNifti)  
 idx <- 1
@@ -141,6 +141,40 @@ load_Z <- function(path_to_ukb_data,confounder){
   }
 }
 
+# Generate Y from simple image statistics that ResNet can easily learn
+y_from_image_stats <- function(image_paths, eps_sigmaY = 0) {
+  library(RNifti)
+  
+  cat("Computing simple image statistics...\n")
+  image_stats <- sapply(image_paths, function(path) {
+    img <- readNifti(path)
+    data <- as.vector(img)
+    data <- data[data > 0]  # Remove background
+    
+    c(
+      mean_intensity = mean(data, na.rm = TRUE),
+      sd_intensity = sd(data, na.rm = TRUE),
+      q95 = quantile(data, 0.95, na.rm = TRUE),
+      total_volume = sum(data > mean(data)/2, na.rm = TRUE)  # Rough brain volume
+    )
+  })
+  
+  # Transpose so rows are samples
+  image_stats <- t(image_stats)
+  
+  # Create Y as linear combination of these stats
+  # Use known weights so we can verify signal strength
+  weights <- c(0.5, 0.3, 0.1, 0.1)
+  Y <- scale(image_stats %*% weights)
+  
+  # Add noise
+  if (eps_sigmaY > 0) {
+    Y <- Y + rnorm(length(Y), 0, eps_sigmaY)
+  }
+  
+  return(as.matrix(Y))
+}
+
 # Function to check if a column has only 2 values (binary after sd e.g.)
 is_binary <- function(x) {
   unique_values <- unique(x)
@@ -202,8 +236,51 @@ X_orig[,c(-1)] <- scale(X_orig[,c(-1)])
 if(is.null(beta2s)){
   Y <- y_from_xz(Z[,c(-1)], eps_sigmaY, post_non_lin=post_non_lin, g_z=g_z)
 }else{
-  Y <- y_from_xz(Z[,c(-1)], eps_sigmaY, X=as.matrix(X_orig[,c(-1)]), beta2s=beta2s, idx_beta2=idx_beta2, post_non_lin=post_non_lin, g_z=g_z)
+  Y <- y_from_xz(Z[,c(-1)], eps_sigmaY, X=as.matrix(X_orig[,c(-1)][,2:6])*3, beta2s=beta2s, idx_beta2=idx_beta2, post_non_lin=post_non_lin, g_z=g_z)
 }
+
+
+if (TRUE) {  # TEST MODE flag
+  cat("🧪 TEST MODE: Creating synthetic Y with strong MRI signal\n")
+  
+  # Load a few sample images and compute very simple features
+  library(RNifti)
+  sample_features <- t(sapply(1:nrow(X_obs), function(i) {
+    if (i %% 50 == 1) cat(sprintf("Processing %d/%d\n", i, nrow(X_obs)))
+    img <- readNifti(X_obs$path[i])
+    data <- as.vector(img)
+    data <- data[data > quantile(data, 0.1)]  # Remove background
+    
+    # Just 4 very simple features
+    c(
+      mean(data),
+      sd(data),
+      quantile(data, 0.75),
+      length(data)  # Proxy for brain volume
+    )
+  }))
+  
+  # Scale features
+  sample_features <- scale(sample_features)
+  
+  # Create Y as strong linear combination
+  set.seed(1337)
+  true_weights <- rnorm(4, mean=0, sd=1)
+  Y_signal <- sample_features %*% true_weights
+  Y_signal <- scale(Y_signal)
+  
+  # Add only a little noise
+  Y <- Y_signal + rnorm(length(Y_signal), 0, 0.01)
+  Y <- as.matrix(Y)
+  
+  # Update X_obs
+  X_obs$y <- Y[,1]
+  
+  cat(sprintf("✅ Created Y with SNR=%.2f\n", var(Y_signal)/var(Y - Y_signal)))
+  cat(sprintf("Y stats: mean=%.3f, sd=%.3f\n", mean(Y), sd(Y)))
+}
+
+
 
 
 
@@ -218,7 +295,7 @@ if(embedding_obs %in% c('fastsurfer', 'condVAE', 'latentDiffusion', 'freesurfer'
   # Setup paths for train results and embeddings
   input_csv <- paste0(path_to_ukb_data, '/t1_paths.csv')
   embedding_dir <- paste0(path_to_ukb_data, '/t1/embeddings/', n_sample[[idx_sample]], '_', embedding_obs, '_', confounder, '_', g_z, '/', seed)
-  train_output_dir <- paste0(path_to_ukb_data, '/t1/results/', n_sample[[idx_sample]], '_', embedding_obs, '_', confounder, '_', g_z)
+  #train_output_dir <- paste0(path_to_ukb_data, '/t1/results/', n_sample[[idx_sample]], '_', embedding_obs, '_', confounder, '_', g_z)
 
   embeddings_path <- file.path(embedding_dir, 'test_embeddings.npy')
   index_path <- file.path(embedding_dir, 'test_embeddings_index.csv')
@@ -252,7 +329,7 @@ if(embedding_obs %in% c('fastsurfer', 'condVAE', 'latentDiffusion', 'freesurfer'
     jsonlite::write_json(config, config_path, pretty = TRUE, auto_unbox = TRUE)
 
     # save image paths and Y values
-    train_csv <- paste0(embedding_dir, '/train_labeled.csv')
+    train_csv <- paste0(embedding_dir, '/x_obs_for_train.csv')
     write.csv(X_obs, train_csv, row.names = FALSE)
 
     # generate X_obs
@@ -280,7 +357,7 @@ if(embedding_obs %in% c('fastsurfer', 'condVAE', 'latentDiffusion', 'freesurfer'
                     "--val_frac", "0.2",
                     "--amp",
                     "--num_workers", "8",
-                    "--lr", "1e-2",
+                    "--lr", "3e-3",
                     "--use_tensorboard",
                     "--pretrained","--simple_head")
 

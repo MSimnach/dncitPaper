@@ -14,6 +14,12 @@ inst/withdraws_ukb.R
 inst/learn_embedding/back_up
 inst/learn_embedding/__pycache__
 #inst/python/*
+
+# ukb ids and check
 inst/learn_embedding/ukb/prep_ukb_id_path_csv.py
 inst/learn_embedding/ukb/audit_nifti_orientation_spacing.py
 
+# simple resnet embedding to test network training
+/sc/home/marco.simnacher/dncitPaper/inst/learn_embedding/train_simple_resnet.py
+/sc/home/marco.simnacher/dncitPaper/inst/learn_embedding/plot_simple_results.py
+/sc/home/marco.simnacher/dncitPaper/inst/learn_embedding/generate_synthetic_y.py

@@ -189,19 +189,24 @@ class BrainMRIModule(pl.LightningModule):
     
     def _init_head_bias(self):
         """Initialize final layer bias to training mean"""
+        # deactivate for now
         try:
             if hasattr(self, 'y_mean_buf') and self.y_mean_buf is not None:
                 y_mean = float(self.y_mean_buf.item())
+                y_std = float(self.y_std_buf.item())
             else:
-                y_mean = 50.0  # fallback
+                y_mean = 0.05
+                y_std = 1.13  # Your training std
         except Exception:
-            y_mean = 50.0  # fallback
+            y_mean = 0.05
+            y_std = 1.13
         
         with torch.no_grad():
             if hasattr(self.model.fc, 'bias') and self.model.fc.bias is not None:
-                # Simple linear head
+                # Simple linear head - scale weights by std and set bias to mean
+                self.model.fc.weight.mul_(y_std)  # Scale weights by target std
                 self.model.fc.bias.fill_(y_mean)
-                print(f"🎯 Initialized head bias to {y_mean:.1f}")
+                print(f"🎯 Initialized head: bias={y_mean:.3f}, weight_scale={y_std:.3f}")
             elif hasattr(self.model.fc, '__getitem__'):
                 # Sequential MLP - get last layer
                 last_layer = self.model.fc[-1]
@@ -226,14 +231,27 @@ class BrainMRIModule(pl.LightningModule):
         x = batch["image"]
         y = batch["y"]
         
+        # DEBUG: Print raw targets
+        if batch_idx == 0 and stage == "train":
+            print(f"[DEBUG] Raw y before normalization: {y[:5]}")
+            
         # Prepare targets
         if self.args.task == "regression":
             y = torch.as_tensor(y, dtype=torch.float32, device=self.device).view(-1, 1)
+            
+            # DEBUG: Print before normalization
+            if batch_idx == 0 and stage == "train":
+                print(f"[DEBUG] y as tensor: {y[:5].flatten()}")
+                
             # Apply z-score normalization if enabled
             if (self.args.target_norm == "zscore" and 
                 hasattr(self, 'y_mean_buf') and hasattr(self, 'y_std_buf') and
                 self.y_mean_buf is not None and self.y_std_buf is not None):
                 y = (y - self.y_mean_buf) / (self.y_std_buf + 1e-6)
+                # DEBUG: Print after normalization
+                if batch_idx == 0 and stage == "train":
+                    print(f"[DEBUG] y after z-score: {y[:5].flatten()}")
+                    print(f"[DEBUG] y_mean_buf: {self.y_mean_buf}, y_std_buf: {self.y_std_buf}")
         elif self.args.task == "binary":
             y = torch.as_tensor(y, dtype=torch.float32, device=self.device).view(-1, 1)
         else:
@@ -241,8 +259,14 @@ class BrainMRIModule(pl.LightningModule):
         
         # Forward pass
         logits = self(x)
-        loss = self.criterion(logits, y)
         
+        # DEBUG: Print predictions
+        if batch_idx == 0 and stage == "train":
+            print(f"[DEBUG] logits: {logits[:5].flatten()}")
+        loss = self.criterion(logits, y)
+        # DEBUG: Print loss
+        if batch_idx == 0 and stage == "train":
+            print(f"[DEBUG] loss: {loss.item()}")
         # Log metrics
         self.log(f'{stage}_loss', loss, on_step=True, on_epoch=True, prog_bar=True, logger=True)
         
@@ -460,12 +484,6 @@ class BrainMRIDataModule(pl.LightningDataModule):
             p = str(r[img_col])
             sid = str(r[id_col]) if id_col and id_col in df.columns else Path(p).stem
             y = r[y_col]
-            if len(items) < 5:  # Only print for first 5 samples to avoid spam
-                print(f"[DEBUG] Sample {len(items)}:")
-                print(f"  Image path: {p}")
-                print(f"  Subject ID: {sid}")
-                print(f"  Raw y value: {y} (type: {type(y)})")
-                print(f"  ID column exists: {id_col in df.columns if id_col else 'No id_col specified'}")
             if task == "regression":
                 y = float(y)
             elif task == "binary":
@@ -723,6 +741,15 @@ def main():
         # Initialize final bias to training mean
         if model._init_bias:
             model._init_head_bias()
+            # Force better initialization for regression
+        if args.task == "regression" and hasattr(model.model.fc, 'weight'):
+            with torch.no_grad():
+                # Scale final layer weights by target std to match output range
+                target_std = data_module.target_stats['std']
+                model.model.fc.weight.mul_(target_std)
+                model.model.fc.bias.fill_(data_module.target_stats['mean'])
+                print(f"🎯 Scaled final layer: weight×{target_std:.3f}, bias={data_module.target_stats['mean']:.3f}")
+        
     total_params = sum(p.numel() for p in model.parameters())
     trainable_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
     print(f"🔧 Parameters: {total_params:,} total, {trainable_params:,} trainable")

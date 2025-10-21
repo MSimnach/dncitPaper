@@ -35,7 +35,8 @@ def evaluate_resnet_from_predictions(predictions_path, index_path, test_csv_path
     
     # Merge to get predictions with actual ages
     results_df = index_df.merge(test_df, left_on='subject_id', right_on='id')
-    
+    # ⚠️ CRITICAL: Sort by 'row' to align with predictions array order!
+    results_df = results_df.sort_values('row').reset_index(drop=True)
     # Check if merge was successful
     if len(results_df) == 0:
         print(f"❌ Error: No matching subject IDs found!")
@@ -103,6 +104,8 @@ def load_embeddings_with_labels(embeddings_path, index_path, test_csv_path):
     
     # Merge to get embeddings with labels
     results_df = index_df.merge(test_df, left_on='subject_id', right_on='id')
+    # ⚠️ CRITICAL: Sort by 'row' to align with embeddings array order!
+    results_df = results_df.sort_values('row').reset_index(drop=True)
     
     print(f"📊 Data loaded:")
     print(f"   Embeddings shape: {embeddings.shape}")
