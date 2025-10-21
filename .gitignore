@@ -20,6 +20,6 @@ inst/learn_embedding/ukb/prep_ukb_id_path_csv.py
 inst/learn_embedding/ukb/audit_nifti_orientation_spacing.py
 
 # simple resnet embedding to test network training
-/sc/home/marco.simnacher/dncitPaper/inst/learn_embedding/train_simple_resnet.py
-/sc/home/marco.simnacher/dncitPaper/inst/learn_embedding/plot_simple_results.py
-/sc/home/marco.simnacher/dncitPaper/inst/learn_embedding/generate_synthetic_y.py
+inst/learn_embedding/train_simple_resnet.py
+inst/learn_embedding/plot_simple_results.py
+inst/learn_embedding/generate_synthetic_y.py
