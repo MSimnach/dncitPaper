@@ -10,7 +10,7 @@ Sys.getenv(c("UKB_PATH","IXI_PATH"))
 ukb_path <- Sys.getenv("UKB_PATH", unset = NA)
 ukb_data <- read.csv(paste0(ukb_path, "/t1_paths.csv"))
 
-n_diag <- 1000
+n_diag <- 2000
 idx <- sample(1:nrow(ukb_data), n_diag)
 ukb_data_diag <- ukb_data[idx,]
 
