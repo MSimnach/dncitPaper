@@ -190,8 +190,8 @@ def main():
     
     print(f"\n🎉 Pipeline completed successfully!")
     print(f"   Training results: {output_dir}")
-    print(f"   Test embeddings: {output_dir / 'test_embeddings.npy'}")
-    print(f"   Test predictions: {output_dir / 'test_predictions.npy'}")
+    print(f"   Test embeddings: {output_dir / 'test_embeddings.parquet'}")
+    print(f"   Test predictions: {output_dir / 'test_predictions.parquet'}")
     print(f"   Embedding index: {output_dir / 'test_embeddings_index.csv'}")
     
     return 0

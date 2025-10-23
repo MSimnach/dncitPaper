@@ -23,10 +23,11 @@ run_python_safe <- function(script_path, args = character(), python = NULL) {
 ##### Testing for simulation  
 library(devtools)
 load_all()
+library(arrow)
 
 # Load embeddings using reticulate (numpy only - should work fine)
-library(reticulate)
-np <- import("numpy")
+#library(reticulate)
+#np <- import("numpy")
 
 ######### Data checking #########
 # load UKB image_path.csv 
@@ -59,7 +60,7 @@ dev.off()
 
 
 # set up as in sim_run_settings.R and sim_ukb_brainmri.R
-args <- c("/No_CI/", "1", "0", "1", "0", "fastsurfer", "scratch", "ukb_z4", "linear", "RCOT", "1")
+args <- c("/No_CI/", "1", "0", "0.05", "0", "fastsurfer", "scratch", "ukb_z4", "squared", "RCOT", "1")
 n_cits <- 1
 cit <- c(args[10])
 print(args)
@@ -115,8 +116,11 @@ load_X_obs <- function(path_to_ukb_data,embedding_obs, embedding_orig, X_orig, e
   }else if(grepl('noisy',embedding_obs, fixed=TRUE)){
     epsX <- stats::rnorm(nrow(X_orig)*(ncol(X_orig)-1), 0,eps_sigmaX)
     X_obs <- cbind(X_orig[,1], scale(X_orig[,2:ncol(X_orig)])+epsX)
-  }else if(embedding_obs %in% c('medicalnet', 'scratch', 'ft_head_only', 'ft_full')){
-    X_obs <- data.table::fread(paste0(path_to_ukb_data, '/t1_paths.csv'), header=TRUE, nThread = 1)
+  }else if(embedding_obs %in% c('scratch', 'medicalnet_ft', 'medicalnet_ft_frozen')){
+    X_obs <- data.table::fread(paste0(path_to_ukb_data, '/t1_paths_cit.csv'), header=TRUE, nThread = 1)
+  }else if (embedding_obs == 'medicalnet'){
+    X_obs_emb <- arrow::read_parquet(paste0(path_to_ukb_data, '/medicalnet_embeddings/embeddings.parquet'))
+    X_obs <- as.data.frame(X_obs_emb)
   }
   return(X_obs)
 }
@@ -141,40 +145,6 @@ load_Z <- function(path_to_ukb_data,confounder){
   }
 }
 
-# Generate Y from simple image statistics that ResNet can easily learn
-y_from_image_stats <- function(image_paths, eps_sigmaY = 0) {
-  library(RNifti)
-  
-  cat("Computing simple image statistics...\n")
-  image_stats <- sapply(image_paths, function(path) {
-    img <- readNifti(path)
-    data <- as.vector(img)
-    data <- data[data > 0]  # Remove background
-    
-    c(
-      mean_intensity = mean(data, na.rm = TRUE),
-      sd_intensity = sd(data, na.rm = TRUE),
-      q95 = quantile(data, 0.95, na.rm = TRUE),
-      total_volume = sum(data > mean(data)/2, na.rm = TRUE)  # Rough brain volume
-    )
-  })
-  
-  # Transpose so rows are samples
-  image_stats <- t(image_stats)
-  
-  # Create Y as linear combination of these stats
-  # Use known weights so we can verify signal strength
-  weights <- c(0.5, 0.3, 0.1, 0.1)
-  Y <- scale(image_stats %*% weights)
-  
-  # Add noise
-  if (eps_sigmaY > 0) {
-    Y <- Y + rnorm(length(Y), 0, eps_sigmaY)
-  }
-  
-  return(as.matrix(Y))
-}
-
 # Function to check if a column has only 2 values (binary after sd e.g.)
 is_binary <- function(x) {
   unique_values <- unique(x)
@@ -191,10 +161,11 @@ X_orig <- as.data.frame(X_orig)
 Z <- as.data.frame(Z)
 
 #Z <- Z[!duplicated(Z$id), ]
-common_ids <- Reduce(intersect, list(X_orig$id, Z$id))
+cit_ids <- data.table::fread(paste0(path_to_ukb_data, '/t1_paths_cit.csv'), header=TRUE, nThread = 1)$id
+common_ids <- Reduce(intersect, list(X_orig$id, Z$id, cit_ids))
 
-subset_X_orig <-  X_orig[X_orig$id %in% common_ids, ]
-subset_Z <- Z[Z$id %in% common_ids, ]
+subset_X_orig <-  X_orig[match(common_ids, X_orig$id), ]
+subset_Z <- Z[match(common_ids, Z$id), ]
 #check if ids are equal
 stopifnot(all.equal(subset_X_orig[,1], subset_Z[,1]))
 
@@ -236,70 +207,29 @@ X_orig[,c(-1)] <- scale(X_orig[,c(-1)])
 if(is.null(beta2s)){
   Y <- y_from_xz(Z[,c(-1)], eps_sigmaY, post_non_lin=post_non_lin, g_z=g_z)
 }else{
-  Y <- y_from_xz(Z[,c(-1)], eps_sigmaY, X=as.matrix(X_orig[,c(-1)][,2:6])*3, beta2s=beta2s, idx_beta2=idx_beta2, post_non_lin=post_non_lin, g_z=g_z)
+  Y <- y_from_xz(Z[,c(-1)], eps_sigmaY, X=as.matrix(X_orig[,c(-1)]), beta2s=beta2s, idx_beta2=idx_beta2, post_non_lin=post_non_lin, g_z=g_z)
 }
 
-
-if (TRUE) {  # TEST MODE flag
-  cat("🧪 TEST MODE: Creating synthetic Y with strong MRI signal\n")
-  
-  # Load a few sample images and compute very simple features
-  library(RNifti)
-  sample_features <- t(sapply(1:nrow(X_obs), function(i) {
-    if (i %% 50 == 1) cat(sprintf("Processing %d/%d\n", i, nrow(X_obs)))
-    img <- readNifti(X_obs$path[i])
-    data <- as.vector(img)
-    data <- data[data > quantile(data, 0.1)]  # Remove background
-    
-    # Just 4 very simple features
-    c(
-      mean(data),
-      sd(data),
-      quantile(data, 0.75),
-      length(data)  # Proxy for brain volume
-    )
-  }))
-  
-  # Scale features
-  sample_features <- scale(sample_features)
-  
-  # Create Y as strong linear combination
-  set.seed(1337)
-  true_weights <- rnorm(4, mean=0, sd=1)
-  Y_signal <- sample_features %*% true_weights
-  Y_signal <- scale(Y_signal)
-  
-  # Add only a little noise
-  Y <- Y_signal + rnorm(length(Y_signal), 0, 0.01)
-  Y <- as.matrix(Y)
-  
-  # Update X_obs
-  X_obs$y <- Y[,1]
-  
-  cat(sprintf("✅ Created Y with SNR=%.2f\n", var(Y_signal)/var(Y - Y_signal)))
-  cat(sprintf("Y stats: mean=%.3f, sd=%.3f\n", mean(Y), sd(Y)))
-}
-
-
-
+y_dir <- paste0(path_to_ukb_data, '/', args[1], '/', n_sample[[idx_sample]], '/', seed)
+dir.create(y_dir, recursive = TRUE)
+Y_id <- data.frame(id = X_orig$id, Y = Y[,1])
+write.csv(Y_id, file.path(y_dir, 'Y.csv'), row.names = FALSE)
 
 
 if(embedding_obs %in% c('fastsurfer', 'condVAE', 'latentDiffusion', 'freesurfer')){
   X_obs[,c(-1)] <- scale(X_obs[,c(-1)])
 } else{
   # Reorder X_obs to match X_orig,Z,Y and assign Y to X_obs
-  X_obs <- data.table::fread(paste0(path_to_ukb_data, '/t1_paths.csv'), header=TRUE, nThread = 1)
+  X_obs <- data.table::fread(paste0(path_to_ukb_data, '/t1_paths_cit.csv'), header=TRUE, nThread = 1)
   X_obs <- X_obs[match(X_orig$id, X_obs$id), ]
+  stopifnot(all.equal(X_obs$id, Y_id$id))
   X_obs$y <- Y[,1]
 
   # Setup paths for train results and embeddings
-  input_csv <- paste0(path_to_ukb_data, '/t1_paths.csv')
-  embedding_dir <- paste0(path_to_ukb_data, '/t1/embeddings/', n_sample[[idx_sample]], '_', embedding_obs, '_', confounder, '_', g_z, '/', seed)
-  #train_output_dir <- paste0(path_to_ukb_data, '/t1/results/', n_sample[[idx_sample]], '_', embedding_obs, '_', confounder, '_', g_z)
-
-  embeddings_path <- file.path(embedding_dir, 'test_embeddings.npy')
-  index_path <- file.path(embedding_dir, 'test_embeddings_index.csv')
-  preds_path <- file.path(embedding_dir, 'test_predictions.npy')
+  embedding_dir <- paste0(y_dir, '/', embedding_obs)
+  embeddings_path <- file.path(embedding_dir, '/test_embeddings.parquet')
+  index_path <- file.path(embedding_dir, '/test_embeddings_index.csv')
+  preds_path <- file.path(embedding_dir, '/test_predictions.parquet')
 
   ## Train or skip if embeddings already exist
   if (dir.exists(embedding_dir)){
@@ -338,76 +268,81 @@ if(embedding_obs %in% c('fastsurfer', 'condVAE', 'latentDiffusion', 'freesurfer'
       cat("🏗️  Training model from scratch...\n")
         # Run training pipeline
       train_script <- "inst/learn_embedding/run_train_test_pipeline.py"
-      train_args <- sprintf("--input_csv %s --id_col id --output_dir %s --script_dir %s --model_name resnet18 --task regression --epochs 30 --batch_size 8 --test_size 0.5 --val_frac 0.2 --amp --num_workers 4 --lr 8e-4 --use_tensorboard",
-                          train_csv, embedding_dir, script_dir)
-      
-      cat("Training with args:", train_args, "\n")
-      result <- run_python_safe(train_script, train_args, conda_env = 'dncit-paper')
-      head(read.csv(train_csv))
-      # Build args as a vector (safer than one big string)
       args_vec <- c("--input_csv", normalizePath(train_csv),
                     "--id_col", "id",
                     "--output_dir", normalizePath(embedding_dir),
                     "--script_dir", normalizePath(script_dir),
                     "--model_name", "resnet18",
                     "--task", "regression",
-                    "--epochs", "30",
-                    "--batch_size", "8",
+                    "--epochs", "100",
+                    "--batch_size", "4",
                     "--test_size", "0.5",
                     "--val_frac", "0.2",
                     "--amp",
-                    "--num_workers", "8",
                     "--lr", "3e-3",
-                    "--use_tensorboard",
-                    "--pretrained","--simple_head")
+                    "--use_tensorboard")
 
       # Use the python from the active env (auto-detected via CONDA_PREFIX)
       res <- run_python_safe(train_script, args_vec)
       cat(res, sep = "\n")  
       
     } else if (embedding_obs == 'medicalnet_ft'){
-      # For 'medicalnet_ft': fine-tune pretrained medicalnet weights, then use fine-tuned model
-      cat("🏗️  Fine-tune model with pretrained medicalnet weights...\n")
-      # Run training pipeline
-      train_script <- "/home/RDC/simnacma/Coding/dncitPaper/inst/learn_embedding/run_train_test_pipeline.py"
-      train_args <- sprintf("--input_csv %s --id_col id --output_dir %s --script_dir %s --model_name resnet18 --task regression --epochs 30 --batch_size 16 --test_size 0.5 --val_frac 0.2 --amp --num_workers 4 --lr 8e-4 --pretrained --simple_head",
-                          train_csv, train_output_dir, script_dir)
-      
-      cat("Training with args:", train_args, "\n")
-      result <- run_python_safe(train_script, train_args)
-    } else{
-      # For pretrained models: use extraction script
-      embedding_dir <- paste0(path_to_ixi_data, '/t1/embeddings/', embedding_obs)
-      embeddings_path <- file.path(embedding_dir, 'embeddings.npy')
-      index_path <- file.path(embedding_dir, 'embeddings_index.csv')
-      
-      # Create embedding directory
-      dir.create(embedding_dir, recursive = TRUE)
-      
-      # Determine model name
-      model_name <- switch(embedding_obs,
-                          'medicalnet' = 'resnet18',
-                          'ft_head_only' = 'resnet18',
-                          'ft_full' = 'resnet18',
-                          'resnet18')
-      
-      # Run extraction using helper script
-      python_script <- "/home/RDC/simnacma/Coding/dncitPaper/inst/learn_embedding/run_ixi_extraction.py"
-      batch_size <- 16
-      args <- sprintf("--input_csv %s --output_dir %s --model_name %s --batch_size %d",
-                      input_csv, embedding_dir, model_name, batch_size)
-      
-      cat("Running:", model_name, "on", input_csv, "\n")
-      result <- run_python_safe(python_script, args)
+      # For 'scratch': train from scratch first, then use trained model
+      cat("🏗️  Fine-tuning pretrained MedicalNet weights...\n")
+        # Run training pipeline
+      train_script <- "inst/learn_embedding/run_train_test_pipeline.py"
+      args_vec <- c("--input_csv", normalizePath(train_csv),
+                    "--id_col", "id",
+                    "--output_dir", normalizePath(embedding_dir),
+                    "--script_dir", normalizePath(script_dir),
+                    "--model_name", "resnet18",
+                    "--task", "regression",
+                    "--epochs", "100",
+                    "--batch_size", "4",
+                    "--test_size", "0.5",
+                    "--val_frac", "0.2",
+                    "--amp",
+                    "--lr", "3e-3",
+                    "--use_tensorboard",
+                    "--pretrained",
+                    "--simple_head")
+
+      # Use the python from the active env (auto-detected via CONDA_PREFIX)
+      res <- run_python_safe(train_script, args_vec)
+      cat(res, sep = "\n") 
+    } else if(embedding_obs == 'medicalnet_ft_frozen'){
+      # For 'scratch': train from scratch first, then use trained model
+      cat("🏗️  Fine-tuning pretrained MedicalNet weights with frozen backbone...\n")
+         # Run training pipeline
+      train_script <- "inst/learn_embedding/run_train_test_pipeline.py"
+      args_vec <- c("--input_csv", normalizePath(train_csv),
+                    "--id_col", "id",
+                    "--output_dir", normalizePath(embedding_dir),
+                    "--script_dir", normalizePath(script_dir),
+                    "--model_name", "resnet18",
+                    "--task", "regression",
+                    "--epochs", "100",
+                    "--batch_size", "4",
+                    "--test_size", "0.5",
+                    "--val_frac", "0.2",
+                    "--amp",
+                    "--lr", "3e-3",
+                    "--use_tensorboard",
+                    "--pretrained",
+                    "--simple_head",
+                    "--freeze_backbone")
+
+      # Use the python from the active env (auto-detected via CONDA_PREFIX)
+      res <- run_python_safe(train_script, args_vec)
+      cat(res, sep = "\n") 
+    }else{
+      # error
+      stop("Error: embedding_obs not supported")
     }
-    # copy results from train_output_dir to embedding_dir
-    file.copy(from = file.path(train_output_dir, 'test_embeddings.npy'), to = embeddings_path)
-    file.copy(from = file.path(train_output_dir, 'test_embeddings_index.csv'), to = index_path)
-    file.copy(from = file.path(train_output_dir, 'test_predictions.npy'), to = preds_path)
   }
 
   # Load embeddings and convert to proper format
-  embeddings <- np$load(embeddings_path)
+embeddings <- as.matrix(arrow::read_parquet(embeddings_path))
   index_df <- read.csv(index_path, stringsAsFactors = FALSE)
 
   # Convert to data frame, add IDs, and align to X_orig$id
@@ -423,4 +358,61 @@ if(embedding_obs %in% c('fastsurfer', 'condVAE', 'latentDiffusion', 'freesurfer'
   Y <- Y[id_order, , drop=FALSE]
   # (optional) sanity check
   stopifnot(identical(X_obs$id, X_orig$id))
+}
+
+
+
+### now with data_gen function
+args <- c("/No_CI/", "1", "0", "0.01", "0", "fastsurfer", "scratch", "ukb_z4", "squared", "RCOT", "1")
+n_cits <- 1
+cit <- c(args[10])
+print(args)
+
+n_seeds = 1:200
+
+post_non_lin=as.numeric(args[2])
+eps_sigmaX=as.numeric(args[3])
+eps_sigmaY=as.numeric(args[4])
+eps_sigmaZ=as.numeric(args[5])
+embedding_orig=args[6]
+embedding_obs=args[7]
+confounder=args[8]                                        
+g_z=args[9]
+beta2s=list(1)
+idx_beta2=1
+idx_sample = 1
+seed=1
+n_sample = list(550)
+
+## test data generation
+set.seed(seed)
+
+##### Test DNCIT-specific embedding maps
+## prepare data
+path_to_ukb_data <- Sys.getenv("UKB_PATH", unset = NA)
+
+XYZ_list <- dncitPaper::data_gen(seed=seed, idx_sample=idx_sample, n_sample=n_sample, idx_beta2=idx_beta2, 
+                      beta2s=beta2s, post_non_lin=post_non_lin, eps_sigmaX=eps_sigmaX, eps_sigmaY=eps_sigmaY, 
+                      eps_sigmaZ=eps_sigmaZ, embedding_orig=embedding_orig, embedding_obs=embedding_obs, 
+                      confounder=confounder, g_z=g_z)
+
+X <- as.matrix(XYZ_list[[1]])
+Y <- as.matrix(XYZ_list[[2]])
+Z <- as.matrix(XYZ_list[[3]])
+
+
+## test for several eps_sigmaY
+# for 3 seeds
+seeds <- c(1, 2, 3)
+eps_sigmaY_list <- c(0, 0.01, 0.05, 0.1, 0.5)
+for(eps_sigmaY in eps_sigmaY_list){
+  for(seed in seeds){
+    XYZ_list <- dncitPaper::data_gen(seed=seed, idx_sample=idx_sample, n_sample=n_sample, idx_beta2=idx_beta2, 
+                        beta2s=beta2s, post_non_lin=post_non_lin, eps_sigmaX=eps_sigmaX, eps_sigmaY=eps_sigmaY, 
+                        eps_sigmaZ=eps_sigmaZ, embedding_orig=embedding_orig, embedding_obs=embedding_obs, 
+                        confounder=confounder, g_z=g_z)
+    X <- as.matrix(XYZ_list[[1]])
+    Y <- as.matrix(XYZ_list[[2]])
+    Z <- as.matrix(XYZ_list[[3]])
+  }
 }

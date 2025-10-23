@@ -98,8 +98,8 @@ def run_ixi_extraction(input_csv, output_dir, model_name="resnet18", batch_size=
         output_dir.mkdir(parents=True, exist_ok=True)
         
         # Create output paths
-        embeddings_path = output_dir / 'embeddings.npy'
-        predictions_path = output_dir / 'predictions.npy'
+        embeddings_path = output_dir / 'embeddings.parquet'
+        predictions_path = output_dir / 'predictions.parquet'
         index_path = output_dir / 'embeddings_index.csv'
         
         print(f'🔄 Extracting embeddings and predictions for {len(items)} samples...')

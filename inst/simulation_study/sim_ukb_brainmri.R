@@ -73,7 +73,8 @@ res_time <- foreach::foreach (i= n_seeds, .packages = pkgs_for_each) %dopar% {
                                                  if (grepl('/CI',args[1],fixed=TRUE)){
                                                    #cat('CIT:', cit)
                                                    res <- rep(0,length(n_sample))
-                                                   runtime <- rep(0,length(n_sample))
+                                                   runtime_cit <- rep(0,length(n_sample))
+                                                   runtime_embedding <- rep(0,length(n_sample))
                                                    for (idx_sample in seq_along(n_sample)){
                                                      if(i %% 50 == 1) {
                                                       cat(paste("Iteration",i,"for sample size", n_sample[[idx_sample]], "\n"))
@@ -85,6 +86,7 @@ res_time <- foreach::foreach (i= n_seeds, .packages = pkgs_for_each) %dopar% {
                                                      X <- as.matrix(XYZ_list[[1]])
                                                      Y <- as.matrix(XYZ_list[[2]])
                                                      Z <- as.matrix(XYZ_list[[3]])
+                                                     embedding_time <- XYZ_list[[4]]
 
                                                      if (args[10] == 'RCOT'){
                                                       if(n_sample[[idx_sample]] < 500){
@@ -174,13 +176,15 @@ res_time <- foreach::foreach (i= n_seeds, .packages = pkgs_for_each) %dopar% {
                                                      tmp <- DNCIT::DNCIT(X, Y, Z, embedding_map_with_parameters = 'feature_representations',
                                                            cit_with_parameters = cit_params)
                                                      res[idx_sample] <- tmp$p
-                                                     runtime[idx_sample] <- tmp$runtime
+                                                     runtime_cit[idx_sample] <- tmp$runtime
+                                                     runtime_embedding[idx_sample] <- embedding_time
                                                    }
-                                                   p_time <- cbind(res, runtime)
+                                                   p_time <- cbind(res, runtime_cit, runtime_embedding)
                                                  }else if(grepl('/No_CI',args[1],fixed=TRUE)){
                                                    #cat('CIT:', cit)
                                                    res <- rep(0,length(n_sample))
-                                                   runtime <- rep(0,length(n_sample))
+                                                   runtime_cit <- rep(0,length(n_sample))
+                                                   runtime_embedding <- rep(0,length(n_sample))
                                                    for (idx_sample in seq_along(n_sample)){
                                                      if(i %% 50 == 1) {
                                                       cat(paste("Iteration",i,"for sample size", n_sample[[idx_sample]], "\n"))
@@ -194,6 +198,7 @@ res_time <- foreach::foreach (i= n_seeds, .packages = pkgs_for_each) %dopar% {
                                                        X <- as.matrix(XYZ_list[[1]])
                                                        Y <- as.matrix(XYZ_list[[2]])
                                                        Z <- as.matrix(XYZ_list[[3]])
+                                                       embedding_time <- XYZ_list[[4]]
                                                        #XYZ <- data.frame(XYZ_list)
 
                                                        if (args[10] == 'RCOT'){
@@ -282,10 +287,11 @@ res_time <- foreach::foreach (i= n_seeds, .packages = pkgs_for_each) %dopar% {
                                                        tmp <- DNCIT::DNCIT(X, Y, Z, embedding_map_with_parameters = 'feature_representations',
                                                                     cit_with_parameters = cit_params)
                                                        res[idx_sample] <- tmp$p
-                                                       runtime[idx_sample] <- tmp$runtime
+                                                       runtime_cit[idx_sample] <- tmp$runtime
+                                                       runtime_embedding[idx_sample] <- embedding_time
                                                      }
                                                    }
-                                                   p_time <- cbind(res, runtime)
+                                                   p_time <- cbind(res, runtime_cit, runtime_embedding)
                                                  }
                                                  p_time
                                                }
@@ -294,15 +300,18 @@ parallel::stopCluster(cl)
 
 #save results
 p_res <- matrix(nrow=length(n_seeds), ncol=length(n_sample))
-runtime <- matrix(nrow=length(n_seeds), ncol=length(n_sample))
+runtime_cit <- matrix(nrow=length(n_seeds), ncol=length(n_sample))
+runtime_embedding <- matrix(nrow=length(n_seeds), ncol=length(n_sample))
 for (i in n_seeds){
   for (idx_sample in seq_along(n_sample)){
     p_res[i, idx_sample] <- res_time[[i]][idx_sample,1]
-    runtime[i, idx_sample] <- res_time[[i]][idx_sample,2]
+    runtime_cit[i, idx_sample] <- res_time[[i]][idx_sample,2]
+    runtime_embedding[i, idx_sample] <- res_time[[i]][idx_sample,3]
   }
 }
 write.csv(p_res,file=paste0("Results", args[1], "p-values/", paste(args[-1], collapse="_"), ".csv", collapse=''))
-write.csv(runtime,file=paste0("Results", args[1], "Runtime/", paste(args[-1], collapse="_"), ".csv", collapse=''))
+write.csv(runtime_cit,file=paste0("Results", args[1], "runtime_cit/", paste(args[-1], collapse="_"), ".csv", collapse=''))
+write.csv(runtime_embedding,file=paste0("Results", args[1], "runtime_embedding/", paste(args[-1], collapse="_"), ".csv", collapse=''))
 
 #rejection rates
 n_seeds_ <- length(n_seeds)
@@ -318,15 +327,18 @@ write.csv(rejected,file=paste0("Results", args[1], "rejection_rates/", paste(arg
 if (FALSE){
   if(grepl("/CI",args[1],fixed=TRUE)){
     p_res <- matrix(nrow=length(n_seeds), ncol=length(n_sample))
-    runtime <- matrix(nrow=length(n_seeds), ncol=length(n_sample))
+    runtime_cit <- matrix(nrow=length(n_seeds), ncol=length(n_sample))
+    runtime_embedding <- matrix(nrow=length(n_seeds), ncol=length(n_sample))
     for (i in n_seeds){
       for (idx_sample in seq_along(n_sample)){
         p_res[i, idx_sample] <- res_time[[i]][idx_sample,1]
-        runtime[i, idx_sample] <- res_time[[i]][idx_sample,2]
+        runtime_cit[i, idx_sample] <- res_time[[i]][idx_sample,2]
+        runtime_embedding[i, idx_sample] <- res_time[[i]][idx_sample,3]
       }
     }
     write.csv(p_res,file=paste0("Results", args[1], "p-values/", paste(args[-1], collapse="_"), ".csv", collapse=''))
-    write.csv(runtime,file=paste0("Results", args[1], "Runtime/", paste(args[-1], collapse="_"), ".csv", collapse=''))
+    write.csv(runtime_cit,file=paste0("Results", args[1], "runtime_cit/", paste(args[-1], collapse="_"), ".csv", collapse=''))
+    write.csv(runtime_embedding,file=paste0("Results", args[1], "runtime_embedding/", paste(args[-1], collapse="_"), ".csv", collapse=''))
 
     #rejection rates
     n_seeds_ <- length(n_seeds)
@@ -350,15 +362,18 @@ if (FALSE){
   }else if(grepl("/No_CI",args[1],fixed=TRUE)){
     #save p-values and runtimes
     p_res <- matrix(nrow=length(n_seeds), ncol=length(beta2s))
-    runtime <- matrix(nrow=length(n_seeds), ncol=length(beta2s))
+    runtime_cit <- matrix(nrow=length(n_seeds), ncol=length(beta2s))
+    runtime_embedding <- matrix(nrow=length(n_seeds), ncol=length(beta2s))
     for (i in n_seeds){
       for (idx_beta2 in seq_along(beta2s)){
         p_res[i, idx_beta2] <- res_time[[i]][idx_beta2,1]
-        runtime[i, idx_beta2] <- res_time[[i]][idx_beta2,2]
+        runtime_cit[i, idx_beta2] <- res_time[[i]][idx_beta2,2]
+        runtime_embedding[i, idx_beta2] <- res_time[[i]][idx_beta2,3]
       }
     }
     write.csv(p_res,file=paste0("Results", args[1], "p-values/", paste(args[-1], collapse="_"), ".csv", collapse=''))
-    write.csv(runtime,file=paste0("Results", args[1], "Runtime/", paste(args[-1], collapse="_"), ".csv", collapse=''))
+    write.csv(runtime_cit,file=paste0("Results", args[1], "runtime_cit/", paste(args[-1], collapse="_"), ".csv", collapse=''))
+    write.csv(runtime_embedding,file=paste0("Results", args[1], "runtime_embedding/", paste(args[-1], collapse="_"), ".csv", collapse=''))
 
     #rejection rates
     n_seeds_ <- length(n_seeds)

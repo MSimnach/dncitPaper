@@ -1,10 +1,10 @@
 # load T1 paths for diagnostic
-library(data.table)
 library(dplyr)
 library(devtools)
 load_all()
-library(reticulate)
-np <- import("numpy")
+#library(reticulate)
+#np <- import("numpy")
+library(arrow)
 
 # load UKB image_path.csv 
 readRenviron(".Renviron")
@@ -23,48 +23,26 @@ colnames(freesurfer_embedding)[1] <- "id"
 
 # Extract pretrained MedicalNet embeddings
 out_dir <- paste0(ukb_path, "/medicalnet_embeddings")
-system2("python", c("inst/learn_embedding/extract_embeddings.py",
-                    "--pretrained", "--model_name", "resnet18",
-                    "--input_csv", paste0(ukb_path, "/t1_paths_diag.csv"),
-                    "--output_dir", out_dir, 
-                    "--batch_size", "16",
-                    "--num_workers", "4"))
-medicalnet_emb <- np$load(paste0(out_dir, "/embeddings.npy"))
+#system2("python", c("inst/learn_embedding/extract_embeddings.py",
+#                    "--pretrained", "--model_name", "resnet18",
+#                    "--input_csv", paste0(ukb_path, "/t1_paths.csv"),
+#                    "--output_dir", out_dir, 
+#                    "--batch_size", "16",
+#                    "--num_workers", "4"))
+medicalnet_emb <- as.matrix(arrow::read_parquet(paste0(out_dir, "/embeddings.parquet")))
 medicalnet_idx <- fread(paste0(out_dir, "/embeddings_index.csv"))
 medicalnet_embedding <- cbind(id = medicalnet_idx$subject_id, as.data.frame(medicalnet_emb))
-
-# Extract embeddings from trained checkpoint
-checkpoint_path <- paste0(ukb_path, "/t1/embeddings/550_scratch_ukb_z4_linear/1/best_model.ckpt")
-out_dir_trained <- paste0(ukb_path, "/trained_model_embeddings")
-system2("python", c("inst/learn_embedding/extract_embeddings.py",
-                    "--checkpoint", checkpoint_path,
-                    "--input_csv", paste0(ukb_path, "/t1_paths_diag.csv"),
-                    "--output_dir", out_dir_trained,
-                    "--config_name", "trained", 
-                    "--batch_size", "16",
-                    "--num_workers", "4"))
-trained_emb <- np$load(paste0(out_dir_trained, "/trained/embeddings.npy"))
-trained_idx <- fread(paste0(out_dir_trained, "/trained/embeddings_index.csv"))
-trained_embedding <- cbind(id = trained_idx$subject_id, as.data.frame(trained_emb))
-
-Y <- read.csv(paste0(ukb_path, "/ukb_z1_age.csv"))
 
 # Find common IDs across all datasets
 # Assuming Y is stored in a dataframe/data.table with an 'id' column
 common_ids <- Reduce(intersect, list(
   t1_paths_diag$id,
   fastsurfer_embedding$id,  # or $id depending on column name
-  #condVAE_embedding$id,
+  condVAE_embedding$id,
   freesurfer_embedding$id,
-  medicalnet_embedding$id,
-  trained_embedding$id,
-  Y$id  # adjust column name as needed
+  medicalnet_embedding$id
 ))
-
 cat("Total common IDs across all datasets:", length(common_ids), "\n")
-
-# Filter and sort all datasets by common IDs
-# Sort common_ids first for consistent ordering
 common_ids <- sort(common_ids)
 
 # Filter and reorder each dataset
@@ -73,35 +51,117 @@ fastsurfer_emb <- fastsurfer_embedding[match(common_ids, fastsurfer_embedding$id
 condVAE_emb <- condVAE_embedding[match(common_ids, condVAE_embedding$id), ]
 freesurfer_emb <- freesurfer_embedding[match(common_ids, freesurfer_embedding$id), ]
 medicalnet_emb <- medicalnet_embedding[match(common_ids, medicalnet_embedding$id), ]
-trained_emb <- trained_embedding[match(common_ids, trained_embedding$id), ]
-Y_aligned <- Y[match(common_ids, Y$id), ]
 
-# Verify alignment (all should return TRUE)
-cat("Checking alignment:\n")
-cat("  t1_paths_diag IDs match:", all(t1_paths_diag$id == common_ids), "\n")
-cat("  fastsurfer IDs match:", all(fastsurfer_emb$eid == common_ids), "\n")
-#cat("  condVAE IDs match:", all(condVAE_emb$id == common_ids), "\n")
-cat("  freesurfer IDs match:", all(freesurfer_emb$id == common_ids), "\n")
-cat("  medicalnet IDs match:", all(medicalnet_emb$id == common_ids), "\n")
-cat("  trained IDs match:", all(trained_emb$id == common_ids), "\n")
-cat("  Y IDs match:", all(Y_aligned$id == common_ids), "\n")
+write.csv(t1_paths_diag, file.path(ukb_path, 't1_paths_diag_cvae.csv'), row.names = FALSE)
 
-# ---- train / test split ----
-n  <- length(common_ids)
-idx_test  <- sample.int(n, size = round(0.2*n))   # 20% hold-out
-idx_train <- setdiff(seq_len(n), idx_test)
+# Extract embeddings from trained checkpoint
+current_y_gen_dir <- paste0(ukb_path, "/No_CI/550/1")
+checkpoint_path <- paste0(current_y_gen_dir, "/scratch/best_model.ckpt")
+out_dir_diagnostic <- paste0(current_y_gen_dir, "/diagnostic")
+dir.create(out_dir_diagnostic, recursive = TRUE)
+system2("python", c("inst/learn_embedding/extract_embeddings.py",
+                    "--checkpoint", checkpoint_path,
+                    "--input_csv", paste0(ukb_path, "/t1_paths_diag_cvae.csv"),
+                    "--output_dir", out_dir_diagnostic,
+                    "--config_name", "scratch", 
+                    "--batch_size", "16",
+                    "--num_workers", "4",
+                    "--amp"))
+trained_emb <- as.matrix(arrow::read_parquet(paste0(out_dir_diagnostic, "/scratch/embeddings.parquet")))
+trained_idx <- fread(paste0(out_dir_diagnostic, "/scratch/embeddings_index.csv"))
+trained_embedding <- cbind(id = trained_idx$subject_id, as.data.frame(trained_emb))
 
-fastsurfer_tr <- fastsurfer_emb[idx_train, -1, drop = FALSE]
-fastsurfer_te <- fastsurfer_emb[idx_test, -1, drop = FALSE]
-freesurfer_tr <- freesurfer_emb[idx_train, -1, drop = FALSE]
-freesurfer_te <- freesurfer_emb[idx_test, -1, drop = FALSE]
-medicalnet_tr <- medicalnet_emb[idx_train, -1, drop = FALSE]
-medicalnet_te <- medicalnet_emb[idx_test, -1, drop = FALSE]
-trained_tr <- trained_emb[idx_train, -1, drop = FALSE]
-trained_te <- trained_emb[idx_test,  -1, drop = FALSE]
-ytr <- Y_aligned[idx_train,2]
-yte <- Y_aligned[idx_test,2]
 
+
+
+### gen Y for current setting
+# set up as in sim_run_settings.R and sim_ukb_brainmri.R
+args <- c("/No_CI/", "1", "0", "0.05", "0", "fastsurfer", "scratch", "ukb_z4", "squared", "RCOT", "1")
+n_cits <- 1
+cit <- c(args[10])
+print(args)
+post_non_lin=as.numeric(args[2])
+eps_sigmaX=as.numeric(args[3])
+eps_sigmaY=as.numeric(args[4])
+eps_sigmaZ=as.numeric(args[5])
+embedding_orig=args[6]
+embedding_obs=args[7]
+confounder=args[8]                                        
+g_z=args[9]
+if(args[1] == "/No_CI/"){
+  beta2s=list(1)
+  idx_beta2=1
+}
+seed = 1
+set.seed(seed)
+load_Z <- function(path_to_ukb_data,confounder){
+  if(confounder=='AS'){
+    Z <- data.table::fread(paste0(path_to_ukb_data, "/ukb_Z.csv"), header=TRUE, nThread = 1)
+  }else if(confounder == 'genes10'){
+    Z <- data.table::fread(paste0(path_to_ukb_data, "/ukb_Z_genes10.csv"), header=TRUE, nThread = 1)
+  }else if(confounder == 'ukb_z1'){
+    Z <- data.table::fread(paste0(path_to_ukb_data, "/ukb_z1_age.csv"), header=TRUE, nThread = 1)
+  }else if(confounder == 'ukb_z2'){
+    Z <- data.table::fread(paste0(path_to_ukb_data, "/ukb_z2_agesex.csv"), header=TRUE, nThread = 1)
+  }else if(confounder == 'ukb_z4'){
+    Z <- data.table::fread(paste0(path_to_ukb_data, "/ukb_z4_agesexsitesize.csv"), header=TRUE, nThread = 1)
+  }else if(confounder == 'ukb_z6'){
+    Z <- data.table::fread(paste0(path_to_ukb_data, "/ukb_z6_agesexsitesizedateqc.csv"), header=TRUE, nThread = 1)
+  }else if(confounder == 'ukb_z10'){
+    Z <- data.table::fread(paste0(path_to_ukb_data, "/ukb_z10_agesexsitesizedateqclocation.csv"), header=TRUE, nThread = 1)
+  }else if(confounder == 'ukb_z15'){
+    Z <- data.table::fread(paste0(path_to_ukb_data, "/ukb_z15_agesexsitesizedateqcgenes.csv"), header=TRUE, nThread = 1)
+  }
+}
+is_binary <- function(x) {
+  unique_values <- unique(x)
+  length(unique_values) == 2
+}
+
+Z <- load_Z(ukb_path,confounder)
+
+epsZ <- matrix(stats::rnorm((nrow(Z)*ncol(Z)), 0, eps_sigmaZ), nrow=nrow(Z), ncol=ncol(Z))
+Z <- as.data.frame(Z)+epsZ
+Z <- Z[match(common_ids, trained_embedding$id), ]
+
+  #remove zero columns and multicollinearity in one-hot-encoding of sites (due to subsampling)
+  site_columns <- grep("^site", colnames(Z), value = TRUE)
+  for (site in site_columns){
+    site_sum <- sum(Z[[site]])
+    if(site_sum == 0){
+      Z <- Z[, !names(Z) %in% site]
+    }
+  }
+  site_columns <- grep("^site", colnames(Z), value = TRUE)
+  # Sum the 'site' columns row-wise
+  site_sum <- sum(as.data.frame(Z)[site_columns])
+  #remove one site column
+  if(site_sum == nrow(Z)){
+    for(site in site_columns){
+      if(is_binary(Z[[site]])){
+        Z <- Z[, !names(Z) %in% site]
+        break
+      }
+    }
+  }
+
+#Standardize
+# scale only continuous confounders
+Z[,c(-1)] <- Z[,c(-1)] %>% dplyr::mutate(dplyr::across(dplyr::where(function(x) !is_binary(x)), scale))
+# scale fastsurfer embeddings (X_orig)
+fastsurfer_emb <- as.data.frame(fastsurfer_emb)
+fastsurfer_emb[,c(-1)] <- scale(fastsurfer_emb[,c(-1)])
+
+if(is.null(beta2s)){
+  Y <- y_from_xz(Z[,c(-1)], eps_sigmaY, post_non_lin=post_non_lin, g_z=g_z)
+}else{
+  Y <- y_from_xz(Z[,c(-1)], eps_sigmaY, X=as.matrix(fastsurfer_emb[,c(-1)]), beta2s=beta2s, idx_beta2=idx_beta2, post_non_lin=post_non_lin, g_z=g_z)
+}
+
+Y_id <- data.frame(id = fastsurfer_emb$id, Y = Y[,1])
+write.csv(Y_id, file.path(out_dir_diagnostic, 'Y_diag.csv'), row.names = FALSE)
+
+#### predict Y using glmnet
 library(glmnet)
 
 ridge_lasso_glmnet <- function(
@@ -163,12 +223,14 @@ ridge_lasso_glmnet <- function(
   out
 }
 
-fastsurfer_results <- ridge_lasso_glmnet(X=fastsurfer_emb, y=Y_aligned$age, lambda_choice = "1se")
-freesurfer_results <- ridge_lasso_glmnet(freesurfer_emb, Y_aligned$age, lambda_choice = "1se")
-medicalnet_results <- ridge_lasso_glmnet(medicalnet_emb, Y_aligned$age, lambda_choice = "1se")
-trained_results <- ridge_lasso_glmnet(trained_emb, Y_aligned$age, lambda_choice = "1se")
+fastsurfer_results <- ridge_lasso_glmnet(X=fastsurfer_emb, y=Y, lambda_choice = "1se")
+condVAE_results <- ridge_lasso_glmnet(X=condVAE_emb, y=Y, lambda_choice = "1se")
+freesurfer_results <- ridge_lasso_glmnet(freesurfer_emb, Y, lambda_choice = "1se")
+medicalnet_results <- ridge_lasso_glmnet(medicalnet_emb, Y, lambda_choice = "1se")
+trained_results <- ridge_lasso_glmnet(trained_emb, Y, lambda_choice = "1se")
 
-print(paste0("FastSurfer: ", fastsurfer_results$r2_test))
-print(paste0("Freesurfer: ", freesurfer_results$r2_test))
-print(paste0("MedicalNet: ", medicalnet_results$r2_test))
-print(paste0("Trained: ", trained_results$r2_test))
+print(paste0("FastSurfer: R^2 = ", fastsurfer_results$r2_test, " MSE = ", fastsurfer_results$mse_test))
+print(paste0("condVAE: R^2 = ", condVAE_results$r2_test, " MSE = ", condVAE_results$mse_test))
+print(paste0("Freesurfer: R^2 = ", freesurfer_results$r2_test, " MSE = ", freesurfer_results$mse_test))
+print(paste0("MedicalNet: R^2 = ", medicalnet_results$r2_test, " MSE = ", medicalnet_results$mse_test))
+print(paste0("Trained: R^2 = ", trained_results$r2_test, " MSE = ", trained_results$mse_test))

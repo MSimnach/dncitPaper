@@ -9,6 +9,8 @@ import argparse
 import torch
 import pandas as pd
 import numpy as np
+import pyarrow as pa
+import pyarrow.parquet as pq
 from pathlib import Path
 from train_resnet3d_lightning import BrainMRIModule, BrainMRIDataModule
 from monai.data import Dataset
@@ -128,8 +130,8 @@ def main():
     output_dir.mkdir(parents=True, exist_ok=True)
     
     # Create output paths
-    embeddings_path = output_dir / "embeddings.npy"
-    predictions_path = output_dir / "predictions.npy"
+    embeddings_path = output_dir / "embeddings.parquet"
+    predictions_path = output_dir / "predictions.parquet"
     index_path = output_dir / "embeddings_index.csv"
     
     print(f"🔄 Extracting embeddings and predictions for {len(items)} samples...")
@@ -163,8 +165,10 @@ def main():
     print(f"   Config: {config_path}")
     
     # Load and print shapes for verification
-    embeddings = np.load(embeddings_path)
-    predictions = np.load(predictions_path)
+    embeddings_table = pq.read_table(embeddings_path)
+    embeddings = embeddings_table.to_pandas().values
+    predictions_table = pq.read_table(predictions_path)
+    predictions = predictions_table.to_pandas().values
     index_df = pd.read_csv(index_path)
     
     print(f"\n📊 Results summary:")

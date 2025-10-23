@@ -8,6 +8,8 @@ import os, csv, json, argparse, math, random, time
 from pathlib import Path
 import numpy as np
 import pandas as pd
+import pyarrow as pa
+import pyarrow.parquet as pq
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -26,6 +28,7 @@ from monai.networks.nets import (
     resnet10, resnet18, resnet34, resnet50, resnet101, resnet152, resnet200
 )
 from sklearn.model_selection import train_test_split
+import pyarrow.parquet as pq
 
 # Optional loggers
 try:
@@ -359,8 +362,16 @@ class BrainMRIModule(pl.LightningModule):
         
         return optimizer
     
-    def export_embeddings_and_predictions(self, dataloader, embeddings_path, predictions_path, index_path):
-        """Export penultimate layer embeddings and predictions"""
+    def export_embeddings_and_predictions(self, dataloader, embeddings_path, predictions_path, index_path, use_amp=False):
+        """Export penultimate layer embeddings and predictions
+        
+        Args:
+            dataloader: DataLoader containing the data
+            embeddings_path: Path to save embeddings
+            predictions_path: Path to save predictions
+            index_path: Path to save index
+            use_amp: If True, use automatic mixed precision for faster inference
+        """
         self.eval()
         feats, preds, sids = [], [], []
         
@@ -368,58 +379,60 @@ class BrainMRIModule(pl.LightningModule):
             for batch in dataloader:
                 x = batch["image"].to(self.device)
                 
-                if self.args.pretrained:
-                    # For pretrained MedicalNet models, extract features from backbone
-                    z = self.model.conv1(x)
-                    z = self.model.bn1(z)
-                    z = self.model.act(z)  # MONAI uses 'act' instead of 'relu'
-                    z = self.model.maxpool(z)
-                    z = self.model.layer1(z)
-                    z = self.model.layer2(z)
-                    z = self.model.layer3(z)
-                    z = self.model.layer4(z)
-                    gap = self.model.avgpool(z).flatten(1)  # (B, 512)
+                # Use autocast for mixed precision if enabled
+                with torch.cuda.amp.autocast(enabled=use_amp):
+                    if self.args.pretrained:
+                        # For pretrained MedicalNet models, extract features from backbone
+                        z = self.model.conv1(x)
+                        z = self.model.bn1(z)
+                        z = self.model.act(z)  # MONAI uses 'act' instead of 'relu'
+                        z = self.model.maxpool(z)
+                        z = self.model.layer1(z)
+                        z = self.model.layer2(z)
+                        z = self.model.layer3(z)
+                        z = self.model.layer4(z)
+                        gap = self.model.avgpool(z).flatten(1)  # (B, 512)
+                        
+                        if not self.args.simple_head:
+                            # For MLP head, extract features from penultimate MLP layer (256-dim)
+                            # self.model.fc is Sequential: Linear(512, 512) -> ReLU -> Dropout -> Linear(512, 256) -> ReLU -> Dropout -> Linear(256, out_ch)
+                            mlp_features = self.model.fc[0](gap)  # Linear(512, 512)
+                            mlp_features = self.model.fc[1](mlp_features)  # ReLU
+                            mlp_features = self.model.fc[2](mlp_features)  # Dropout
+                            mlp_features = self.model.fc[3](mlp_features)  # Linear(512, 256)
+                            mlp_features = self.model.fc[4](mlp_features)  # ReLU
+                            # Stop before final dropout and linear layer to get 256-dim embeddings
+                            gap = mlp_features  # (B, 256)
+                        # For simple head, keep the 512-dim backbone features as embeddings
+                    else:
+                        # For non-pretrained models, extract features from backbone as before
+                        z = self.model.conv1(x)
+                        z = self.model.bn1(z)
+                        z = self.model.act(z)  # MONAI uses 'act' instead of 'relu'
+                        z = self.model.maxpool(z)
+                        z = self.model.layer1(z)
+                        z = self.model.layer2(z)
+                        z = self.model.layer3(z)
+                        z = self.model.layer4(z)
+                        # Use the model's built-in avgpool instead of F.adaptive_avg_pool3d
+                        gap = self.model.avgpool(z).flatten(1)  # (B, C)
                     
-                    if not self.args.simple_head:
-                        # For MLP head, extract features from penultimate MLP layer (256-dim)
-                        # self.model.fc is Sequential: Linear(512, 512) -> ReLU -> Dropout -> Linear(512, 256) -> ReLU -> Dropout -> Linear(256, out_ch)
-                        mlp_features = self.model.fc[0](gap)  # Linear(512, 512)
-                        mlp_features = self.model.fc[1](mlp_features)  # ReLU
-                        mlp_features = self.model.fc[2](mlp_features)  # Dropout
-                        mlp_features = self.model.fc[3](mlp_features)  # Linear(512, 256)
-                        mlp_features = self.model.fc[4](mlp_features)  # ReLU
-                        # Stop before final dropout and linear layer to get 256-dim embeddings
-                        gap = mlp_features  # (B, 256)
-                    # For simple head, keep the 512-dim backbone features as embeddings
-                else:
-                    # For non-pretrained models, extract features from backbone as before
-                    z = self.model.conv1(x)
-                    z = self.model.bn1(z)
-                    z = self.model.act(z)  # MONAI uses 'act' instead of 'relu'
-                    z = self.model.maxpool(z)
-                    z = self.model.layer1(z)
-                    z = self.model.layer2(z)
-                    z = self.model.layer3(z)
-                    z = self.model.layer4(z)
-                    # Use the model's built-in avgpool instead of F.adaptive_avg_pool3d
-                    gap = self.model.avgpool(z).flatten(1)  # (B, C)
-                
-                # Get predictions - always use forward pass through the PyTorch Lightning module
-                # This ensures we get the final output regardless of the underlying model architecture
-                logits = self(x)
-                
-                # Convert logits to predictions based on task
-                if self.args.task == "regression":
-                    pred = logits  # Keep as is for regression
-                    # Denormalize if z-score was used during training
-                    if (self.args.target_norm == "zscore" and 
-                        hasattr(self, 'y_mean_buf') and hasattr(self, 'y_std_buf') and
-                        self.y_mean_buf is not None and self.y_std_buf is not None):
-                        pred = pred * (self.y_std_buf + 1e-6) + self.y_mean_buf
-                elif self.args.task == "binary":
-                    pred = torch.sigmoid(logits)  # Convert to probabilities
-                else:  # multiclass
-                    pred = F.softmax(logits, dim=1)  # Convert to probabilities
+                    # Get predictions - always use forward pass through the PyTorch Lightning module
+                    # This ensures we get the final output regardless of the underlying model architecture
+                    logits = self(x)
+                    
+                    # Convert logits to predictions based on task
+                    if self.args.task == "regression":
+                        pred = logits  # Keep as is for regression
+                        # Denormalize if z-score was used during training
+                        if (self.args.target_norm == "zscore" and 
+                            hasattr(self, 'y_mean_buf') and hasattr(self, 'y_std_buf') and
+                            self.y_mean_buf is not None and self.y_std_buf is not None):
+                            pred = pred * (self.y_std_buf + 1e-6) + self.y_mean_buf
+                    elif self.args.task == "binary":
+                        pred = torch.sigmoid(logits)  # Convert to probabilities
+                    else:  # multiclass
+                        pred = F.softmax(logits, dim=1)  # Convert to probabilities
                 
                 feats.append(gap.cpu().numpy())
                 preds.append(pred.cpu().numpy())
@@ -431,8 +444,19 @@ class BrainMRIModule(pl.LightningModule):
         
         
         Path(embeddings_path).parent.mkdir(parents=True, exist_ok=True)
-        np.save(embeddings_path, feats)
-        np.save(predictions_path, preds)
+        
+        # Save embeddings as parquet
+        embeddings_df = pd.DataFrame(feats)
+        embeddings_df.columns = [f'feat_{i}' for i in range(feats.shape[1])]
+        pq.write_table(pa.Table.from_pandas(embeddings_df), embeddings_path, compression='snappy')
+        
+        # Save predictions as parquet
+        if preds.ndim == 1:
+            predictions_df = pd.DataFrame({'prediction': preds})
+        else:
+            predictions_df = pd.DataFrame(preds)
+            predictions_df.columns = [f'pred_{i}' for i in range(preds.shape[1])]
+        pq.write_table(pa.Table.from_pandas(predictions_df), predictions_path, compression='snappy')
         
         with open(index_path, "w", newline="") as f:
             writer = csv.writer(f)
@@ -447,7 +471,7 @@ class BrainMRIModule(pl.LightningModule):
     def export_embeddings(self, dataloader, output_path, index_path):
         """Export penultimate layer embeddings (backward compatibility)"""
         # For backward compatibility, extract predictions path from embeddings path
-        predictions_path = str(Path(output_path).with_name(Path(output_path).stem + "_predictions.npy"))
+        predictions_path = str(Path(output_path).with_name(Path(output_path).stem + "_predictions.parquet"))
         self.export_embeddings_and_predictions(dataloader, output_path, predictions_path, index_path)
 
 class BrainMRIDataModule(pl.LightningDataModule):
@@ -636,8 +660,8 @@ def parse_args():
     
     # Export embeddings and predictions
     ap.add_argument("--export_csv", default=None, help="CSV to embed with trained model")
-    ap.add_argument("--export_features", default=None, help="Output .npy for embeddings")
-    ap.add_argument("--export_predictions", default=None, help="Output .npy for predictions")
+    ap.add_argument("--export_features", default=None, help="Output .parquet for embeddings")
+    ap.add_argument("--export_predictions", default=None, help="Output .parquet for predictions")
     ap.add_argument("--export_index", default=None, help="Output .csv for embedding index")
     
     # Train/test split mode
@@ -705,9 +729,9 @@ def main():
         
         # Auto-configure embedding and prediction export paths
         if not args.export_features:
-            args.export_features = str(Path(args.out_dir) / "test_embeddings.npy")
+            args.export_features = str(Path(args.out_dir) / "test_embeddings.parquet")
         if not args.export_predictions:
-            args.export_predictions = str(Path(args.out_dir) / "test_predictions.npy")
+            args.export_predictions = str(Path(args.out_dir) / "test_predictions.parquet")
         if not args.export_index:
             args.export_index = str(Path(args.out_dir) / "test_embeddings_index.csv")
             
@@ -818,7 +842,7 @@ def main():
         'final_val_losses': model.val_losses,
     })
     
-    with open(os.path.join(args.out_dir, "config.json"), "w") as f:
+    with open(os.path.join(args.out_dir, "config_training.json"), "w") as f:
         json.dump(config, f, indent=2)
     
     # Export embeddings and predictions if requested or in train/test split mode

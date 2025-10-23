@@ -7,6 +7,7 @@ without manual inference, making the analysis faster and more efficient.
 
 import numpy as np
 import pandas as pd
+import pyarrow.parquet as pq
 import matplotlib.pyplot as plt
 import torch
 from pathlib import Path
@@ -23,9 +24,10 @@ def evaluate_resnet_from_predictions(predictions_path, index_path, test_csv_path
     """Evaluate the trained ResNet model using exported predictions"""
     print(f"\n🤖 ResNet Direct Evaluation (using exported predictions):")
     
-    # Load exported predictions
+    # Load exported predictions from parquet
     print(f"   Loading predictions: {predictions_path}")
-    resnet_predictions = np.load(predictions_path)
+    predictions_table = pq.read_table(predictions_path)
+    resnet_predictions = predictions_table.to_pandas().values.flatten()
     
     # Load index to get subject ID mapping
     index_df = pd.read_csv(index_path)
@@ -95,8 +97,9 @@ def evaluate_resnet_from_predictions(predictions_path, index_path, test_csv_path
 
 def load_embeddings_with_labels(embeddings_path, index_path, test_csv_path):
     """Load embeddings and merge with original labels"""
-    # Load embeddings and index
-    embeddings = np.load(embeddings_path)
+    # Load embeddings from parquet and index
+    embeddings_table = pq.read_table(embeddings_path)
+    embeddings = embeddings_table.to_pandas().values
     index_df = pd.read_csv(index_path)
     
     # Load original test data for labels
@@ -331,7 +334,7 @@ def main(results_dir=None, test_csv_path=None, output_dir=None):
     Main analysis function
     
     Args:
-        results_dir: Directory containing test_embeddings.npy, test_predictions.npy, and test_embeddings_index.csv
+        results_dir: Directory containing test_embeddings.parquet, test_predictions.parquet, and test_embeddings_index.csv
         test_csv_path: Path to test_labeled.csv file
         output_dir: Directory to save analysis results
     """
@@ -345,8 +348,8 @@ def main(results_dir=None, test_csv_path=None, output_dir=None):
     
     # Construct file paths
     results_path = Path(results_dir)
-    embeddings_path = results_path / "test_embeddings.npy"
-    predictions_path = results_path / "test_predictions.npy"
+    embeddings_path = results_path / "test_embeddings.parquet"
+    predictions_path = results_path / "test_predictions.parquet"
     index_path = results_path / "test_embeddings_index.csv"
     
     print("🧠 ResNet Brain MRI Embedding Analysis")
@@ -362,7 +365,7 @@ def main(results_dir=None, test_csv_path=None, output_dir=None):
     if not predictions_path.exists():
         print(f"❌ Error: Predictions file not found: {predictions_path}")
         print("   Make sure you've run the training pipeline with the updated version that exports predictions.")
-        print("   The file test_predictions.npy should be generated alongside test_embeddings.npy")
+        print("   The file test_predictions.parquet should be generated alongside test_embeddings.parquet")
         return
     
     # Evaluate ResNet model using exported predictions
@@ -466,7 +469,7 @@ if __name__ == "__main__":
     
     parser = argparse.ArgumentParser(description="Analyze ResNet embeddings and predictions")
     parser.add_argument("--results_dir", default=None,
-                       help="Directory containing test_embeddings.npy, test_predictions.npy, and test_embeddings_index.csv")
+                       help="Directory containing test_embeddings.parquet, test_predictions.parquet, and test_embeddings_index.csv")
     parser.add_argument("--test_csv", default=None,
                        help="Path to test_labeled.csv file")
     parser.add_argument("--output_dir", default=None,

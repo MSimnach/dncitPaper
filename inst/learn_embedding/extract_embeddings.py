@@ -13,6 +13,9 @@ Usage:
   
   # From pretrained MedicalNet:
   python extract_embeddings.py --pretrained --model_name resnet18 --input_csv data.csv --output_dir output/
+  
+  # With AMP (automatic mixed precision) for faster inference:
+  python extract_embeddings.py --checkpoint path/to/best_model.ckpt --input_csv data.csv --output_dir output/ --amp
 """
 
 import argparse
@@ -20,6 +23,8 @@ import json
 import torch
 import pandas as pd
 import numpy as np
+import pyarrow as pa
+import pyarrow.parquet as pq
 from pathlib import Path
 from train_resnet3d_lightning import BrainMRIModule, BrainMRIDataModule
 from monai.data import Dataset
@@ -117,6 +122,7 @@ def main():
     parser.add_argument("--config_name", help="Training config descriptor (e.g., 'frozen', 'finetuned', 'scratch') - appended to output_dir")
     parser.add_argument("--batch_size", type=int, default=4, help="Batch size")
     parser.add_argument("--num_workers", type=int, default=0, help="DataLoader workers")
+    parser.add_argument("--amp", action="store_true", help="Use automatic mixed precision (AMP) for faster inference")
     
     args = parser.parse_args()
     
@@ -140,6 +146,8 @@ def main():
     # Setup device
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     print(f"🧠 Device: {device}")
+    if args.amp:
+        print(f"⚡ AMP: Enabled (faster inference with mixed precision)")
     
     # Load model
     if args.checkpoint:
@@ -190,15 +198,15 @@ def main():
     )
     
     # Setup output paths
-    embeddings_path = output_dir / "embeddings.npy"
-    predictions_path = output_dir / "predictions.npy"
+    embeddings_path = output_dir / "embeddings.parquet"
+    predictions_path = output_dir / "predictions.parquet"
     index_path = output_dir / "embeddings_index.csv"
     config_path = output_dir / "extraction_config.json"
     
     # Extract embeddings
     print(f"🔄 Extracting embeddings for {len(items)} samples...")
     model.export_embeddings_and_predictions(
-        dataloader, str(embeddings_path), str(predictions_path), str(index_path)
+        dataloader, str(embeddings_path), str(predictions_path), str(index_path), use_amp=args.amp
     )
     
     # Save extraction configuration
@@ -208,6 +216,7 @@ def main():
         'batch_size': args.batch_size,
         'config_name': args.config_name,
         'model_source': 'checkpoint' if args.checkpoint else 'pretrained',
+        'amp': args.amp,
     }
     
     if args.checkpoint:
@@ -236,8 +245,10 @@ def main():
         temp_csv.unlink()
     
     # Print summary
-    embeddings = np.load(embeddings_path)
-    predictions = np.load(predictions_path)
+    embeddings_table = pq.read_table(embeddings_path)
+    embeddings = embeddings_table.to_pandas().values
+    predictions_table = pq.read_table(predictions_path)
+    predictions = predictions_table.to_pandas().values
     
     print(f"\n✅ Done!")
     print(f"   Embeddings: {embeddings_path} (shape: {embeddings.shape})")
