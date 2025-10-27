@@ -259,7 +259,7 @@ data_gen <- function(seed, idx_sample=NULL, n_sample=NULL, idx_beta2=NULL, beta2
   X_obs <- X_obs[, -c(1)]
   X_obs <- scale(X_obs)
   Z <- Z[, -c(1)]
-  Y <- Y[, -c(1)]
+  Y <- Y[, -c(1), drop=FALSE]
   return(list(X_obs, Y, Z, training_time))
 }
 
