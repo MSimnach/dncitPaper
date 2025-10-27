@@ -122,7 +122,7 @@ data_gen <- function(seed, idx_sample=NULL, n_sample=NULL, idx_beta2=NULL, beta2
     index_path <- file.path(embedding_dir, '/test_embeddings_index.csv')
     preds_path <- file.path(embedding_dir, '/test_predictions.parquet')
     ## Train or skip if embeddings already exist
-    if (dir.exists(embedding_dir)){
+    if (file.exists(embedding_dir)){
       cat("✅ Embedding directory already exists. Skipping training...\n")
     } else {
       dir.create(embedding_dir, recursive = TRUE)
