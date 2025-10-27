@@ -363,7 +363,7 @@ embeddings <- as.matrix(arrow::read_parquet(embeddings_path))
 
 
 ### now with data_gen function
-args <- c("/No_CI/", "1", "0", "0.01", "0", "fastsurfer", "scratch", "ukb_z4", "squared", "RCOT", "1")
+args <- c("/No_CI/", "1", "0", "1", "0", "fastsurfer", "scratch", "ukb_z4", "squared", "RCOT", "1")
 n_cits <- 1
 cit <- c(args[10])
 print(args)
@@ -403,16 +403,23 @@ Z <- as.matrix(XYZ_list[[3]])
 
 ## test for several eps_sigmaY
 # for 3 seeds
-seeds <- c(1, 2, 3)
-eps_sigmaY_list <- c(0, 0.01, 0.05, 0.1, 0.5)
+idx_samples <- 1:3
+n_sample <- list(460, 825, 1100)
+xz_modes <- c('independent')
+seeds <- 1:10
+eps_sigmaY_list <- c(0, 0.05, 0.1, 0.5, 1)
 for(eps_sigmaY in eps_sigmaY_list){
   for(seed in seeds){
-    XYZ_list <- dncitPaper::data_gen(seed=seed, idx_sample=idx_sample, n_sample=n_sample, idx_beta2=idx_beta2, 
-                        beta2s=beta2s, post_non_lin=post_non_lin, eps_sigmaX=eps_sigmaX, eps_sigmaY=eps_sigmaY, 
-                        eps_sigmaZ=eps_sigmaZ, embedding_orig=embedding_orig, embedding_obs=embedding_obs, 
-                        confounder=confounder, g_z=g_z)
-    X <- as.matrix(XYZ_list[[1]])
-    Y <- as.matrix(XYZ_list[[2]])
-    Z <- as.matrix(XYZ_list[[3]])
+    for(xz_mode in xz_modes){
+      for(idx_sample in idx_samples){
+        XYZ_list <- dncitPaper::data_gen(seed=seed, idx_sample=idx_sample, n_sample=n_sample, idx_beta2=idx_beta2, 
+                            beta2s=beta2s, post_non_lin=post_non_lin, eps_sigmaX=eps_sigmaX, eps_sigmaY=eps_sigmaY, 
+                            eps_sigmaZ=eps_sigmaZ, embedding_orig=embedding_orig, embedding_obs=embedding_obs, 
+                            confounder=confounder, g_z=g_z, xz_mode=xz_mode)
+        X <- as.matrix(XYZ_list[[1]])
+        Y <- as.matrix(XYZ_list[[2]])
+        Z <- as.matrix(XYZ_list[[3]])
+      }
+    }
   }
 }

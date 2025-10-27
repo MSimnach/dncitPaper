@@ -23,3 +23,6 @@ inst/learn_embedding/ukb/audit_nifti_orientation_spacing.py
 inst/learn_embedding/train_simple_resnet.py
 inst/learn_embedding/plot_simple_results.py
 inst/learn_embedding/generate_synthetic_y.py
+
+# old code
+inst/old_code/

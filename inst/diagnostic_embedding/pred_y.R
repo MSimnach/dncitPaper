@@ -234,3 +234,20 @@ print(paste0("condVAE: R^2 = ", condVAE_results$r2_test, " MSE = ", condVAE_resu
 print(paste0("Freesurfer: R^2 = ", freesurfer_results$r2_test, " MSE = ", freesurfer_results$mse_test))
 print(paste0("MedicalNet: R^2 = ", medicalnet_results$r2_test, " MSE = ", medicalnet_results$mse_test))
 print(paste0("Trained: R^2 = ", trained_results$r2_test, " MSE = ", trained_results$mse_test))
+
+
+
+#### via auto_diagnostic function
+seeds <- c(1)
+eps_sigmaY_list <- c(1)
+for(eps_sigmaY in eps_sigmaY_list){
+  for(seed in seeds){
+    results <- auto_diagnostic(
+      experiment_dir = paste0("/sc/home/marco.simnacher/ukbiobank/data/No_CI/550/", seed, "/eps_sigmaY=", as.character(eps_sigmaY)),
+      embedding_obs = c("scratch"),
+      seed = seed,
+      extract_trained = FALSE,
+      debug_Y = TRUE
+    )
+  }
+}

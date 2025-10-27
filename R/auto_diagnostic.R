@@ -41,7 +41,8 @@ auto_diagnostic <- function(
   alpha = 1,
   test_prop = 0.2,
   nfolds = 10,
-  lambda_choice = "1se"
+  lambda_choice = "1se",
+  debug_Y = TRUE
 ) {
   
   # Set single thread for reproducibility
@@ -335,18 +336,46 @@ auto_diagnostic <- function(
   if (is_ci == "CI" || is.null(is_ci)) {
     cat("Generating Y under Conditional Independence (CI)\n")
     Y <- y_from_xz(Z[,c(-1)], eps_sigmaY, post_non_lin=post_non_lin, g_z=g_z)
+    Y_info <- NULL  # Add this line
   } else {
     cat("Generating Y under No Conditional Independence (No_CI)\n")
-    Y <- y_from_xz(Z[,c(-1)], eps_sigmaY, X=as.matrix(fastsurfer_emb[,c(-1)]), 
-                  beta2s=list(1), idx_beta2=1, post_non_lin=post_non_lin, g_z=g_z)
+    if (debug_Y) {
+      Y_list <- y_from_xz(Z[,c(-1)], eps_sigmaY, X=as.matrix(fastsurfer_emb[,c(-1)]), 
+                    gamma=0.5, post_non_lin=post_non_lin, g_z=g_z, debug=debug_Y)
+      Y <- Y_list$Y
+      Y_info <- Y_list$info
+    } else {
+      Y <- y_from_xz(Z[,c(-1)], eps_sigmaY, X=as.matrix(fastsurfer_emb[,c(-1)]), 
+                    gamma=0.5, post_non_lin=post_non_lin, g_z=g_z)
+      Y_info <- NULL  # Add this line
+    }
   }
   
   # Save Y
-  Y_id <- data.frame(id = fastsurfer_emb$id, Y = Y[,1])
+  Y_id <- data.frame(id = fastsurfer_emb$id, Y = Y)
   Y_path <- file.path(out_dir_diagnostic, 'Y_diag.csv')
   write.csv(Y_id, Y_path, row.names = FALSE)
   cat("Saved Y to:", Y_path, "\n")
   cat("Y statistics: mean=", round(mean(Y), 4), ", sd=", round(sd(Y), 4), "\n\n", sep="")
+  # Save Y_info if available
+  if (debug_Y) {
+    # Option 1: Save as RDS (preserves R object structure)
+    Y_info_path <- file.path(out_dir_diagnostic, 'Y_info.rds')
+    saveRDS(Y_info, Y_info_path)
+    cat("Saved Y_info to:", Y_info_path, "\n")
+    
+    # Option 2: Also save as JSON for readability
+    Y_info_json_path <- file.path(out_dir_diagnostic, 'Y_info.json')
+    jsonlite::write_json(Y_info, Y_info_json_path, pretty = TRUE, auto_unbox = TRUE)
+    cat("Saved Y_info (JSON) to:", Y_info_json_path, "\n")
+    
+    # Print some info
+    cat("Y_info contents:\n")
+    cat("  - Correlation pX vs pZ:", round(Y_info$corr_pX_pZ, 4), "\n")
+    cat("  - Mode:", Y_info$mode, "\n")
+    cat("  - Gamma:", Y_info$gamma, "\n")
+    cat("  - Tau:", Y_info$tau, "\n\n")
+  }
   
   # ============================================================================
   # 6. Evaluate All Embeddings
@@ -380,7 +409,7 @@ auto_diagnostic <- function(
       # Run glmnet
       result <- ridge_lasso_glmnet(
         X = X, 
-        y = Y[,1],
+        y = Y,
         alpha = alpha,
         test_prop = test_prop,
         nfolds = nfolds,
@@ -416,7 +445,7 @@ auto_diagnostic <- function(
       # Run glmnet
       result <- ridge_lasso_glmnet(
         X = X, 
-        y = Y[,1],
+        y = Y,
         alpha = alpha,
         test_prop = test_prop,
         nfolds = nfolds,

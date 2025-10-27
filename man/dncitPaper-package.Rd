@@ -4,9 +4,9 @@
 \name{dncitPaper-package}
 \alias{dncitPaper}
 \alias{dncitPaper-package}
-\title{dncitPaper: Code to reproduce the analysis of the paper Deep Nonparametric Conditional Indpendence Tests (DNCIT)}
+\title{dncitPaper: Reproduction of the analysis of the paper Deep Nonparametric Conditional Indpendence Tests (DNCIT)}
 \description{
-What the package does (one paragraph).
+This repository provides the code to reproduce the results in the paper on DNCITs. The repository can be installed as an R-package. To reproduce the results, access to the UK Biobank brain imaging data and the corresponding meta data is necessary.
 }
 \author{
 \strong{Maintainer}: Marco Simnacher \email{marco.simnacher@hu-berlin.de}

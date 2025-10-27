@@ -19,7 +19,7 @@
 #' @return list of X_obs, Y, Z
 #' @export
 data_gen <- function(seed, idx_sample=NULL, n_sample=NULL, idx_beta2=NULL, beta2s=NULL, post_non_lin=4, eps_sigmaX=0, eps_sigmaY=1, eps_sigmaZ=0, embedding_orig='fastsurfer',
-                     embedding_obs='fastsurfer', confounder='AS', g_z='linear'){
+                     embedding_obs='fastsurfer', confounder='AS', g_z='linear', debug=FALSE, xz_mode='independent'){
   path_to_ukb_data <- Sys.getenv("UKB_PATH", unset = NA)
 
   if (is.na(path_to_ukb_data) || path_to_ukb_data == "") {
@@ -86,23 +86,35 @@ data_gen <- function(seed, idx_sample=NULL, n_sample=NULL, idx_beta2=NULL, beta2
   #X_obs <- scale(X_obs)
 
   if(is.null(beta2s)){
-    Y <- y_from_xz(Z[,c(-1)], eps_sigmaY, post_non_lin=post_non_lin, g_z=g_z)
+    if (debug) {
+      Y <- y_from_xz(Z[,c(-1)], eps_sigmaY, post_non_lin=post_non_lin, g_z=g_z, debug=debug)
+    } else {
+      Y <- y_from_xz(Z[,c(-1)], eps_sigmaY, post_non_lin=post_non_lin, g_z=g_z)
+    }
     is_ci <- "CI"
   }else{
-    Y <- y_from_xz(Z[,c(-1)], eps_sigmaY, X=as.matrix(X_orig[,c(-1)]), beta2s=beta2s, idx_beta2=idx_beta2, post_non_lin=post_non_lin, g_z=g_z)
+    if (debug) {
+      Y <- y_from_xz(Z[,c(-1)], eps_sigmaY, X=as.matrix(X_orig[,c(-1)]), gamma=beta2s[[idx_beta2]], post_non_lin=post_non_lin, g_z=g_z, debug=debug, xz_mode=xz_mode)
+    } else {
+      Y <- y_from_xz(Z[,c(-1)], eps_sigmaY, X=as.matrix(X_orig[,c(-1)]), gamma=beta2s[[idx_beta2]], post_non_lin=post_non_lin, g_z=g_z, xz_mode=xz_mode)
+    }
     is_ci <- "No_CI"
   }
 
   y_dir <- paste0(path_to_ukb_data, '/', is_ci, '/', n_sample[[idx_sample]], '/', seed, '/', paste0("eps_sigmaY=", eps_sigmaY))
   dir.create(y_dir, recursive = TRUE)
-  Y_id <- data.frame(id = X_orig$id, Y = Y[,1])
+  if (debug) {
+    Y_id <- data.frame(id = X_orig$id, Y = Y$Y)
+  } else {
+    Y_id <- data.frame(id = X_orig$id, Y = Y)
+  }
   write.csv(Y_id, file.path(y_dir, 'Y.csv'), row.names = FALSE)
 
   if (embedding_obs %in% c('fastsurfer', 'condVAE', 'latentDiffusion', 'freesurfer', 'medicalnet')){
     X_obs[,c(-1)] <- scale(X_obs[,c(-1)])
   }else if(embedding_obs %in% c('scratch', 'medicalnet_ft', 'medicalnet_ft_frozen')){
     stopifnot(all.equal(X_obs$id, Y_id$id))
-    X_obs$y <- Y[,1]
+    X_obs$y <- Y
 
     # Setup paths for train results and embeddings
     embedding_dir <- paste0(y_dir, '/', embedding_obs)
@@ -165,6 +177,7 @@ data_gen <- function(seed, idx_sample=NULL, n_sample=NULL, idx_beta2=NULL, beta2
         start_time <- Sys.time()
         res <- run_python_safe(train_script, args_vec)
         training_time <- as.numeric(difftime(Sys.time(), start_time, units = "secs"))
+        write.csv(data.frame(training_time_seconds = training_time), file.path(embedding_dir, '/training_time.csv'), row.names = FALSE)
         cat(res, sep = "\n")  
         
       } else if (embedding_obs == 'medicalnet_ft'){
@@ -192,6 +205,7 @@ data_gen <- function(seed, idx_sample=NULL, n_sample=NULL, idx_beta2=NULL, beta2
         start_time <- Sys.time()
         res <- run_python_safe(train_script, args_vec)
         training_time <- as.numeric(difftime(Sys.time(), start_time, units = "secs"))
+        write.csv(data.frame(training_time_seconds = training_time), file.path(embedding_dir, '/training_time.csv'), row.names = FALSE)
         cat(res, sep = "\n") 
       } else if(embedding_obs == 'medicalnet_ft_frozen'){
         # For 'scratch': train from scratch first, then use trained model
@@ -219,6 +233,7 @@ data_gen <- function(seed, idx_sample=NULL, n_sample=NULL, idx_beta2=NULL, beta2
         start_time <- Sys.time()
         res <- run_python_safe(train_script, args_vec)
         training_time <- as.numeric(difftime(Sys.time(), start_time, units = "secs"))
+        write.csv(data.frame(training_time_seconds = training_time), file.path(embedding_dir, '/training_time.csv'), row.names = FALSE)
         cat(res, sep = "\n") 
       }else{
         # error
@@ -231,7 +246,7 @@ data_gen <- function(seed, idx_sample=NULL, n_sample=NULL, idx_beta2=NULL, beta2
 
     test_ids <- X_obs$id
     Z <- Z[match(test_ids, Z$id), ]
-    Y <- Y_id[match(test_ids, Y_id$id), ]
+    Y <- Y_id[match(test_ids, Y_id$id), , drop=FALSE]
     X_orig <- X_orig[match(test_ids, X_orig$id), ]
     stopifnot(all.equal(X_obs$id, Y$id))
   }
