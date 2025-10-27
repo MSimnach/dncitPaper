@@ -158,7 +158,7 @@ data_gen <- function(seed, idx_sample=NULL, n_sample=NULL, idx_beta2=NULL, beta2
         # For 'scratch': train from scratch first, then use trained model
         cat("🏗️  Training model from scratch...\n")
           # Run training pipeline
-        train_script <- "learn_embedding/run_train_test_pipeline.py"
+        train_script <- "inst/learn_embedding/run_train_test_pipeline.py"
         args_vec <- c("--input_csv", normalizePath(train_csv),
                       "--id_col", "id",
                       "--output_dir", normalizePath(embedding_dir),
@@ -184,7 +184,7 @@ data_gen <- function(seed, idx_sample=NULL, n_sample=NULL, idx_beta2=NULL, beta2
         # For 'scratch': train from scratch first, then use trained model
         cat("🏗️  Fine-tuning pretrained MedicalNet weights...\n")
           # Run training pipeline
-        train_script <- "learn_embedding/run_train_test_pipeline.py"
+        train_script <- "inst/learn_embedding/run_train_test_pipeline.py"
         args_vec <- c("--input_csv", normalizePath(train_csv),
                       "--id_col", "id",
                       "--output_dir", normalizePath(embedding_dir),
@@ -211,7 +211,7 @@ data_gen <- function(seed, idx_sample=NULL, n_sample=NULL, idx_beta2=NULL, beta2
         # For 'scratch': train from scratch first, then use trained model
         cat("🏗️  Fine-tuning pretrained MedicalNet weights with frozen backbone...\n")
           # Run training pipeline
-        train_script <- "learn_embedding/run_train_test_pipeline.py"
+        train_script <- "inst/learn_embedding/run_train_test_pipeline.py"
         args_vec <- c("--input_csv", normalizePath(train_csv),
                       "--id_col", "id",
                       "--output_dir", normalizePath(embedding_dir),
