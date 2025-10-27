@@ -238,16 +238,22 @@ print(paste0("Trained: R^2 = ", trained_results$r2_test, " MSE = ", trained_resu
 
 
 #### via auto_diagnostic function
-seeds <- c(1)
-eps_sigmaY_list <- c(1)
+idx_samples <- 1:3
+n_sample <- list(460, 825, 1100)
+xz_modes <- c('independent')
+seeds <- 1:10
+eps_sigmaY_list <- c(0, 0.05, 0.1, 0.5, 1)
 for(eps_sigmaY in eps_sigmaY_list){
   for(seed in seeds){
-    results <- auto_diagnostic(
-      experiment_dir = paste0("/sc/home/marco.simnacher/ukbiobank/data/No_CI/550/", seed, "/eps_sigmaY=", as.character(eps_sigmaY)),
-      embedding_obs = c("scratch"),
-      seed = seed,
-      extract_trained = FALSE,
-      debug_Y = TRUE
-    )
+    for(xz_mode in xz_modes){
+      for(idx_sample in idx_samples){
+        results <- auto_diagnostic(
+          experiment_dir = paste0("/sc/home/marco.simnacher/ukbiobank/data/No_CI/", n_sample[idx_sample], "/", seed, "/eps_sigmaY=", as.character(eps_sigmaY)),
+          embedding_obs = c("scratch"),
+          seed = seed,
+          debug_Y = TRUE
+        )
+      }
+    }
   }
 }

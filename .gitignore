@@ -26,3 +26,6 @@ inst/learn_embedding/generate_synthetic_y.py
 
 # old code
 inst/old_code/
+
+# figures
+inst/diagnostic_embedding/figures/
