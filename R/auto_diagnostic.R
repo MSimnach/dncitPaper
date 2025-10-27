@@ -13,8 +13,9 @@
 #' @param test_prop Test set proportion (default: 0.2)
 #' @param nfolds Number of CV folds (default: 10)
 #' @param lambda_choice Lambda selection method: "min" or "1se" (default: "1se")
+#' @param baseline_results_cached Pre-computed baseline results to reuse (default: NULL)
 #'
-#' @return List containing results data frame and paths to saved files
+#' @return List containing results data frame, baseline results, and paths to saved files
 #' @export
 #'
 #' @examples
@@ -42,7 +43,8 @@ auto_diagnostic <- function(
   test_prop = 0.2,
   nfolds = 10,
   lambda_choice = "1se",
-  debug_Y = TRUE
+  debug_Y = TRUE,
+  baseline_results_cached = NULL
 ) {
   
   # Set single thread for reproducibility
@@ -384,8 +386,17 @@ auto_diagnostic <- function(
   
   results_list <- list()
   
-  # Evaluate baseline embeddings
-  if (length(baseline_emb_list) > 0) {
+  # Evaluate baseline embeddings (or use cached results)
+  if (!is.null(baseline_results_cached)) {
+    cat("\n--- Using Cached Baseline Embeddings ---\n")
+    # Use pre-computed baseline results
+    for (i in seq_len(nrow(baseline_results_cached))) {
+      results_list[[length(results_list) + 1]] <- baseline_results_cached[i, ]
+      cat("Using cached", baseline_results_cached$embedding_name[i], 
+          ": R²=", round(baseline_results_cached$r2_test[i], 4), 
+          ", MSE=", round(baseline_results_cached$mse_test[i], 4), "\n", sep="")
+    }
+  } else if (length(baseline_emb_list) > 0) {
     cat("\n--- Baseline Embeddings ---\n")
     for (emb_name in names(baseline_emb_list)) {
       cat("Evaluating", emb_name, "... ")
@@ -515,9 +526,13 @@ auto_diagnostic <- function(
   
   cat("\n=== Diagnostic Complete ===\n")
   
+  # Extract baseline results for caching
+  baseline_results_only <- results_df[results_df$embedding_type == "baseline", ]
+  
   # Return results
   invisible(list(
     results = results_df,
+    baseline_results = baseline_results_only,
     results_path = results_path,
     config_path = config_path,
     Y_path = Y_path,

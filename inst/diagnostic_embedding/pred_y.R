@@ -245,14 +245,29 @@ seeds <- 1:10
 eps_sigmaY_list <- c(0, 0.05, 0.1, 0.5, 1)
 for(eps_sigmaY in eps_sigmaY_list){
   for(seed in seeds){
+    # Cache baseline results per seed (constant across sample sizes)
+    baseline_cache <- NULL
     for(xz_mode in xz_modes){
       for(idx_sample in idx_samples){
-        results <- auto_diagnostic(
-          experiment_dir = paste0("/sc/home/marco.simnacher/ukbiobank/data/No_CI/", n_sample[idx_sample], "/", seed, "/eps_sigmaY=", as.character(eps_sigmaY)),
-          embedding_obs = c("scratch"),
-          seed = seed,
-          debug_Y = TRUE
-        )
+        if(idx_sample == 1){
+          # Compute baseline results for first sample size and cache them
+          results <- auto_diagnostic(
+            experiment_dir = paste0("/sc/home/marco.simnacher/ukbiobank/data/No_CI/", n_sample[idx_sample], "/", seed, "/eps_sigmaY=", as.character(eps_sigmaY)),
+            embedding_obs = c("scratch"),
+            seed = seed,
+            debug_Y = TRUE
+          )
+          baseline_cache <- results$baseline_results
+        } else {
+          # Reuse cached baseline results for subsequent sample sizes
+          results <- auto_diagnostic(
+            experiment_dir = paste0("/sc/home/marco.simnacher/ukbiobank/data/No_CI/", n_sample[idx_sample], "/", seed, "/eps_sigmaY=", as.character(eps_sigmaY)),
+            embedding_obs = c("scratch"),
+            seed = seed,
+            debug_Y = TRUE,
+            baseline_results_cached = baseline_cache
+          )
+        }
       }
     }
   }
