@@ -61,7 +61,7 @@ doParallel::registerDoParallel(cl)
 #cl <- parallel::makeCluster(10, outfile="")
 #doParallel::registerDoParallel(cl)
 
-res_time <- foreach::foreach (i= n_seeds, .packages = pkgs_for_each, .export = c("cit", "args")) %dopar% {
+res_time <- foreach::foreach (i= n_seeds, .packages = pkgs_for_each) %dopar% {
   if(cit %in% c('pred_cit')){
     # Set the logging level for mlr3
    lgr::get_logger("mlr3")$set_threshold("fatal")

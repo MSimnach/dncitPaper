@@ -126,6 +126,7 @@ data_gen <- function(seed, idx_sample=NULL, n_sample=NULL, idx_beta2=NULL, beta2
       cat("✅ Embedding directory already exists. Skipping training...\n")
     } else {
       dir.create(embedding_dir, recursive = TRUE)
+      script_dir <- "inst/learn_embedding"
       # save Y and data gen config
       # Save configuration
       config <- list(
