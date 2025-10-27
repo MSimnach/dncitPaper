@@ -139,7 +139,6 @@ data_gen <- function(seed, idx_sample=NULL, n_sample=NULL, idx_beta2=NULL, beta2
         embedding_obs = embedding_obs,
         confounder = confounder,
         g_z = g_z,
-        cit = cit,
         seed = seed,
         n_sample = n_sample[[idx_sample]],
         idx_sample = idx_sample,
