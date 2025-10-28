@@ -124,6 +124,13 @@ if(any(is.na(Y_id$Y))) {
 }
   if (embedding_obs %in% c('fastsurfer', 'condVAE', 'latentDiffusion', 'freesurfer', 'medicalnet')){
     X_obs[,c(-1)] <- scale(X_obs[,c(-1)])
+    # ADD DEBUG OUTPUT HERE:
+cat(sprintf("[DEBUG data_gen] X_obs dim=%s, NAs=%d\n", 
+            paste(dim(X_obs), collapse="x"), sum(is.na(X_obs))))
+if(any(is.na(X_obs))) {
+  cat("[ERROR] Some X_obs values are NA - will create NA rows\n")
+  print(X_obs[is.na(X_obs)])
+}
   }else if(embedding_obs %in% c('scratch', 'medicalnet_ft', 'medicalnet_ft_frozen')){
     stopifnot(all.equal(X_obs$id, Y_id$id))
     X_obs$y <- Y
@@ -276,7 +283,7 @@ if(any(is.na(match(test_ids, Z$id)))) {
   row.names(Y) <- 1:nrow(Y)
 
   X_obs <- X_obs[, -c(1)]
-  X_obs <- scale(X_obs)
+  #X_obs <- scale(X_obs)
   Z <- Z[, -c(1)]
   Y <- Y[, -c(1), drop=FALSE]
   cat("X_obs: ", dim(X_obs), "\n")
