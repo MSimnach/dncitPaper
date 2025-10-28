@@ -325,7 +325,8 @@ load_Z <- function(path_to_ukb_data,confounder){
 
 # Function to check if a column has only 2 values (binary after sd e.g.)
 is_binary <- function(x) {
-  unique_values <- unique(x)
+  if (all(is.na(x))) return(FALSE)  # Handle all-NA columns
+  unique_values <- unique(x[!is.na(x)])  # Exclude NAs when checking
   length(unique_values) == 2
 }
 

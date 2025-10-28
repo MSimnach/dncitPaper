@@ -90,9 +90,9 @@ res_time <- foreach::foreach (i= n_seeds, .packages = pkgs_for_each) %dopar% {
 
                                                      if (args[10] == 'RCOT'){
                                                       if(n_sample[[idx_sample]] < 500){
-                                                        cit_params <- list(cit='RCOT', params_cit=list(seed=as.numeric(args[11]), approx="perm", num_fz=200, num_fy=3, num_fx=7))
+                                                        cit_params <- list(cit='RCOT', params_cit=list(seed=as.numeric(args[11]), approx="perm"))#, num_fz=200, num_fy=3, num_fx=7))
                                                       }else{
-                                                        cit_params <- list(cit='RCOT', params_cit=list(seed=as.numeric(args[11]), num_fz=200, num_fy=3, num_fx=7))
+                                                        cit_params <- list(cit='RCOT', params_cit=list(seed=as.numeric(args[11])))#, num_fz=200, num_fy=3, num_fx=7))
                                                       }
                                                      }else if(args[10] == 'CMIknn'){
                                                        cit_params <- list(cit='cmiknn', params_cit=list())
@@ -203,9 +203,9 @@ res_time <- foreach::foreach (i= n_seeds, .packages = pkgs_for_each) %dopar% {
 
                                                        if (args[10] == 'RCOT'){
                                                         if(n_sample[[idx_sample]] < 500){
-                                                          cit_params <- list(cit='RCOT', params_cit=list(seed=as.numeric(args[11]), approx="perm", num_fz=50, num_fy=3, num_fx=20))
+                                                          cit_params <- list(cit='RCOT', params_cit=list(seed=as.numeric(args[11]), approx="perm"))#, num_fz=50, num_fy=3, num_fx=20))
                                                         }else{
-                                                          cit_params <- list(cit='RCOT', params_cit=list(seed=as.numeric(args[11]), num_fz=50, num_fy=3, num_fx=20))
+                                                          cit_params <- list(cit='RCOT', params_cit=list(seed=as.numeric(args[11])))#, num_fz=50, num_fy=3, num_fx=20))
                                                         }
                                                        }else if(args[10] == 'CMIknn'){
                                                          cit_params <- list(cit='cmiknn', params_cit=list())
