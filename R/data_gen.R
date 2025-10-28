@@ -74,11 +74,6 @@ cat(sprintf("[DEBUG data_gen] site_columns: %s, site_sum=%s, nrow(Z)=%d\n",
             paste(site_columns, collapse=","), 
             as.character(site_sum), nrow(Z)))
 
-# ADD PROTECTION AGAINST NA:
-if(is.na(site_sum)) {
-  cat("[ERROR] site_sum is NA!\n")
-  site_sum <- 0  # or handle appropriately
-}
   #remove one site column
   if(isTRUE(site_sum == nrow(Z))){
     for(site in site_columns){
@@ -120,7 +115,13 @@ if(is.na(site_sum)) {
     Y_id <- data.frame(id = X_orig$id, Y = Y)
   }
   write.csv(Y_id, file.path(y_dir, 'Y.csv'), row.names = FALSE)
-
+  # ADD DEBUG OUTPUT HERE:
+cat(sprintf("[DEBUG data_gen] Y_id dim=%s, NAs=%d\n", 
+            paste(dim(Y_id), collapse="x"), sum(is.na(Y_id))))
+if(any(is.na(Y_id$Y))) {
+  cat("[ERROR] Some Y values are NA - will create NA rows\n")
+  print(Y_id$Y[is.na(Y_id$Y)])
+}
   if (embedding_obs %in% c('fastsurfer', 'condVAE', 'latentDiffusion', 'freesurfer', 'medicalnet')){
     X_obs[,c(-1)] <- scale(X_obs[,c(-1)])
   }else if(embedding_obs %in% c('scratch', 'medicalnet_ft', 'medicalnet_ft_frozen')){
@@ -257,7 +258,6 @@ if(is.na(site_sum)) {
 
     test_ids <- X_obs$id
     Z <- Z[match(test_ids, Z$id), ]
-
     # ADD DEBUG OUTPUT HERE:
 cat(sprintf("[DEBUG data_gen] After test_ids match: Z dim=%s, NAs=%d\n", 
             paste(dim(Z), collapse="x"), sum(is.na(Z))))

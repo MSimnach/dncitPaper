@@ -87,7 +87,8 @@ res_time <- foreach::foreach (i= n_seeds, .packages = pkgs_for_each) %dopar% {
                                                      Y <- as.matrix(XYZ_list[[2]])
                                                      Z <- as.matrix(XYZ_list[[3]])
                                                      embedding_time <- XYZ_list[[4]]
-
+                                                     cat(sprintf("[DEBUG sim] embedding_time=%f\n", embedding_time))
+                                                     cat(sprintf("[DEBUG sim] X dim=%s, Y dim=%s, Z dim=%s\n", paste(dim(X), collapse="x"), paste(dim(Y), collapse="x"), paste(dim(Z), collapse="x")))
                                                      if (args[10] == 'RCOT'){
                                                       if(n_sample[[idx_sample]] < 500){
                                                         cit_params <- list(cit='RCOT', params_cit=list(seed=as.numeric(args[11]), approx="perm"))#, num_fz=200, num_fy=3, num_fx=7))
@@ -172,13 +173,17 @@ res_time <- foreach::foreach (i= n_seeds, .packages = pkgs_for_each) %dopar% {
                                                      }else if(args[10]=='WALD'){
                                                         cit_params <- list(cit='wald')
                                                      }
+cat(sprintf("[DEBUG sim] About to call DNCIT for seed=%d, idx_sample=%d\n", i, idx_sample))
 
                                                      tmp <- DNCIT::DNCIT(X, Y, Z, embedding_map_with_parameters = 'feature_representations',
                                                            cit_with_parameters = cit_params)
+                                                           cat(sprintf("[DEBUG sim] DNCIT completed for seed=%d, idx_sample=%d, p=%f, runtime=%f, embedding_time=%f\n", 
+            i, idx_sample, tmp$p, tmp$runtime, embedding_time))
                                                      res[idx_sample] <- tmp$p
                                                      runtime_cit[idx_sample] <- tmp$runtime
                                                      runtime_embedding[idx_sample] <- embedding_time
                                                    }
+                                                   cat(sprintf("[DEBUG sim] Completed idx_sample=%d for seed=%d\n", idx_sample, i))
                                                    p_time <- cbind(res, runtime_cit, runtime_embedding)
                                                  }else if(grepl('/No_CI',args[1],fixed=TRUE)){
                                                    #cat('CIT:', cit)
@@ -199,17 +204,6 @@ res_time <- foreach::foreach (i= n_seeds, .packages = pkgs_for_each) %dopar% {
                                                        Y <- as.matrix(XYZ_list[[2]])
                                                        Z <- as.matrix(XYZ_list[[3]])
                                                        embedding_time <- XYZ_list[[4]]
-                                                       # ADD DEBUG OUTPUT HERE:
-cat(sprintf("[DEBUG] Seed=%d, Sample=%d: X dim=%s, Y dim=%s, Z dim=%s\n", 
-            i, n_sample[[idx_sample]], paste(dim(X), collapse="x"), 
-            paste(dim(Y), collapse="x"), paste(dim(Z), collapse="x")))
-cat(sprintf("[DEBUG] NAs in X=%d, Y=%d, Z=%d\n", 
-            sum(is.na(X)), sum(is.na(Y)), sum(is.na(Z))))
-if(any(is.na(X)) || any(is.na(Y)) || any(is.na(Z))) {
-  cat("[ERROR] Found NAs in data!\n")
-  stop("Data contains NA values")
-}
-
                                                        if (args[10] == 'RCOT'){
                                                         if(n_sample[[idx_sample]] < 500){
                                                           cit_params <- list(cit='RCOT', params_cit=list(seed=as.numeric(args[11]), approx="perm"))#, num_fz=50, num_fy=3, num_fx=20))
