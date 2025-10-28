@@ -363,7 +363,7 @@ embeddings <- as.matrix(arrow::read_parquet(embeddings_path))
 
 
 ### now with data_gen function
-args <- c("/No_CI/", "1", "0", "1", "0", "fastsurfer", "scratch", "ukb_z4", "squared", "RCOT", "1")
+args <- c("/No_CI/", "1", "0", "1", "0", "fastsurfer", "medicalnet", "ukb_z4", "squared", "RCOT", "1")
 n_cits <- 1
 cit <- c(args[10])
 print(args)

@@ -113,6 +113,15 @@ data_gen <- function(seed, idx_sample=NULL, n_sample=NULL, idx_beta2=NULL, beta2
 
   if (embedding_obs %in% c('fastsurfer', 'condVAE', 'latentDiffusion', 'freesurfer', 'medicalnet')){
     X_obs[,c(-1)] <- scale(X_obs[,c(-1)])
+    # Remove columns with NA values (zero variance columns)
+    na_cols <- colSums(is.na(X_obs[, -1])) > 0
+    if (any(na_cols)) {
+      na_col_names <- names(X_obs[, -1])[na_cols]
+      cat(sprintf("[INFO] Removing %d NA columns from X_obs: %s\n", 
+                  sum(na_cols), 
+                  paste(na_col_names, collapse=", ")))
+      X_obs <- X_obs[, c(TRUE, !na_cols)]  # Keep id column (TRUE) and non-NA columns
+    }
     Y <- Y_id
   }else if(embedding_obs %in% c('scratch', 'medicalnet_ft', 'medicalnet_ft_frozen')){
     stopifnot(all.equal(X_obs$id, Y_id$id))
