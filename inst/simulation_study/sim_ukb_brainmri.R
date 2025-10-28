@@ -36,7 +36,7 @@ n_seeds = 1:200
 #}
 #beta2s <- beta2s_all
 
-beta2s <- list(1)
+beta2s <- list(0.5)
 
 if (cit %in% c('cpi', 'pred_cit')) {
    pkgs_for_each <- c('DNCIT', 'dncitPaper', 'mlr3', 'mlr3learners')
@@ -173,12 +173,25 @@ res_time <- foreach::foreach (i= n_seeds, .packages = pkgs_for_each) %dopar% {
                                                      }else if(args[10]=='WALD'){
                                                         cit_params <- list(cit='wald')
                                                      }
-cat(sprintf("[DEBUG sim] About to call DNCIT for seed=%d, idx_sample=%d\n", i, idx_sample))
-
-                                                     tmp <- DNCIT::DNCIT(X, Y, Z, embedding_map_with_parameters = 'feature_representations',
-                                                           cit_with_parameters = cit_params)
-                                                           cat(sprintf("[DEBUG sim] DNCIT completed for seed=%d, idx_sample=%d, p=%f, runtime=%f, embedding_time=%f\n", 
-            i, idx_sample, tmp$p, tmp$runtime, embedding_time))
+tmp <- tryCatch({
+  DNCIT::DNCIT(X, Y, Z, embedding_map_with_parameters = 'feature_representations',
+               cit_with_parameters = cit_params)
+}, error = function(e) {
+  cat(sprintf("[ERROR in DNCIT] Seed=%d, idx_sample=%d, n=%d\n", 
+              i, idx_sample, n_sample[[idx_sample]]))
+  cat(sprintf("[ERROR] Message: %s\n", e$message))
+  cat(sprintf("[ERROR] X: %s, Y: %s, Z: %s\n",
+              paste(dim(X), collapse="x"),
+              paste(dim(Y), collapse="x"),
+              paste(dim(Z), collapse="x")))
+  cat(sprintf("[ERROR] Z colnames: %s\n", paste(colnames(Z), collapse=", ")))
+  cat(sprintf("[ERROR] Any NA in X:%s Y:%s Z:%s\n",
+              any(is.na(X)), any(is.na(Y)), any(is.na(Z))))
+  cat(sprintf("[ERROR] Any Inf in X:%s Y:%s Z:%s\n",
+              any(is.infinite(X)), any(is.infinite(Y)), any(is.infinite(Z))))
+  # Return NA result so loop can continue
+  list(p = NA, Sta = NA, runtime = NA)
+})
                                                      res[idx_sample] <- tmp$p
                                                      runtime_cit[idx_sample] <- tmp$runtime
                                                      runtime_embedding[idx_sample] <- embedding_time
