@@ -6,6 +6,7 @@
 .Rprofile
 inst/logs
 inst/Results
+Results/
 inst/Results_jmlr_1
 inst/old_results
 inst/raw_code/

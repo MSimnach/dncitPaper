@@ -364,7 +364,7 @@ load_X_obs <- function(path_to_ukb_data,embedding_obs, embedding_orig, X_orig, e
   }else if (embedding_obs == 'medicalnet'){
     X_obs_emb <- arrow::read_parquet(paste0(path_to_ukb_data, '/medicalnet_embeddings/embeddings.parquet'))
     X_obs <- as.data.frame(X_obs_emb)
-    medicalnet_idx <- fread(paste0(out_dir, "/embeddings_index.csv"))
+    medicalnet_idx <- data.table::fread(paste0(out_dir, "/embeddings_index.csv"))
     X_obs <- cbind(id = medicalnet_idx$subject_id, as.data.frame(X_obs_emb))
   }
   return(X_obs)

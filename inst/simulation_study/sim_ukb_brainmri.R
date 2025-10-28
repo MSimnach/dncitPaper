@@ -39,7 +39,9 @@ n_seeds = 1:200
 beta2s <- list(0.5)
 
 if (cit %in% c('cpi', 'pred_cit')) {
-   pkgs_for_each <- c('DNCIT', 'dncitPaper', 'mlr3', 'mlr3learners')
+   pkgs_for_each <- c('DNCIT', 'dncitPaper', 'mlr3', 'mlr3learners', 'momentchi2')
+} else if (cit %in% c('RCOT')) {
+   pkgs_for_each <- c('DNCIT', 'dncitPaper', 'momentchi2')
 } else {
    pkgs_for_each <- c('DNCIT', 'dncitPaper')
 }
@@ -325,6 +327,12 @@ for (i in n_seeds){
     runtime_embedding[i, idx_sample] <- res_time[[i]][idx_sample,3]
   }
 }
+# Create output directories
+dir.create(paste0("Results", args[1], "p-values/"), recursive = TRUE, showWarnings = FALSE)
+dir.create(paste0("Results", args[1], "runtime_cit/"), recursive = TRUE, showWarnings = FALSE)
+dir.create(paste0("Results", args[1], "runtime_embedding/"), recursive = TRUE, showWarnings = FALSE)
+dir.create(paste0("Results", args[1], "rejection_rates/"), recursive = TRUE, showWarnings = FALSE)
+
 write.csv(p_res,file=paste0("Results", args[1], "p-values/", paste(args[-1], collapse="_"), ".csv", collapse=''))
 write.csv(runtime_cit,file=paste0("Results", args[1], "runtime_cit/", paste(args[-1], collapse="_"), ".csv", collapse=''))
 write.csv(runtime_embedding,file=paste0("Results", args[1], "runtime_embedding/", paste(args[-1], collapse="_"), ".csv", collapse=''))
