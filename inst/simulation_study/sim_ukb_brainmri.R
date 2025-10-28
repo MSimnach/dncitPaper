@@ -89,8 +89,7 @@ res_time <- foreach::foreach (i= n_seeds, .packages = pkgs_for_each) %dopar% {
                                                      Y <- as.matrix(XYZ_list[[2]])
                                                      Z <- as.matrix(XYZ_list[[3]])
                                                      embedding_time <- XYZ_list[[4]]
-                                                     cat(sprintf("[DEBUG sim] embedding_time=%f\n", embedding_time))
-                                                     cat(sprintf("[DEBUG sim] X dim=%s, Y dim=%s, Z dim=%s\n", paste(dim(X), collapse="x"), paste(dim(Y), collapse="x"), paste(dim(Z), collapse="x")))
+                                                     
                                                      if (args[10] == 'RCOT'){
                                                       if(n_sample[[idx_sample]] < 500){
                                                         cit_params <- list(cit='RCOT', params_cit=list(seed=as.numeric(args[11]), approx="perm"))#, num_fz=200, num_fy=3, num_fx=7))
@@ -175,30 +174,29 @@ res_time <- foreach::foreach (i= n_seeds, .packages = pkgs_for_each) %dopar% {
                                                      }else if(args[10]=='WALD'){
                                                         cit_params <- list(cit='wald')
                                                      }
-tmp <- tryCatch({
-  DNCIT::DNCIT(X, Y, Z, embedding_map_with_parameters = 'feature_representations',
-               cit_with_parameters = cit_params)
-}, error = function(e) {
-  cat(sprintf("[ERROR in DNCIT] Seed=%d, idx_sample=%d, n=%d\n", 
-              i, idx_sample, n_sample[[idx_sample]]))
-  cat(sprintf("[ERROR] Message: %s\n", e$message))
-  cat(sprintf("[ERROR] X: %s, Y: %s, Z: %s\n",
-              paste(dim(X), collapse="x"),
-              paste(dim(Y), collapse="x"),
-              paste(dim(Z), collapse="x")))
-  cat(sprintf("[ERROR] Z colnames: %s\n", paste(colnames(Z), collapse=", ")))
-  cat(sprintf("[ERROR] Any NA in X:%s Y:%s Z:%s\n",
-              any(is.na(X)), any(is.na(Y)), any(is.na(Z))))
-  cat(sprintf("[ERROR] Any Inf in X:%s Y:%s Z:%s\n",
-              any(is.infinite(X)), any(is.infinite(Y)), any(is.infinite(Z))))
-  # Return NA result so loop can continue
-  list(p = NA, Sta = NA, runtime = NA)
-})
+                                                      tmp <- tryCatch({
+                                                        DNCIT::DNCIT(X, Y, Z, embedding_map_with_parameters = 'feature_representations',
+                                                                    cit_with_parameters = cit_params)
+                                                      }, error = function(e) {
+                                                        cat(sprintf("[ERROR in DNCIT] Seed=%d, idx_sample=%d, n=%d\n", 
+                                                                    i, idx_sample, n_sample[[idx_sample]]))
+                                                        cat(sprintf("[ERROR] Message: %s\n", e$message))
+                                                        cat(sprintf("[ERROR] X: %s, Y: %s, Z: %s\n",
+                                                                    paste(dim(X), collapse="x"),
+                                                                    paste(dim(Y), collapse="x"),
+                                                                    paste(dim(Z), collapse="x")))
+                                                        cat(sprintf("[ERROR] Z colnames: %s\n", paste(colnames(Z), collapse=", ")))
+                                                        cat(sprintf("[ERROR] Any NA in X:%s Y:%s Z:%s\n",
+                                                                    any(is.na(X)), any(is.na(Y)), any(is.na(Z))))
+                                                        cat(sprintf("[ERROR] Any Inf in X:%s Y:%s Z:%s\n",
+                                                                    any(is.infinite(X)), any(is.infinite(Y)), any(is.infinite(Z))))
+                                                        # Return NA result so loop can continue
+                                                        list(p = NA, Sta = NA, runtime = NA)
+                                                      })
                                                      res[idx_sample] <- tmp$p
                                                      runtime_cit[idx_sample] <- tmp$runtime
                                                      runtime_embedding[idx_sample] <- embedding_time
                                                    }
-                                                   cat(sprintf("[DEBUG sim] Completed idx_sample=%d for seed=%d\n", idx_sample, i))
                                                    p_time <- cbind(res, runtime_cit, runtime_embedding)
                                                  }else if(grepl('/No_CI',args[1],fixed=TRUE)){
                                                    #cat('CIT:', cit)

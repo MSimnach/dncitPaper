@@ -69,11 +69,6 @@ data_gen <- function(seed, idx_sample=NULL, n_sample=NULL, idx_beta2=NULL, beta2
   # Sum the 'site' columns row-wise
   site_sum <- sum(Z[site_columns])
 
-  # ADD DEBUG OUTPUT HERE:
-cat(sprintf("[DEBUG data_gen] site_columns: %s, site_sum=%s, nrow(Z)=%d\n", 
-            paste(site_columns, collapse=","), 
-            as.character(site_sum), nrow(Z)))
-
   #remove one site column
   if(isTRUE(site_sum == nrow(Z))){
     for(site in site_columns){
@@ -116,23 +111,9 @@ cat(sprintf("[DEBUG data_gen] site_columns: %s, site_sum=%s, nrow(Z)=%d\n",
   }
   write.csv(Y_id, file.path(y_dir, 'Y.csv'), row.names = FALSE)
 
-  # ADD DEBUG OUTPUT HERE:
-cat(sprintf("[DEBUG data_gen] Y_id dim=%s, NAs=%d\n", 
-            paste(dim(Y_id), collapse="x"), sum(is.na(Y_id))))
-if(any(is.na(Y_id$Y))) {
-  cat("[ERROR] Some Y values are NA - will create NA rows\n")
-  print(Y_id$Y[is.na(Y_id$Y)])
-}
   if (embedding_obs %in% c('fastsurfer', 'condVAE', 'latentDiffusion', 'freesurfer', 'medicalnet')){
     X_obs[,c(-1)] <- scale(X_obs[,c(-1)])
-      Y <- Y_id
-    # ADD DEBUG OUTPUT HERE:
-cat(sprintf("[DEBUG data_gen] X_obs dim=%s, NAs=%d\n", 
-            paste(dim(X_obs), collapse="x"), sum(is.na(X_obs))))
-if(any(is.na(X_obs))) {
-  cat("[ERROR] Some X_obs values are NA - will create NA rows\n")
-  print(X_obs[is.na(X_obs)])
-}
+    Y <- Y_id
   }else if(embedding_obs %in% c('scratch', 'medicalnet_ft', 'medicalnet_ft_frozen')){
     stopifnot(all.equal(X_obs$id, Y_id$id))
     X_obs$y <- Y
@@ -264,38 +245,31 @@ if(any(is.na(X_obs))) {
     X_obs_test_trained <- as.matrix(arrow::read_parquet(embeddings_path))
     X_obs_test_trained_idx <- data.table::fread(index_path)
     X_obs <- cbind(id = X_obs_test_trained_idx$subject_id, as.data.frame(X_obs_test_trained))
-# CHECK FOR INF/NAN VALUES - COLUMN BY COLUMN:
-na_count <- sum(sapply(X_obs[,-1], function(x) sum(is.na(x))))
-inf_count <- sum(sapply(X_obs[,-1], function(x) sum(is.infinite(x) & x > 0)))
-neginf_count <- sum(sapply(X_obs[,-1], function(x) sum(is.infinite(x) & x < 0)))
-nan_count <- sum(sapply(X_obs[,-1], function(x) sum(is.nan(x))))
+    # CHECK FOR INF/NAN VALUES - COLUMN BY COLUMN:
+    na_count <- sum(sapply(X_obs[,-1], function(x) sum(is.na(x))))
+    inf_count <- sum(sapply(X_obs[,-1], function(x) sum(is.infinite(x) & x > 0)))
+    neginf_count <- sum(sapply(X_obs[,-1], function(x) sum(is.infinite(x) & x < 0)))
+    nan_count <- sum(sapply(X_obs[,-1], function(x) sum(is.nan(x))))
 
-cat(sprintf("[DEBUG data_gen] X_obs after loading dim=%s, NAs=%d, Inf=%d, -Inf=%d, NaN=%d\n", 
-            paste(dim(X_obs), collapse="x"), na_count, inf_count, neginf_count, nan_count))
+    cat(sprintf("[DEBUG data_gen] X_obs after loading dim=%s, NAs=%d, Inf=%d, -Inf=%d, NaN=%d\n", 
+                paste(dim(X_obs), collapse="x"), na_count, inf_count, neginf_count, nan_count))
 
-if(inf_count > 0 || neginf_count > 0) {
-  cat("[ERROR] X_obs contains Inf values after loading!\n")
-  
-  # Find which columns have Inf
-  inf_cols <- which(sapply(X_obs[,-1], function(x) any(is.infinite(x))))
-  cat(sprintf("[ERROR] Columns with Inf (indices): %s\n", paste(inf_cols, collapse=", ")))
-  
-  # Replace Inf with NA
-  for(i in 2:ncol(X_obs)) {  # Start from 2 to skip id column
-    X_obs[[i]][is.infinite(X_obs[[i]])] <- NA
-  }
-  cat("[FIX] Replaced Inf values with NA\n")
-}
+    if(inf_count > 0 || neginf_count > 0) {
+      cat("[ERROR] X_obs contains Inf values after loading!\n")
+      
+      # Find which columns have Inf
+      inf_cols <- which(sapply(X_obs[,-1], function(x) any(is.infinite(x))))
+      cat(sprintf("[ERROR] Columns with Inf (indices): %s\n", paste(inf_cols, collapse=", ")))
+      
+      # Replace Inf with NA
+      for(i in 2:ncol(X_obs)) {  # Start from 2 to skip id column
+        X_obs[[i]][is.infinite(X_obs[[i]])] <- NA
+      }
+      cat("[FIX] Replaced Inf values with NA\n")
+    }
 
     test_ids <- X_obs$id
     Z <- Z[match(test_ids, Z$id), ]
-    # ADD DEBUG OUTPUT HERE:
-cat(sprintf("[DEBUG data_gen] After test_ids match: Z dim=%s, NAs=%d\n", 
-            paste(dim(Z), collapse="x"), sum(is.na(Z))))
-if(any(is.na(match(test_ids, Z$id)))) {
-  cat("[ERROR] Some test_ids not found in Z$id - will create NA rows\n")
-  print(test_ids[is.na(match(test_ids, Z$id))])
-}
     Y <- Y_id[match(test_ids, Y_id$id), , drop=FALSE]
     X_orig <- X_orig[match(test_ids, X_orig$id), ]
     stopifnot(all.equal(X_obs$id, Y$id))
@@ -305,22 +279,7 @@ if(any(is.na(match(test_ids, Z$id)))) {
   row.names(X_obs) <- 1:nrow(X_obs)
   row.names(X_orig) <- 1:nrow(X_orig)
   row.names(Y) <- 1:nrow(Y)
-  # Before line 285:
-cat(sprintf("[DEBUG data_gen] Before removing id col: Z ncol=%d, X_obs ncol=%d, Y ncol=%d\n",
-            ncol(Z), ncol(X_obs), ncol(Y)))
-if(ncol(Z) <= 1) {
-  cat("[ERROR] Z has only 1 or fewer columns (just id or empty)!\n")
-  cat(sprintf("[ERROR] Z colnames: %s\n", paste(colnames(Z), collapse=", ")))
-  stop("Z has no data columns after processing")
-}
-if(ncol(X_obs) <= 1) {
-  cat("[ERROR] X_obs has only 1 or fewer columns!\n")
-  stop("X_obs has no data columns")
-}
-if(ncol(Y) <= 1) {
-  cat("[ERROR] Y has only 1 or fewer columns!\n")
-  stop("Y has no data columns")
-}
+
   X_obs <- X_obs[, -c(1)]
   #X_obs <- scale(X_obs)
   Z <- Z[, -c(1)]
@@ -364,7 +323,7 @@ load_X_obs <- function(path_to_ukb_data,embedding_obs, embedding_orig, X_orig, e
   }else if (embedding_obs == 'medicalnet'){
     X_obs_emb <- arrow::read_parquet(paste0(path_to_ukb_data, '/medicalnet_embeddings/embeddings.parquet'))
     X_obs <- as.data.frame(X_obs_emb)
-    medicalnet_idx <- data.table::fread(paste0(out_dir, "/embeddings_index.csv"))
+    medicalnet_idx <- data.table::fread(paste0(path_to_ukb_data, "/medicalnet_embeddings/embeddings_index.csv"))
     X_obs <- cbind(id = medicalnet_idx$subject_id, as.data.frame(X_obs_emb))
   }
   return(X_obs)
