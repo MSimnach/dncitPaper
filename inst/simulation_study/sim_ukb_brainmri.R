@@ -199,7 +199,16 @@ res_time <- foreach::foreach (i= n_seeds, .packages = pkgs_for_each) %dopar% {
                                                        Y <- as.matrix(XYZ_list[[2]])
                                                        Z <- as.matrix(XYZ_list[[3]])
                                                        embedding_time <- XYZ_list[[4]]
-                                                       #XYZ <- data.frame(XYZ_list)
+                                                       # ADD DEBUG OUTPUT HERE:
+cat(sprintf("[DEBUG] Seed=%d, Sample=%d: X dim=%s, Y dim=%s, Z dim=%s\n", 
+            i, n_sample[[idx_sample]], paste(dim(X), collapse="x"), 
+            paste(dim(Y), collapse="x"), paste(dim(Z), collapse="x")))
+cat(sprintf("[DEBUG] NAs in X=%d, Y=%d, Z=%d\n", 
+            sum(is.na(X)), sum(is.na(Y)), sum(is.na(Z))))
+if(any(is.na(X)) || any(is.na(Y)) || any(is.na(Z))) {
+  cat("[ERROR] Found NAs in data!\n")
+  stop("Data contains NA values")
+}
 
                                                        if (args[10] == 'RCOT'){
                                                         if(n_sample[[idx_sample]] < 500){

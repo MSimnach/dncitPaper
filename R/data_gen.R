@@ -68,8 +68,19 @@ data_gen <- function(seed, idx_sample=NULL, n_sample=NULL, idx_beta2=NULL, beta2
   site_columns <- grep("^site", colnames(Z), value = TRUE)
   # Sum the 'site' columns row-wise
   site_sum <- sum(Z[site_columns])
+
+  # ADD DEBUG OUTPUT HERE:
+cat(sprintf("[DEBUG data_gen] site_columns: %s, site_sum=%s, nrow(Z)=%d\n", 
+            paste(site_columns, collapse=","), 
+            as.character(site_sum), nrow(Z)))
+
+# ADD PROTECTION AGAINST NA:
+if(is.na(site_sum)) {
+  cat("[ERROR] site_sum is NA!\n")
+  site_sum <- 0  # or handle appropriately
+}
   #remove one site column
-  if(site_sum == nrow(Z)){
+  if(isTRUE(site_sum == nrow(Z))){
     for(site in site_columns){
       if(is_binary(Z[[site]])){
         Z <- Z[, !names(Z) %in% site]
@@ -246,6 +257,14 @@ data_gen <- function(seed, idx_sample=NULL, n_sample=NULL, idx_beta2=NULL, beta2
 
     test_ids <- X_obs$id
     Z <- Z[match(test_ids, Z$id), ]
+
+    # ADD DEBUG OUTPUT HERE:
+cat(sprintf("[DEBUG data_gen] After test_ids match: Z dim=%s, NAs=%d\n", 
+            paste(dim(Z), collapse="x"), sum(is.na(Z))))
+if(any(is.na(match(test_ids, Z$id)))) {
+  cat("[ERROR] Some test_ids not found in Z$id - will create NA rows\n")
+  print(test_ids[is.na(match(test_ids, Z$id))])
+}
     Y <- Y_id[match(test_ids, Y_id$id), , drop=FALSE]
     X_orig <- X_orig[match(test_ids, X_orig$id), ]
     stopifnot(all.equal(X_obs$id, Y$id))
@@ -260,6 +279,9 @@ data_gen <- function(seed, idx_sample=NULL, n_sample=NULL, idx_beta2=NULL, beta2
   X_obs <- scale(X_obs)
   Z <- Z[, -c(1)]
   Y <- Y[, -c(1), drop=FALSE]
+  cat("X_obs: ", dim(X_obs), "\n")
+  cat("Y: ", dim(Y), "\n")
+  cat("Z: ", dim(Z), "\n")
   return(list(X_obs, Y, Z, training_time))
 }
 
