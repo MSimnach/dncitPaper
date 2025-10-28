@@ -115,6 +115,7 @@ cat(sprintf("[DEBUG data_gen] site_columns: %s, site_sum=%s, nrow(Z)=%d\n",
     Y_id <- data.frame(id = X_orig$id, Y = Y)
   }
   write.csv(Y_id, file.path(y_dir, 'Y.csv'), row.names = FALSE)
+
   # ADD DEBUG OUTPUT HERE:
 cat(sprintf("[DEBUG data_gen] Y_id dim=%s, NAs=%d\n", 
             paste(dim(Y_id), collapse="x"), sum(is.na(Y_id))))
@@ -124,6 +125,7 @@ if(any(is.na(Y_id$Y))) {
 }
   if (embedding_obs %in% c('fastsurfer', 'condVAE', 'latentDiffusion', 'freesurfer', 'medicalnet')){
     X_obs[,c(-1)] <- scale(X_obs[,c(-1)])
+      Y <- Y_id
     # ADD DEBUG OUTPUT HERE:
 cat(sprintf("[DEBUG data_gen] X_obs dim=%s, NAs=%d\n", 
             paste(dim(X_obs), collapse="x"), sum(is.na(X_obs))))
@@ -262,6 +264,28 @@ if(any(is.na(X_obs))) {
     X_obs_test_trained <- as.matrix(arrow::read_parquet(embeddings_path))
     X_obs_test_trained_idx <- data.table::fread(index_path)
     X_obs <- cbind(id = X_obs_test_trained_idx$subject_id, as.data.frame(X_obs_test_trained))
+# CHECK FOR INF/NAN VALUES - COLUMN BY COLUMN:
+na_count <- sum(sapply(X_obs[,-1], function(x) sum(is.na(x))))
+inf_count <- sum(sapply(X_obs[,-1], function(x) sum(is.infinite(x) & x > 0)))
+neginf_count <- sum(sapply(X_obs[,-1], function(x) sum(is.infinite(x) & x < 0)))
+nan_count <- sum(sapply(X_obs[,-1], function(x) sum(is.nan(x))))
+
+cat(sprintf("[DEBUG data_gen] X_obs after loading dim=%s, NAs=%d, Inf=%d, -Inf=%d, NaN=%d\n", 
+            paste(dim(X_obs), collapse="x"), na_count, inf_count, neginf_count, nan_count))
+
+if(inf_count > 0 || neginf_count > 0) {
+  cat("[ERROR] X_obs contains Inf values after loading!\n")
+  
+  # Find which columns have Inf
+  inf_cols <- which(sapply(X_obs[,-1], function(x) any(is.infinite(x))))
+  cat(sprintf("[ERROR] Columns with Inf (indices): %s\n", paste(inf_cols, collapse=", ")))
+  
+  # Replace Inf with NA
+  for(i in 2:ncol(X_obs)) {  # Start from 2 to skip id column
+    X_obs[[i]][is.infinite(X_obs[[i]])] <- NA
+  }
+  cat("[FIX] Replaced Inf values with NA\n")
+}
 
     test_ids <- X_obs$id
     Z <- Z[match(test_ids, Z$id), ]
@@ -281,7 +305,22 @@ if(any(is.na(match(test_ids, Z$id)))) {
   row.names(X_obs) <- 1:nrow(X_obs)
   row.names(X_orig) <- 1:nrow(X_orig)
   row.names(Y) <- 1:nrow(Y)
-
+  # Before line 285:
+cat(sprintf("[DEBUG data_gen] Before removing id col: Z ncol=%d, X_obs ncol=%d, Y ncol=%d\n",
+            ncol(Z), ncol(X_obs), ncol(Y)))
+if(ncol(Z) <= 1) {
+  cat("[ERROR] Z has only 1 or fewer columns (just id or empty)!\n")
+  cat(sprintf("[ERROR] Z colnames: %s\n", paste(colnames(Z), collapse=", ")))
+  stop("Z has no data columns after processing")
+}
+if(ncol(X_obs) <= 1) {
+  cat("[ERROR] X_obs has only 1 or fewer columns!\n")
+  stop("X_obs has no data columns")
+}
+if(ncol(Y) <= 1) {
+  cat("[ERROR] Y has only 1 or fewer columns!\n")
+  stop("Y has no data columns")
+}
   X_obs <- X_obs[, -c(1)]
   #X_obs <- scale(X_obs)
   Z <- Z[, -c(1)]

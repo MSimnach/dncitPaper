@@ -382,7 +382,7 @@ beta2s=list(0.5)
 idx_beta2=1
 idx_sample = 1
 seed=1
-n_sample = list(550)
+n_sample = list(145)
 
 ## test data generation
 set.seed(seed)
