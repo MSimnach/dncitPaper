@@ -55,7 +55,7 @@ data_gen <- function(seed, idx_sample=NULL, n_sample=NULL, idx_beta2=NULL, beta2
   Z <- subset_Z[idx, , drop=FALSE]
 
   epsZ <- matrix(stats::rnorm((nrow(Z)*(ncol(Z)-1)), 0, eps_sigmaZ), nrow=nrow(Z), ncol=ncol(Z)-1)
-  Z[,c(-1), drop=FALSE] <- Z[,c(-1), drop=FALSE]+epsZ
+  Z[,c(-1)] <- Z[,c(-1), drop=FALSE]+epsZ
 
   #remove zero columns and multicollinearity in one-hot-encoding of sites (due to subsampling)
   site_columns <- grep("^site", colnames(Z), value = TRUE)
@@ -81,9 +81,9 @@ data_gen <- function(seed, idx_sample=NULL, n_sample=NULL, idx_beta2=NULL, beta2
 
   #Standardize
   # scale only continuous confounders
-  Z[,c(-1), drop=FALSE] <- Z[,c(-1), drop=FALSE] %>% dplyr::mutate(dplyr::across(dplyr::where(function(x) !is_binary(x)), scale))
+  Z[,c(-1)] <- Z[,c(-1), drop=FALSE] %>% dplyr::mutate(dplyr::across(dplyr::where(function(x) !is_binary(x)), scale))
 
-  X_orig[,c(-1), drop=FALSE] <- scale(X_orig[,c(-1), drop=FALSE])
+  X_orig[,c(-1)] <- scale(X_orig[,c(-1), drop=FALSE])
   #X_obs <- scale(X_obs)
 
   if(is.null(beta2s)){
