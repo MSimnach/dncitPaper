@@ -33,5 +33,5 @@ inst/old_code/
 inst/diagnostic_embedding/figures/
 
 # temporary execution files
-inst/simulation_study/sim_ukb_brainmri_test.R
+inst/simulation_study/sim_ukb_brainmri_*.R
 

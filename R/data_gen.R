@@ -103,7 +103,7 @@ data_gen <- function(seed, idx_sample=NULL, n_sample=NULL, idx_beta2=NULL, beta2
   }
 
   y_dir <- paste0(path_to_ukb_data, '/', is_ci, '/', n_sample[[idx_sample]], '/', seed, '/', paste0("eps_sigmaY=", eps_sigmaY))
-  dir.create(y_dir, recursive = TRUE)
+  dir.create(y_dir, recursive = TRUE, showWarnings = FALSE)
   if (debug) {
     Y_id <- data.frame(id = X_orig$id, Y = Y$Y)
   } else {
@@ -136,7 +136,7 @@ data_gen <- function(seed, idx_sample=NULL, n_sample=NULL, idx_beta2=NULL, beta2
     if (file.exists(embeddings_path)){
       cat("✅ Embedding directory already exists. Skipping training...\n")
     } else {
-      dir.create(embedding_dir, recursive = TRUE)
+      dir.create(embedding_dir, recursive = TRUE, showWarnings = FALSE)
       script_dir <- "inst/learn_embedding"
       # save Y and data gen config
       # Save configuration
