@@ -55,7 +55,7 @@ data_gen <- function(seed, idx_sample=NULL, n_sample=NULL, idx_beta2=NULL, beta2
   Z <- subset_Z[idx, , drop=FALSE]
 
   epsZ <- matrix(stats::rnorm((nrow(Z)*(ncol(Z)-1)), 0, eps_sigmaZ), nrow=nrow(Z), ncol=ncol(Z)-1)
-  Z[,c(-1)] <- Z[,c(-1)]+epsZ
+  Z[,c(-1), drop=FALSE] <- Z[,c(-1), drop=FALSE]+epsZ
 
   #remove zero columns and multicollinearity in one-hot-encoding of sites (due to subsampling)
   site_columns <- grep("^site", colnames(Z), value = TRUE)
@@ -81,23 +81,23 @@ data_gen <- function(seed, idx_sample=NULL, n_sample=NULL, idx_beta2=NULL, beta2
 
   #Standardize
   # scale only continuous confounders
-  Z[,c(-1)] <- Z[,c(-1)] %>% dplyr::mutate(dplyr::across(dplyr::where(function(x) !is_binary(x)), scale))
+  Z[,c(-1), drop=FALSE] <- Z[,c(-1), drop=FALSE] %>% dplyr::mutate(dplyr::across(dplyr::where(function(x) !is_binary(x)), scale))
 
-  X_orig[,c(-1)] <- scale(X_orig[,c(-1)])
+  X_orig[,c(-1), drop=FALSE] <- scale(X_orig[,c(-1), drop=FALSE])
   #X_obs <- scale(X_obs)
 
   if(is.null(beta2s)){
     if (debug) {
-      Y <- y_from_xz(Z[,c(-1)], eps_sigmaY, post_non_lin=post_non_lin, g_z=g_z, debug=debug)
+      Y <- y_from_xz(Z[,c(-1), drop=FALSE], eps_sigmaY, post_non_lin=post_non_lin, g_z=g_z, debug=debug)
     } else {
-      Y <- y_from_xz(Z[,c(-1)], eps_sigmaY, post_non_lin=post_non_lin, g_z=g_z)
+      Y <- y_from_xz(Z[,c(-1), drop=FALSE], eps_sigmaY, post_non_lin=post_non_lin, g_z=g_z)
     }
     is_ci <- "CI"
   }else{
     if (debug) {
-      Y <- y_from_xz(Z[,c(-1)], eps_sigmaY, X=as.matrix(X_orig[,c(-1)]), gamma=beta2s[[idx_beta2]], post_non_lin=post_non_lin, g_z=g_z, debug=debug, xz_mode=xz_mode)
+      Y <- y_from_xz(Z[,c(-1), drop=FALSE], eps_sigmaY, X=as.matrix(X_orig[,c(-1), drop=FALSE]), gamma=beta2s[[idx_beta2]], post_non_lin=post_non_lin, g_z=g_z, debug=debug, xz_mode=xz_mode)
     } else {
-      Y <- y_from_xz(Z[,c(-1)], eps_sigmaY, X=as.matrix(X_orig[,c(-1)]), gamma=beta2s[[idx_beta2]], post_non_lin=post_non_lin, g_z=g_z, xz_mode=xz_mode)
+      Y <- y_from_xz(Z[,c(-1), drop=FALSE], eps_sigmaY, X=as.matrix(X_orig[,c(-1), drop=FALSE]), gamma=beta2s[[idx_beta2]], post_non_lin=post_non_lin, g_z=g_z, xz_mode=xz_mode)
     }
     is_ci <- "No_CI"
   }
@@ -289,13 +289,15 @@ data_gen <- function(seed, idx_sample=NULL, n_sample=NULL, idx_beta2=NULL, beta2
   row.names(X_orig) <- 1:nrow(X_orig)
   row.names(Y) <- 1:nrow(Y)
 
-  X_obs <- X_obs[, -c(1)]
+  X_obs <- X_obs[, -c(1), drop=FALSE]
   #X_obs <- scale(X_obs)
-  Z <- Z[, -c(1)]
+  Z <- Z[, -c(1), drop=FALSE]
   Y <- Y[, -c(1), drop=FALSE]
+  if (seed %% 100 == 0){
   cat("X_obs: ", dim(X_obs), "\n")
-  cat("Y: ", dim(Y), "\n")
-  cat("Z: ", dim(Z), "\n")
+    cat("Y: ", dim(Y), "\n")
+    cat("Z: ", dim(Z), "\n")
+  }
   return(list(X_obs, Y, Z, training_time))
 }
 
