@@ -416,7 +416,7 @@ auto_diagnostic <- function(
       
       # Scale remaining columns
       X <- scale(X_raw)
-
+      cat("X: ", X[1:5,1:5], "\n")
       # Run glmnet
       result <- ridge_lasso_glmnet(
         X = X, 
@@ -427,6 +427,8 @@ auto_diagnostic <- function(
         lambda_choice = lambda_choice,
         seed = seed
       )
+
+      cat("Result for ", emb_name, " of Lasso regression: ", result$r2_test, " MSE: ", result$mse_test, "\n")
       
       results_list[[length(results_list) + 1]] <- data.frame(
         embedding_type = "baseline",

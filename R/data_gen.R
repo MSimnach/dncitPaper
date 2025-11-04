@@ -117,9 +117,9 @@ data_gen <- function(seed, idx_sample=NULL, n_sample=NULL, idx_beta2=NULL, beta2
     na_cols <- colSums(is.na(X_obs[, -1])) > 0
     if (any(na_cols)) {
       na_col_names <- names(X_obs[, -1])[na_cols]
-      cat(sprintf("[INFO] Removing %d NA columns from X_obs: %s\n", 
-                  sum(na_cols), 
-                  paste(na_col_names, collapse=", ")))
+      #cat(sprintf("[INFO] Removing %d NA columns from X_obs: %s\n", 
+       #           sum(na_cols), 
+        #          paste(na_col_names, collapse=", ")))
       X_obs <- X_obs[, c(TRUE, !na_cols)]  # Keep id column (TRUE) and non-NA columns
     }
     Y <- Y_id
@@ -177,11 +177,11 @@ data_gen <- function(seed, idx_sample=NULL, n_sample=NULL, idx_beta2=NULL, beta2
                       "--model_name", "resnet18",
                       "--task", "regression",
                       "--epochs", "100",
-                      "--batch_size", "4",
+                      "--batch_size", "8",
                       "--test_size", "0.5",
                       "--val_frac", "0.2",
                       "--amp",
-                      "--lr", "3e-3",
+                      "--lr", "1e-3",
                       "--use_tensorboard")
 
         # Use the python from the active env (auto-detected via CONDA_PREFIX)
@@ -203,11 +203,12 @@ data_gen <- function(seed, idx_sample=NULL, n_sample=NULL, idx_beta2=NULL, beta2
                       "--model_name", "resnet18",
                       "--task", "regression",
                       "--epochs", "100",
-                      "--batch_size", "4",
+                      "--batch_size", "8",
                       "--test_size", "0.5",
                       "--val_frac", "0.2",
                       "--amp",
-                      "--lr", "3e-3",
+                      "--lr_head", "1e-3",
+                      "--lr_backbone", "1e-4",
                       "--use_tensorboard",
                       "--pretrained",
                       "--simple_head")
@@ -230,7 +231,7 @@ data_gen <- function(seed, idx_sample=NULL, n_sample=NULL, idx_beta2=NULL, beta2
                       "--model_name", "resnet18",
                       "--task", "regression",
                       "--epochs", "100",
-                      "--batch_size", "4",
+                      "--batch_size", "8",
                       "--test_size", "0.5",
                       "--val_frac", "0.2",
                       "--amp",

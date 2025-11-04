@@ -14,7 +14,9 @@ print(args)
 ####### In parallel #######
 if(cit == 'KCIT' || tail(args,1)=='20' || cit=='CMIknn'){
   n_sample = list(145, 256, 350, 460, 825, 1100)
-}else if(cit=='WALD'){
+}else if(cit=='WALD' && args[7]=='medicalnet'){
+  n_sample = list(825, 1100, 1475, 1964, 5000, 10000)
+}else if(cit=='WALD' && args[7]!='medicalnet'){
   n_sample = list(350, 460, 825, 1100, 1475, 1964, 5000, 10000)
 }else if(cit=='pred_cit'){
   n_sample = list(460, 825, 1100)
@@ -299,9 +301,27 @@ res_time <- foreach::foreach (i= n_seeds, .packages = pkgs_for_each) %dopar% {
                                                        }else if(args[10]=='WALD'){
                                                           cit_params <- list(cit='wald', params_cit=NULL)
                                                        }
-
-                                                       tmp <- DNCIT::DNCIT(X, Y, Z, embedding_map_with_parameters = 'feature_representations',
+                                                      tmp <- tryCatch({
+                                                        DNCIT::DNCIT(X, Y, Z, embedding_map_with_parameters = 'feature_representations',
                                                                     cit_with_parameters = cit_params)
+                                                      }, error = function(e) {
+                                                        cat(sprintf("[ERROR in DNCIT] Seed=%d, idx_sample=%d, n=%d\n", 
+                                                                    i, idx_sample, n_sample[[idx_sample]]))
+                                                        cat(sprintf("[ERROR] Message: %s\n", e$message))
+                                                        cat(sprintf("[ERROR] X: %s, Y: %s, Z: %s\n",
+                                                                    paste(dim(X), collapse="x"),
+                                                                    paste(dim(Y), collapse="x"),
+                                                                    paste(dim(Z), collapse="x")))
+                                                        cat(sprintf("[ERROR] Z colnames: %s\n", paste(colnames(Z), collapse=", ")))
+                                                        cat(sprintf("[ERROR] Any NA in X:%s Y:%s Z:%s\n",
+                                                                    any(is.na(X)), any(is.na(Y)), any(is.na(Z))))
+                                                        cat(sprintf("[ERROR] Any Inf in X:%s Y:%s Z:%s\n",
+                                                                    any(is.infinite(X)), any(is.infinite(Y)), any(is.infinite(Z))))
+                                                        # Return NA result so loop can continue
+                                                        list(p = NA, Sta = NA, runtime = NA)
+                                                      })
+                                                       #tmp <- DNCIT::DNCIT(X, Y, Z, embedding_map_with_parameters = 'feature_representations',
+                                                       #             cit_with_parameters = cit_params)
                                                        res[idx_sample] <- tmp$p
                                                        runtime_cit[idx_sample] <- tmp$runtime
                                                        runtime_embedding[idx_sample] <- embedding_time

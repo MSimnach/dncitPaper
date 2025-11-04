@@ -115,8 +115,13 @@ y_from_xz <- function(Z, eps_sigmaY, X = NULL,
     beta_X <- beta_X * sd(sample_beta_corr(X_mat, sparsity = 1.0, shrink = shrink_X, lambda = lambda_X))
     pX_raw <- drop(X_mat %*% beta_X)
 
-  } else { # "independent"
+  } else if (xz_mode == "independent") { # "independent"
     beta_X <- sample_beta_corr(X_mat, sparsity = sparsity_X, shrink = shrink_X, lambda = lambda_X)
+    pX_raw <- drop(X_mat %*% beta_X)
+  } else { # "Sigma=I_p", i.e. beta_X with Sigma=I_p
+    beta_X_ <- stats::rnorm(ncol(X_mat), 0, 1)
+    active_X <- stats::rbinom(ncol(X_mat), 1, sparsity_X)
+    beta_X <- beta_X_*active_X
     pX_raw <- drop(X_mat %*% beta_X)
   }
 
