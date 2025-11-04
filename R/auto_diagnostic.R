@@ -416,7 +416,13 @@ auto_diagnostic <- function(
       
       # Scale remaining columns
       X <- scale(X_raw)
-      cat("X: ", X[1:5,1:5], "\n")
+      # Add diagnostic output
+      cat("\n  X dimensions: ", nrow(X), "x", ncol(X), 
+          ", mean:", round(mean(X), 4), 
+          ", sd:", round(sd(X), 4),
+          ", range: [", round(min(X), 4), ",", round(max(X), 4), "]\n", sep="")
+      cat("  First few values: ", paste(round(X[1, 1:min(5, ncol(X))], 4), collapse=" "), "\n")
+      
       # Run glmnet
       result <- ridge_lasso_glmnet(
         X = X, 
@@ -455,16 +461,52 @@ auto_diagnostic <- function(
       # Embeddings already scaled from extraction, just remove id
       X <- as.matrix(emb_data[,c(-1)])
       
-      # Run glmnet
-      result <- ridge_lasso_glmnet(
-        X = X, 
-        y = Y,
-        alpha = alpha,
-        test_prop = test_prop,
-        nfolds = nfolds,
-        lambda_choice = lambda_choice,
-        seed = seed
-      )
+      # Check for missing values before running glmnet
+      if (any(is.na(X)) || any(is.infinite(X))) {
+        cat("SKIPPED (NA or Inf values detected in embeddings)\n")
+        
+        results_list[[length(results_list) + 1]] <- data.frame(
+          embedding_type = "trained",
+          embedding_name = emb_name,
+          r2_test = NA,
+          mse_test = NA,
+          lambda_min = NA,
+          lambda_1se = NA,
+          lambda_used = NA,
+          stringsAsFactors = FALSE
+        )
+        next
+      }
+      
+      # Run glmnet with error handling
+      result <- tryCatch({
+        ridge_lasso_glmnet(
+          X = X, 
+          y = Y,
+          alpha = alpha,
+          test_prop = test_prop,
+          nfolds = nfolds,
+          lambda_choice = lambda_choice,
+          seed = seed
+        )
+      }, error = function(e) {
+        cat("ERROR:", conditionMessage(e), "\n")
+        return(NULL)
+      })
+      
+      if (is.null(result)) {
+        results_list[[length(results_list) + 1]] <- data.frame(
+          embedding_type = "trained",
+          embedding_name = emb_name,
+          r2_test = NA,
+          mse_test = NA,
+          lambda_min = NA,
+          lambda_1se = NA,
+          lambda_used = NA,
+          stringsAsFactors = FALSE
+        )
+        next
+      }
       
       results_list[[length(results_list) + 1]] <- data.frame(
         embedding_type = "trained",

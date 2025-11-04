@@ -238,11 +238,12 @@ print(paste0("Trained: R^2 = ", trained_results$r2_test, " MSE = ", trained_resu
 
 
 #### via auto_diagnostic function
-idx_samples <- 1:3
-n_sample <- list(460, 825, 1100)
+idx_samples <- 1:10
+n_sample = list(145, 256, 350, 460, 825, 1100, 1475, 1964, 5000, 10000)
 xz_modes <- c('independent')
-seeds <- 1:10
-eps_sigmaY_list <- c(0, 0.05, 0.1, 0.5, 1)
+seeds <- 1:3
+eps_sigmaY_list <- c(1)
+embedding_obs <- c('scratch', 'medicalnet_ft', 'medicalnet_ft_frozen')
 for(eps_sigmaY in eps_sigmaY_list){
   for(seed in seeds){
     # Cache baseline results per seed (constant across sample sizes)
@@ -253,19 +254,21 @@ for(eps_sigmaY in eps_sigmaY_list){
           # Compute baseline results for first sample size and cache them
           results <- auto_diagnostic(
             experiment_dir = paste0("/sc/home/marco.simnacher/ukbiobank/data/No_CI/", n_sample[idx_sample], "/", seed, "/eps_sigmaY=", as.character(eps_sigmaY)),
-            embedding_obs = c("scratch"),
+            embedding_obs = embedding_obs,
             seed = seed,
-            debug_Y = TRUE
+            debug_Y = TRUE,
+            lambda_choice = "min"
           )
           baseline_cache <- results$baseline_results
         } else {
           # Reuse cached baseline results for subsequent sample sizes
           results <- auto_diagnostic(
             experiment_dir = paste0("/sc/home/marco.simnacher/ukbiobank/data/No_CI/", n_sample[idx_sample], "/", seed, "/eps_sigmaY=", as.character(eps_sigmaY)),
-            embedding_obs = c("scratch"),
+            embedding_obs = embedding_obs,
             seed = seed,
             debug_Y = TRUE,
-            baseline_results_cached = baseline_cache
+            baseline_results_cached = baseline_cache,
+            lambda_choice = "min"
           )
         }
       }
