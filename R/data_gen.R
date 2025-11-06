@@ -19,7 +19,7 @@
 #' @return list of X_obs, Y, Z
 #' @export
 data_gen <- function(seed, idx_sample=NULL, n_sample=NULL, idx_beta2=NULL, beta2s=NULL, post_non_lin=4, eps_sigmaX=0, eps_sigmaY=1, eps_sigmaZ=0, embedding_orig='fastsurfer',
-                     embedding_obs='fastsurfer', confounder='AS', g_z='linear', debug=FALSE, xz_mode='independent'){
+                     embedding_obs='fastsurfer', confounder='AS', g_z='linear', debug=FALSE, xz_mode='Sigma=I_p'){
   path_to_ukb_data <- Sys.getenv("UKB_PATH", unset = NA)
 
   if (is.na(path_to_ukb_data) || path_to_ukb_data == "") {
@@ -177,9 +177,9 @@ data_gen <- function(seed, idx_sample=NULL, n_sample=NULL, idx_beta2=NULL, beta2
                       "--model_name", "resnet18",
                       "--task", "regression",
                       "--epochs", "100",
-                      "--batch_size", "8",
+                      "--batch_size", "16",
                       "--test_size", "0.5",
-                      "--val_frac", "0.2",
+                      "--val_frac", "0.1",
                       "--amp",
                       "--lr", "1e-3",
                       "--use_tensorboard")
@@ -203,15 +203,17 @@ data_gen <- function(seed, idx_sample=NULL, n_sample=NULL, idx_beta2=NULL, beta2
                       "--model_name", "resnet18",
                       "--task", "regression",
                       "--epochs", "100",
-                      "--batch_size", "8",
+                      "--batch_size", "16",
                       "--test_size", "0.5",
-                      "--val_frac", "0.2",
+                      "--val_frac", "0.1",
                       "--amp",
-                      "--lr_head", "1e-3",
+                      "--lr_head", "2e-3",
                       "--lr_backbone", "1e-4",
                       "--use_tensorboard",
                       "--pretrained",
-                      "--simple_head")
+                      "--simple_head",
+                      "--unfreeze_from", "layer3",
+                      "--unfreeze_after_epochs", "5")
 
         # Use the python from the active env (auto-detected via CONDA_PREFIX)
         start_time <- Sys.time()
@@ -231,11 +233,11 @@ data_gen <- function(seed, idx_sample=NULL, n_sample=NULL, idx_beta2=NULL, beta2
                       "--model_name", "resnet18",
                       "--task", "regression",
                       "--epochs", "100",
-                      "--batch_size", "8",
+                      "--batch_size", "16",
                       "--test_size", "0.5",
-                      "--val_frac", "0.2",
+                      "--val_frac", "0.1",
                       "--amp",
-                      "--lr", "3e-3",
+                      "--lr", "6e-3",
                       "--use_tensorboard",
                       "--pretrained",
                       "--simple_head",
