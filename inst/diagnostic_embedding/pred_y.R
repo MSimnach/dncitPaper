@@ -239,11 +239,13 @@ print(paste0("Trained: R^2 = ", trained_results$r2_test, " MSE = ", trained_resu
 
 #### via auto_diagnostic function
 idx_samples <- 1:10
-n_sample = list(145, 256, 350, 460, 825, 1100, 1475, 1964, 5000, 10000)
+n_sample = list(350, 1100, 1964, 5000, 10000)
 xz_modes <- c('independent')
-seeds <- 1:3
+seeds <- c(1:10, 51:60, 101:110, 151:160)
 eps_sigmaY_list <- c(1)
 embedding_obs <- c('scratch', 'medicalnet_ft', 'medicalnet_ft_frozen')
+Y_age <- FALSE
+standardize_ridge_lasso <- TRUE
 for(eps_sigmaY in eps_sigmaY_list){
   for(seed in seeds){
     # Cache baseline results per seed (constant across sample sizes)
@@ -256,8 +258,10 @@ for(eps_sigmaY in eps_sigmaY_list){
             experiment_dir = paste0("/sc/home/marco.simnacher/ukbiobank/data/No_CI/", n_sample[idx_sample], "/", seed, "/eps_sigmaY=", as.character(eps_sigmaY)),
             embedding_obs = embedding_obs,
             seed = seed,
-            debug_Y = TRUE,
-            lambda_choice = "min"
+            debug_Y = FALSE,
+            lambda_choice = "min",
+            Y_age = Y_age,
+            standardize_ridge_lasso = standardize_ridge_lasso
           )
           baseline_cache <- results$baseline_results
         } else {
@@ -266,9 +270,11 @@ for(eps_sigmaY in eps_sigmaY_list){
             experiment_dir = paste0("/sc/home/marco.simnacher/ukbiobank/data/No_CI/", n_sample[idx_sample], "/", seed, "/eps_sigmaY=", as.character(eps_sigmaY)),
             embedding_obs = embedding_obs,
             seed = seed,
-            debug_Y = TRUE,
+            debug_Y = FALSE,
             baseline_results_cached = baseline_cache,
-            lambda_choice = "min"
+            lambda_choice = "min",
+            Y_age = Y_age,
+            standardize_ridge_lasso = standardize_ridge_lasso
           )
         }
       }

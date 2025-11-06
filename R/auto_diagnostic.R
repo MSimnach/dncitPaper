@@ -39,12 +39,14 @@ auto_diagnostic <- function(
   seed = 1,
   extract_trained = TRUE,
   baseline_embeddings = c("fastsurfer", "condVAE", "freesurfer", "medicalnet"),
-  alpha = 1,
+  alpha = 0.3,
   test_prop = 0.2,
   nfolds = 10,
   lambda_choice = "1se",
+  standardize_ridge_lasso = TRUE,
   debug_Y = TRUE,
-  baseline_results_cached = NULL
+  baseline_results_cached = NULL,
+  Y_age = FALSE
 ) {
   
   # Set single thread for reproducibility
@@ -91,7 +93,11 @@ auto_diagnostic <- function(
   embedding_orig <- config$embedding_orig
   confounder <- config$confounder
   g_z <- config$g_z
-  is_ci <- config$is_ci
+  if (Y_age) {
+    is_ci <- "Y_age"
+  } else {
+    is_ci <- config$is_ci
+  }
   
   cat("Configuration: post_non_lin=", post_non_lin, ", eps_sigmaY=", eps_sigmaY, 
       ", confounder=", confounder, ", g_z=", g_z, "\n", sep="")
@@ -207,25 +213,29 @@ auto_diagnostic <- function(
     
     # Loop through each trained embedding
     for (emb in embedding_obs) {
-      cat("Extracting embeddings for:", emb, "\n")
-      
-      checkpoint_path <- file.path(experiment_dir, emb, "best_model.ckpt")
-      if (!file.exists(checkpoint_path)) {
-        warning("Checkpoint not found for ", emb, ": ", checkpoint_path)
-        next
+      if (file.exists(file.path(out_dir_diagnostic, emb, "embeddings.parquet"))) {
+        cat("Embeddings already extracted for:", emb, "\n")
+      } else {
+        cat("Extracting embeddings for:", emb, "\n")
+        
+        checkpoint_path <- file.path(experiment_dir, emb, "best_model.ckpt")
+        if (!file.exists(checkpoint_path)) {
+          warning("Checkpoint not found for ", emb, ": ", checkpoint_path)
+          next
+        }
+        
+        # Call Python extraction script
+        system2("python", c(
+          "inst/learn_embedding/extract_embeddings.py",
+          "--checkpoint", checkpoint_path,
+          "--input_csv", t1_paths_diag_file,
+          "--output_dir", out_dir_diagnostic,
+          "--config_name", emb,
+          "--batch_size", "16",
+          "--num_workers", "4",
+          "--amp"
+        ))
       }
-      
-      # Call Python extraction script
-      system2("python", c(
-        "inst/learn_embedding/extract_embeddings.py",
-        "--checkpoint", checkpoint_path,
-        "--input_csv", t1_paths_diag_file,
-        "--output_dir", out_dir_diagnostic,
-        "--config_name", emb,
-        "--batch_size", "16",
-        "--num_workers", "4",
-        "--amp"
-      ))
       
       # Load extracted embeddings
       emb_path <- file.path(out_dir_diagnostic, emb, "embeddings.parquet")
@@ -339,7 +349,7 @@ auto_diagnostic <- function(
     cat("Generating Y under Conditional Independence (CI)\n")
     Y <- y_from_xz(Z[,c(-1)], eps_sigmaY, post_non_lin=post_non_lin, g_z=g_z)
     Y_info <- NULL  # Add this line
-  } else {
+  } else if (is_ci == "No_CI") {
     cat("Generating Y under No Conditional Independence (No_CI)\n")
     if (debug_Y) {
       Y_list <- y_from_xz(Z[,c(-1)], eps_sigmaY, X=as.matrix(fastsurfer_emb[,c(-1)]), 
@@ -351,11 +361,22 @@ auto_diagnostic <- function(
                     gamma=0.5, post_non_lin=post_non_lin, g_z=g_z)
       Y_info <- NULL  # Add this line
     }
+  } else if (is_ci == "Y_age") {
+    if ("age" %in% colnames(Z)) {
+      Y <- Z$age
+      Y_info <- NULL
+    } else {
+      stop("Age column not found in Z")
+    }
   }
   
   # Save Y
   Y_id <- data.frame(id = fastsurfer_emb$id, Y = Y)
-  Y_path <- file.path(out_dir_diagnostic, 'Y_diag.csv')
+  if (is_ci == "Y_age") {
+    Y_path <- file.path(out_dir_diagnostic, 'Y_diag_age.csv')
+  } else {
+    Y_path <- file.path(out_dir_diagnostic, 'Y_diag.csv')
+  }
   write.csv(Y_id, Y_path, row.names = FALSE)
   cat("Saved Y to:", Y_path, "\n")
   cat("Y statistics: mean=", round(mean(Y), 4), ", sd=", round(sd(Y), 4), "\n\n", sep="")
@@ -431,7 +452,8 @@ auto_diagnostic <- function(
         test_prop = test_prop,
         nfolds = nfolds,
         lambda_choice = lambda_choice,
-        seed = seed
+        seed = seed 
+        #standardize = standardize_ridge_lasso # already happens above
       )
 
       cat("Result for ", emb_name, " of Lasso regression: ", result$r2_test, " MSE: ", result$mse_test, "\n")
@@ -487,7 +509,8 @@ auto_diagnostic <- function(
           test_prop = test_prop,
           nfolds = nfolds,
           lambda_choice = lambda_choice,
-          seed = seed
+          seed = seed,
+          standardize = standardize_ridge_lasso
         )
       }, error = function(e) {
         cat("ERROR:", conditionMessage(e), "\n")
@@ -532,7 +555,11 @@ auto_diagnostic <- function(
   results_df <- do.call(rbind, results_list)
   
   # Save results CSV
-  results_path <- file.path(out_dir_diagnostic, "diagnostic_results.csv")
+  if (is_ci == "Y_age") {
+    results_path <- file.path(out_dir_diagnostic, "diagnostic_results_age.csv")
+  } else {
+    results_path <- file.path(out_dir_diagnostic, "diagnostic_results.csv")
+  }
   write.csv(results_df, results_path, row.names = FALSE)
   cat("Saved results to:", results_path, "\n")
   
@@ -563,8 +590,11 @@ auto_diagnostic <- function(
     n_samples = length(common_ids),
     timestamp = Sys.time()
   )
-  
-  config_path <- file.path(out_dir_diagnostic, "diagnostic_config.json")
+  if (is_ci == "Y_age") {
+    config_path <- file.path(out_dir_diagnostic, "diagnostic_config_age.json")
+  } else {
+    config_path <- file.path(out_dir_diagnostic, "diagnostic_config.json")
+  }
   jsonlite::write_json(diagnostic_config, config_path, pretty = TRUE, auto_unbox = TRUE)
   cat("Saved config to:", config_path, "\n")
   
