@@ -301,7 +301,7 @@ class BrainMRIModule(pl.LightningModule):
                     print(f"🔓 Gradual unfreeze: enabling {candidate} at epoch {self.current_epoch+1}")
                     self._set_requires_grad(mod, True)
                     # Rebuild optimizer with new param groups (Lightning will pick it up next step)
-                    self.trainer.strategy.optimizer_zero_grad(self.trainer.optimizers[0], self.current_epoch, 0)
+                    #self.trainer.strategy.optimizer_zero_grad(self.trainer.optimizers[0], self.current_epoch, 0)
                     self.trainer.optimizers = [self.configure_optimizers()]  # naive refresh
                     break
     
