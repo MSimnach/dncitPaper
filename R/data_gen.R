@@ -181,7 +181,7 @@ data_gen <- function(seed, idx_sample=NULL, n_sample=NULL, idx_beta2=NULL, beta2
                       "--test_size", "0.5",
                       "--val_frac", "0.1",
                       "--amp",
-                      "--lr", "1.5e-3",
+                      "--lr", "1.2e-3",
                       "--use_tensorboard")
 
         # Use the python from the active env (auto-detected via CONDA_PREFIX)
@@ -207,13 +207,13 @@ data_gen <- function(seed, idx_sample=NULL, n_sample=NULL, idx_beta2=NULL, beta2
                       "--test_size", "0.5",
                       "--val_frac", "0.1",
                       "--amp",
-                      "--lr_head", "2e-3",
-                      "--lr_backbone", "1e-4",
+                      "--lr_head", "1e-3",
+                      "--lr_backbone", "9e-5",
                       "--use_tensorboard",
                       "--pretrained",
                       "--simple_head",
                       "--unfreeze_from", "layer3",
-                      "--unfreeze_after_epochs", "5")
+                      "--unfreeze_after_epochs", "8")
 
         # Use the python from the active env (auto-detected via CONDA_PREFIX)
         start_time <- Sys.time()
@@ -237,7 +237,7 @@ data_gen <- function(seed, idx_sample=NULL, n_sample=NULL, idx_beta2=NULL, beta2
                       "--test_size", "0.5",
                       "--val_frac", "0.1",
                       "--amp",
-                      "--lr", "6e-3",
+                      "--lr", "3e-4",
                       "--use_tensorboard",
                       "--pretrained",
                       #"--simple_head",

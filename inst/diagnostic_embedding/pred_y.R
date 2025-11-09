@@ -238,12 +238,12 @@ print(paste0("Trained: R^2 = ", trained_results$r2_test, " MSE = ", trained_resu
 
 
 #### via auto_diagnostic function
-idx_samples <- 1:10
-n_sample = list(350, 1100, 1964, 5000, 10000)
+idx_samples <- 1:4
+n_sample = list(460, 1100, 5000, 10000)
 xz_modes <- c('independent')
-seeds <- c(1:10, 51:60, 101:110, 151:160)
+seeds <- c(51:60, 61:64, 71:74)
 eps_sigmaY_list <- c(1)
-embedding_obs <- c('scratch', 'medicalnet_ft', 'medicalnet_ft_frozen')
+embedding_obs <- c('medicalnet_ft_frozen','scratch', 'medicalnet_ft')
 Y_age <- FALSE
 standardize_ridge_lasso <- TRUE
 for(eps_sigmaY in eps_sigmaY_list){
