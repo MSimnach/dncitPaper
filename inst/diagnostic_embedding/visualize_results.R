@@ -18,8 +18,8 @@ library(RColorBrewer)
 cat("=== Collecting Diagnostic Results ===\n")
 
 # Parameters
-n_samples <- c(145, 256, 350, 460, 825, 1100, 1475, 1964, 5000, 10000)
-seeds <- 1:200
+n_samples <- c(460, 1100, 5000, 10000)#c(145, 256, 350, 460, 825, 1100, 1475, 1964, 5000, 10000)
+seeds <- c(301,303, 312:313)#c(51:60, 61:64, 71:74)#1:200
 eps_sigmaY_all <- c(1)
 conditions <- c("CI", "No_CI")
 base_paths <- list(

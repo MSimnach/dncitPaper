@@ -129,11 +129,10 @@ class BrainMRIModule(pl.LightningModule):
         """Set requires_grad for all parameters in module and handle BatchNorm eval mode"""
         for p in module.parameters():
             p.requires_grad = requires_grad
-        # If freezing, put BatchNorms in eval so running stats are not updated
-        if not requires_grad:
-            for m in module.modules():
-                if isinstance(m, (nn.BatchNorm3d, nn.InstanceNorm3d)):
-                    m.eval()
+        # Set BatchNorm mode based on requires_grad
+        for m in module.modules():
+            if isinstance(m, (nn.BatchNorm3d, nn.InstanceNorm3d)):
+                m.train() if requires_grad else m.eval()
 
     def _freeze_all(self):
         """Freeze all backbone layers"""
@@ -288,22 +287,24 @@ class BrainMRIModule(pl.LightningModule):
         
         # Gradual unfreeze: after k epochs, unfreeze the next earlier block
         k = self.args.unfreeze_after_epochs
-        if k and self.current_epoch + 1 in [k, 2*k, 3*k, 4*k]:  # stepwise at k,2k,3k,4k
-            # Determine which block to unfreeze next (walk backward)
-            # Start from the earliest currently-frozen among ['layer3','layer2','layer1','conv1']
-            for candidate in ["layer3", "layer2", "layer1", "conv1"]:
-                mod = getattr(self.model, candidate, None)
-                if mod is None:
-                    continue
-                # Check if currently frozen (any param)
-                frozen = all(not p.requires_grad for p in mod.parameters())
-                if frozen:
-                    print(f"🔓 Gradual unfreeze: enabling {candidate} at epoch {self.current_epoch+1}")
-                    self._set_requires_grad(mod, True)
-                    # Rebuild optimizer with new param groups (Lightning will pick it up next step)
-                    #self.trainer.strategy.optimizer_zero_grad(self.trainer.optimizers[0], self.current_epoch, 0)
-                    self.trainer.optimizers = [self.configure_optimizers()]  # naive refresh
-                    break
+        if k > 0:
+            # Compute which epoch we're at in the unfreeze schedule
+            unfreeze_step = (self.current_epoch + 1) // k
+            if unfreeze_step > 0 and (self.current_epoch + 1) % k == 0:
+                # Determine which block to unfreeze next (walk backward)
+                # Start from the earliest currently-frozen among ['layer3','layer2','layer1','conv1']
+                for candidate in ["layer3", "layer2", "layer1", "conv1"]:
+                    mod = getattr(self.model, candidate, None)
+                    if mod is None:
+                        continue
+                    # Check if currently frozen (any param)
+                    frozen = all(not p.requires_grad for p in mod.parameters())
+                    if frozen:
+                        print(f"🔓 Gradual unfreeze: enabling {candidate} at epoch {self.current_epoch+1}")
+                        self._set_requires_grad(mod, True)
+                        # No need to add_param_group - all groups already exist!
+                        # The scheduler will automatically handle the newly unfrozen params
+                        break
     
     def on_validation_epoch_end(self):
         # Get average loss for the epoch
@@ -316,7 +317,7 @@ class BrainMRIModule(pl.LightningModule):
             self.log('loss_diff', loss_diff, prog_bar=True, logger=True)
     
     def configure_optimizers(self):
-        # Check if we're using fine-tuning features (discriminative LRs)
+        # Detect if we're using fine-tuning features (discriminative LRs)
         using_fine_tuning = (
             self.args.freeze_backbone or 
             self.args.unfreeze_from is not None or 
@@ -324,43 +325,131 @@ class BrainMRIModule(pl.LightningModule):
             self.args.lr_head is not None or
             self.args.lr_backbone is not None
         )
-        
+
+        # ---------------------------
+        # 1) Build optimizer with ALL param groups upfront (even frozen ones)
+        # ---------------------------
         if not using_fine_tuning:
-            # Default behavior: single learning rate for all parameters (backward compatibility)
             optimizer = torch.optim.AdamW(
-                self.parameters(), 
-                lr=self.args.lr, 
-                weight_decay=self.args.weight_decay
+                self.parameters(),
+                lr=self.args.lr,
+                weight_decay=self.args.weight_decay,
             )
-            return optimizer
-        
-        # Fine-tuning mode: collect params into head and backbone groups
-        head = []
-        backbone = []
-        for name, p in self.model.named_parameters():
-            if not p.requires_grad:
-                continue
-            if name.startswith("fc.") or name == "fc.weight" or name == "fc.bias":
-                head.append(p)
-            else:
-                backbone.append(p)
+        else:
+            # Strategy: Create param groups for ALL backbone blocks + head upfront
+            # Even if some are frozen, they'll be in the optimizer and scheduler
+            lr_head = self.args.lr if self.args.lr_head is None else self.args.lr_head
+            lr_back = (0.1 * self.args.lr) if self.args.lr_backbone is None else self.args.lr_backbone
 
-        lr_head = self.args.lr if self.args.lr_head is None else self.args.lr_head
-        lr_back = (0.1 * self.args.lr) if self.args.lr_backbone is None else self.args.lr_backbone
+            param_groups = []
+            
+            # Collect parameters by layer
+            layer_params = {}
+            for name, p in self.model.named_parameters():
+                if name.startswith("fc.") or name in ("fc.weight", "fc.bias"):
+                    if "head" not in layer_params:
+                        layer_params["head"] = []
+                    layer_params["head"].append(p)
+                else:
+                    # Extract layer name (e.g., "layer1.0.conv1.weight" -> "layer1")
+                    parts = name.split(".")
+                    if parts[0] in BACKBONE_ORDER:
+                        layer_name = parts[0]
+                    elif parts[0].startswith("layer") and len(parts[0]) == 6:  # "layer1", "layer2", etc.
+                        layer_name = parts[0]
+                    elif parts[0] in ["conv1", "bn1", "maxpool", "avgpool"]:
+                        layer_name = parts[0]
+                    else:
+                        layer_name = "other"
+                    
+                    if layer_name not in layer_params:
+                        layer_params[layer_name] = []
+                    layer_params[layer_name].append(p)
+            
+            # Create param groups for each layer
+            # Head gets lr_head
+            if "head" in layer_params and layer_params["head"]:
+                param_groups.append({
+                    "params": layer_params["head"],
+                    "lr": lr_head,
+                    "is_head": True  # Tag for identification
+                })
+            
+            # Backbone layers get lr_back
+            for layer_name in BACKBONE_ORDER:
+                if layer_name in layer_params and layer_params[layer_name]:
+                    param_groups.append({
+                        "params": layer_params[layer_name],
+                        "lr": lr_back,
+                        "is_backbone": True,  # Tag for identification
+                        "layer_name": layer_name  # Tag for gradual unfreezing
+                    })
+            
+            # Add any remaining parameters
+            if "other" in layer_params and layer_params["other"]:
+                param_groups.append({
+                    "params": layer_params["other"],
+                    "lr": lr_back,
+                    "is_backbone": True
+                })
 
-        param_groups = []
-        if backbone:
-            param_groups.append({"params": backbone, "lr": lr_back})
-        if head:
-            param_groups.append({"params": head, "lr": lr_head})
+            optimizer = torch.optim.AdamW(param_groups, weight_decay=self.args.weight_decay)
 
-        optimizer = torch.optim.AdamW(param_groups, weight_decay=self.args.weight_decay)
+            # Debug info
+            #for i, g in enumerate(optimizer.param_groups):
+            #    print(f"[opt] group{i} lr={g['lr']:.2e} params={sum(p.numel() for p in g['params']):,}")
+
+        # ---------------------------
+        # 2) Optional cosine warm-up scheduler
+        # ---------------------------
+        warmup_epochs = getattr(self.args, "warmup_epochs", 0) or 0
         
-        # Debug: Print optimizer param groups
-        for i, g in enumerate(optimizer.param_groups):
-            print(f"[opt] group{i} lr={g['lr']:.2e} params={sum(p.numel() for p in g['params']):,}")
-        
-        return optimizer
+        # Use trainer.max_epochs if available, otherwise fall back to args.epochs
+        if hasattr(self, 'trainer') and self.trainer is not None and hasattr(self.trainer, 'max_epochs'):
+            total_epochs = self.trainer.max_epochs
+        else:
+            total_epochs = getattr(self.args, "epochs", 100)
+
+        if warmup_epochs > 0 and total_epochs > warmup_epochs:
+            # Use SequentialLR for cleaner warmup + cosine decay
+            T_cosine = max(1, total_epochs - warmup_epochs)
+            
+            # Warmup: linear from 1e-8 to 1.0 over warmup_epochs
+            sched_warm = torch.optim.lr_scheduler.LinearLR(
+                optimizer, 
+                start_factor=1e-8, 
+                end_factor=1.0, 
+                total_iters=warmup_epochs
+            )
+            
+            # Cosine decay: from warmup_epochs to total_epochs
+            sched_cos = torch.optim.lr_scheduler.CosineAnnealingLR(
+                optimizer, 
+                T_max=T_cosine,
+                eta_min=0.0  # Can adjust if you want non-zero minimum LR
+            )
+            
+            # Sequential: warmup then cosine
+            scheduler = torch.optim.lr_scheduler.SequentialLR(
+                optimizer, 
+                schedulers=[sched_warm, sched_cos], 
+                milestones=[warmup_epochs]
+            )
+            
+            return {
+                "optimizer": optimizer,
+                "lr_scheduler": {
+                    "scheduler": scheduler,
+                    "interval": "epoch",
+                    "frequency": 1,
+                    "name": "warm_cos",
+                },
+            }
+
+        # ---------------------------
+        # 3) Always return dict for consistency (even without scheduler)
+        # ---------------------------
+        return {"optimizer": optimizer}
     
     def export_embeddings_and_predictions(self, dataloader, embeddings_path, predictions_path, index_path, use_amp=False):
         """Export penultimate layer embeddings and predictions
@@ -622,6 +711,8 @@ def parse_args():
     ap.add_argument("--amp", action="store_true", help="Mixed precision training")
     ap.add_argument("--num_workers", type=int, default=8)
     ap.add_argument("--seed", type=int, default=1337)
+    ap.add_argument("--warmup_epochs", type=int, default=5,
+                help="Linear warm-up epochs before cosine decay (0 disables warm-up).")
     
     # Fine-tuning options
     ap.add_argument("--freeze_backbone", action="store_true",
@@ -638,7 +729,7 @@ def parse_args():
                     help="Gradual unfreezing: after this many epochs, also unfreeze the next earlier block.")
     ap.add_argument("--target_norm", choices=["none", "zscore"], default="zscore",
                     help="Target normalization: 'zscore' for z-score normalization, 'none' for raw targets")
-    ap.add_argument("--head_dropout", type=float, default=0.2,
+    ap.add_argument("--head_dropout", type=float, default=0.1,
                     help="Dropout rate for head layers (default: 0.2, lower than original 0.5)")
     ap.add_argument("--simple_head", action="store_true",
                     help="Use simple Linear(512->1) head instead of 2-layer MLP")
