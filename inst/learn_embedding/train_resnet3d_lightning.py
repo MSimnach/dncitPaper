@@ -706,7 +706,7 @@ def parse_args():
     ap.add_argument("--batch_size", type=int, default=6)
     ap.add_argument("--lr", type=float, default=1e-3)
     ap.add_argument("--weight_decay", type=float, default=1e-4)
-    ap.add_argument("--patience", type=int, default=15 help="Early stopping patience")
+    ap.add_argument("--patience", type=int, default=15, help="Early stopping patience")
     ap.add_argument("--grad_clip", type=float, default=1.0, help="Gradient clipping (0 to disable)")
     ap.add_argument("--amp", action="store_true", help="Mixed precision training")
     ap.add_argument("--num_workers", type=int, default=8)
