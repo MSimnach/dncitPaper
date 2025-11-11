@@ -241,7 +241,7 @@ print(paste0("Trained: R^2 = ", trained_results$r2_test, " MSE = ", trained_resu
 idx_samples <- 1:4
 n_sample = list(460, 1100, 5000, 10000)
 xz_modes <- c('Sigma=I_p')
-seeds <- c(334:340,344:350,354:360)
+seeds <- c(51:80)
 eps_sigmaY_list <- c(1)
 embedding_obs <- c('medicalnet_ft_frozen', 'medicalnet_ft', 'scratch')
 Y_age <- FALSE

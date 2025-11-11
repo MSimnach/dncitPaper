@@ -19,7 +19,7 @@ cat("=== Collecting Diagnostic Results ===\n")
 
 # Parameters
 n_samples <- c(460, 1100, 5000, 10000)#, 10000)#c(145, 256, 350, 460, 825, 1100, 1475, 1964, 5000, 10000)
-seeds <- c(331:360)#c(51:60, 61:64, 71:74)#1:200
+seeds <- c(21:50)#c(51:60, 61:64, 71:74)#1:200
 eps_sigmaY_all <- c(1)
 conditions <- c("CI", "No_CI")
 base_paths <- list(
