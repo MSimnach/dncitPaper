@@ -18,8 +18,8 @@ library(RColorBrewer)
 cat("=== Collecting Diagnostic Results ===\n")
 
 # Parameters
-n_samples <- c(460, 1100, 5000, 10000)#c(145, 256, 350, 460, 825, 1100, 1475, 1964, 5000, 10000)
-seeds <- c(301,303, 312:313)#c(51:60, 61:64, 71:74)#1:200
+n_samples <- c(460, 1100, 5000, 10000)#, 10000)#c(145, 256, 350, 460, 825, 1100, 1475, 1964, 5000, 10000)
+seeds <- c(331:360)#c(51:60, 61:64, 71:74)#1:200
 eps_sigmaY_all <- c(1)
 conditions <- c("CI", "No_CI")
 base_paths <- list(
@@ -332,7 +332,7 @@ dir.create(output_dir, recursive = TRUE, showWarnings = FALSE)
 if (!is.null(p_y)) {
   cat("\nSaving Y diagnostic plots:\n")
   # Save as PNG
-  png_path_y <- file.path(output_dir, "diagnostic_r2_by_sample_size.png")
+  png_path_y <- file.path(output_dir, paste0("diagnostic_r2_by_sample_size_", min(seeds),"_", max(seeds), ".png"))
   ggsave(
     png_path_y, 
     plot = p_y, 
@@ -344,7 +344,7 @@ if (!is.null(p_y)) {
   cat("  Saved PNG:", png_path_y, "\n")
   
   # Save as PDF
-  pdf_path_y <- file.path(output_dir, "diagnostic_r2_by_sample_size.pdf")
+  pdf_path_y <- file.path(output_dir, paste0("diagnostic_r2_by_sample_size_", min(seeds),"_", max(seeds), ".pdf"))
   ggsave(
     pdf_path_y, 
     plot = p_y, 
@@ -359,7 +359,7 @@ if (!is.null(p_y)) {
 if (!is.null(p_age)) {
   cat("\nSaving age diagnostic plots:\n")
   # Save as PNG
-  png_path_age <- file.path(output_dir, "diagnostic_r2_by_sample_size_age.png")
+  png_path_age <- file.path(output_dir, paste0("diagnostic_r2_by_sample_size_age_", min(seeds),"_", max(seeds), ".png"))
   ggsave(
     png_path_age, 
     plot = p_age, 
@@ -371,7 +371,7 @@ if (!is.null(p_age)) {
   cat("  Saved PNG:", png_path_age, "\n")
   
   # Save as PDF
-  pdf_path_age <- file.path(output_dir, "diagnostic_r2_by_sample_size_age.pdf")
+  pdf_path_age <- file.path(output_dir, paste0("diagnostic_r2_by_sample_size_age_", min(seeds),"_", max(seeds), ".pdf"))
   ggsave(
     pdf_path_age, 
     plot = p_age, 
