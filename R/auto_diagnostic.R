@@ -14,6 +14,8 @@
 #' @param nfolds Number of CV folds (default: 10)
 #' @param lambda_choice Lambda selection method: "min" or "1se" (default: "1se")
 #' @param baseline_results_cached Pre-computed baseline results to reuse (default: NULL)
+#' @param Y_age Generate Y based on age (default: FALSE)
+#' @param xz_mode XZ mode: "Sigma=I_p", "independent", "correlated" (default: "Sigma=I_p")
 #'
 #' @return List containing results data frame, baseline results, and paths to saved files
 #' @export
@@ -46,7 +48,8 @@ auto_diagnostic <- function(
   standardize_ridge_lasso = TRUE,
   debug_Y = TRUE,
   baseline_results_cached = NULL,
-  Y_age = FALSE
+  Y_age = FALSE,
+  xz_mode = "Sigma=I_p"
 ) {
   
   # Set single thread for reproducibility
@@ -347,18 +350,18 @@ auto_diagnostic <- function(
   # Generate Y based on CI or No_CI
   if (is_ci == "CI" || is.null(is_ci)) {
     cat("Generating Y under Conditional Independence (CI)\n")
-    Y <- y_from_xz(Z[,c(-1)], eps_sigmaY, post_non_lin=post_non_lin, g_z=g_z)
+    Y <- y_from_xz(Z[,c(-1)], eps_sigmaY, post_non_lin=post_non_lin, g_z=g_z, xz_mode=xz_mode)
     Y_info <- NULL  # Add this line
   } else if (is_ci == "No_CI") {
     cat("Generating Y under No Conditional Independence (No_CI)\n")
     if (debug_Y) {
       Y_list <- y_from_xz(Z[,c(-1)], eps_sigmaY, X=as.matrix(fastsurfer_emb[,c(-1)]), 
-                    gamma=0.5, post_non_lin=post_non_lin, g_z=g_z, debug=debug_Y)
+                    gamma=0.5, post_non_lin=post_non_lin, g_z=g_z, debug=debug_Y, xz_mode=xz_mode)
       Y <- Y_list$Y
       Y_info <- Y_list$info
     } else {
       Y <- y_from_xz(Z[,c(-1)], eps_sigmaY, X=as.matrix(fastsurfer_emb[,c(-1)]), 
-                    gamma=0.5, post_non_lin=post_non_lin, g_z=g_z)
+                    gamma=0.5, post_non_lin=post_non_lin, g_z=g_z, xz_mode=xz_mode)
       Y_info <- NULL  # Add this line
     }
   } else if (is_ci == "Y_age") {

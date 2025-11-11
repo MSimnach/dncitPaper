@@ -240,10 +240,10 @@ print(paste0("Trained: R^2 = ", trained_results$r2_test, " MSE = ", trained_resu
 #### via auto_diagnostic function
 idx_samples <- 1:4
 n_sample = list(460, 1100, 5000, 10000)
-xz_modes <- c('independent')
-seeds <- c(331:332,341:342,351:352)
+xz_modes <- c('Sigma=I_p')
+seeds <- c(331:334,341:344,351:354)
 eps_sigmaY_list <- c(1)
-embedding_obs <- c('medicalnet_ft_frozen', 'medicalnet_ft')#, 'scratch')
+embedding_obs <- c('medicalnet_ft_frozen', 'medicalnet_ft', 'scratch')
 Y_age <- FALSE
 standardize_ridge_lasso <- TRUE
 for(eps_sigmaY in eps_sigmaY_list){
@@ -261,7 +261,8 @@ for(eps_sigmaY in eps_sigmaY_list){
             debug_Y = FALSE,
             lambda_choice = "min",
             Y_age = Y_age,
-            standardize_ridge_lasso = standardize_ridge_lasso
+            standardize_ridge_lasso = standardize_ridge_lasso,
+            xz_mode = xz_mode
           )
           baseline_cache <- results$baseline_results
         } else {
@@ -274,7 +275,8 @@ for(eps_sigmaY in eps_sigmaY_list){
             baseline_results_cached = baseline_cache,
             lambda_choice = "min",
             Y_age = Y_age,
-            standardize_ridge_lasso = standardize_ridge_lasso
+            standardize_ridge_lasso = standardize_ridge_lasso,
+            xz_mode = xz_mode
           )
         }
       }
