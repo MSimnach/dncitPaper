@@ -103,15 +103,25 @@ auto_diagnostic <- function(
   }
   
   cat("Configuration: post_non_lin=", post_non_lin, ", eps_sigmaY=", eps_sigmaY, 
-      ", confounder=", confounder, ", g_z=", g_z, "\n", sep="")
+      ", confounder=", confounder, ", g_z=", g_z, ", xz_mode=", xz_mode, "\n", sep="")
   
-  # Validate all trained embedding directories exist
+  # Check which trained embedding directories exist (don't stop if missing)
+  existing_embeddings <- c()
   for (emb in embedding_obs) {
     emb_dir <- file.path(experiment_dir, emb)
-    if (!dir.exists(emb_dir)) {
-      stop("Trained embedding directory does not exist: ", emb_dir)
+    if (dir.exists(emb_dir)) {
+      existing_embeddings <- c(existing_embeddings, emb)
+    } else {
+      warning("Trained embedding directory does not exist, will skip: ", emb_dir)
     }
   }
+  
+  if (length(existing_embeddings) == 0) {
+    stop("No trained embedding directories found. At least one must exist.")
+  }
+  
+  cat("Found", length(existing_embeddings), "out of", length(embedding_obs), 
+      "trained embedding directories\n\n")
   
   # Create output directory
   out_dir_diagnostic <- file.path(experiment_dir, "diagnostic")
@@ -216,6 +226,13 @@ auto_diagnostic <- function(
     
     # Loop through each trained embedding
     for (emb in embedding_obs) {
+      # Check if embedding directory exists
+      emb_dir <- file.path(experiment_dir, emb)
+      if (!dir.exists(emb_dir)) {
+        warning("Skipping extraction for ", emb, ": directory does not exist: ", emb_dir)
+        next
+      }
+
       if (file.exists(file.path(out_dir_diagnostic, emb, "embeddings.parquet"))) {
         cat("Embeddings already extracted for:", emb, "\n")
       } else {
@@ -265,6 +282,13 @@ auto_diagnostic <- function(
     
     # Load pre-existing embeddings
     for (emb in embedding_obs) {
+      # Check if embedding directory exists
+      emb_dir <- file.path(experiment_dir, emb)
+      if (!dir.exists(emb_dir)) {
+        warning("Skipping loading for ", emb, ": directory does not exist: ", emb_dir)
+        next
+      }
+      
       emb_path <- file.path(out_dir_diagnostic, emb, "embeddings.parquet")
       idx_path <- file.path(out_dir_diagnostic, emb, "embeddings_index.csv")
       
