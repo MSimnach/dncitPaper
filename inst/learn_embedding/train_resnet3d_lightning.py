@@ -709,7 +709,7 @@ def parse_args():
     ap.add_argument("--patience", type=int, default=12, help="Early stopping patience")
     ap.add_argument("--grad_clip", type=float, default=1.0, help="Gradient clipping (0 to disable)")
     ap.add_argument("--amp", action="store_true", help="Mixed precision training")
-    ap.add_argument("--num_workers", type=int, default=8)
+    ap.add_argument("--num_workers", type=int, default=0)
     ap.add_argument("--seed", type=int, default=1337)
     ap.add_argument("--warmup_epochs", type=int, default=7,
                 help="Linear warm-up epochs before cosine decay (0 disables warm-up).")

@@ -85,7 +85,7 @@ def main():
                        help="Gradual unfreezing: after this many epochs, also unfreeze the next earlier block.")
     
     # System
-    parser.add_argument("--num_workers", type=int, default=8)
+    parser.add_argument("--num_workers", type=int, default=0)
     parser.add_argument("--seed", type=int, default=1337)
     parser.add_argument("--amp", action="store_true", help="Use mixed precision training")
     
