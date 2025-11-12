@@ -59,7 +59,7 @@
 #' }
 y_from_xz <- function(Z, eps_sigmaY, X = NULL,
                       post_non_lin = 1, g_z = "linear",
-                      xz_mode = "independent",
+                      xz_mode = "Sigma=I_p",
                       gamma = 0.5, tau = 1.0,
                       sparsity_Z = 1.0, sparsity_X = 0.2,
                       shrink_X = TRUE, lambda_X = 0.05,

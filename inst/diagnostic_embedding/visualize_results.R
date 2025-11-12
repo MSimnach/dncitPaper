@@ -19,7 +19,7 @@ cat("=== Collecting Diagnostic Results ===\n")
 
 # Parameters
 n_samples <- c(460, 1100, 5000, 10000)#, 10000)#c(145, 256, 350, 460, 825, 1100, 1475, 1964, 5000, 10000)
-seeds <- c(21:50)#c(51:60, 61:64, 71:74)#1:200
+seeds <- c(361:390)#c(51:60, 61:64, 71:74)#1:200
 eps_sigmaY_all <- c(1)
 conditions <- c("CI", "No_CI")
 base_paths <- list(
@@ -107,7 +107,7 @@ cat("\n")
 cat("=== Preparing Data for Visualization ===\n")
 
 # Define embedding types
-constant_embeddings <- c("fastsurfer", "freesurfer", "condVAE", "medicalnet")
+constant_embeddings <- c("fastsurfer", "freesurfer", "condVAE", "medicalnet", "boc_brainsynth", "pooled_brainsynth")
 varying_embeddings <- c("medicalnet_ft", "medicalnet_ft_frozen", "scratch")
 
 # Function to prepare plot data
@@ -172,8 +172,11 @@ cat("=== Creating Visualization ===\n")
 
 # Create color palette for all embeddings
 all_embeddings <- c(constant_embeddings, varying_embeddings)
+n_colors <- length(all_embeddings)
+# Use colorRampPalette to generate enough colors from Set2
+base_colors <- RColorBrewer::brewer.pal(8, "Set2")
 color_palette <- setNames(
-  RColorBrewer::brewer.pal(length(all_embeddings), "Set2"),
+  colorRampPalette(base_colors)(n_colors),
   all_embeddings
 )
 

@@ -3,7 +3,7 @@ setwd('inst')
 # Settings
 #### args =['/CI/ or /No_CI/', post_non_lin, eps_sigmaX, eps_sigmaY, eps_sigmaZ, embedding_orig, embedding_obs, confounder, g_z, CIT, CIT_params]
 if(FALSE){
-  args <- c("/No_CI/", "1", "0", "0.1", "0", "fastsurfer", "medicalnet", "ukb_z4", "linear", "ccit")
+  args <- c("/No_CI/", "1", "0", "0.1", "0", "fastsurfer", "pooled_brainsynth", "ukb_z4", "linear", "ccit")
   idx_sample=idx_beta2=i=1
   n_sample = list(350, 460, 825, 1100, 1475, 1964, 5000, 10000)
   XYZ_list <- dncitPaper::data_gen(seed=i, idx_sample=idx_sample, n_sample=n_sample, idx_beta2=NULL, beta2s=NULL,
@@ -50,6 +50,27 @@ settings_g_z <- data.frame(dependence = rep(c('/CI/', '/No_CI/'), each = 12),
                            embedding_obs = rep(c('fastsurfer', 'noisy', 'freesurfer', 'condVAE'), 6),
                            confounder = rep("ukb_z6", 24),
                            response =  rep(rep(c('linear', 'squared', 'realistic'), each=4), 2)
+)
+
+settings_dim_z <- data.frame(dependence = rep(c('/CI/', '/No_CI/'), each = 12),
+                             fct_relation = rep('1', 24),
+                             eps_sigmaX = rep(c(0, 0, 0, 0), 6),
+                             eps_sigmaY = rep(1, 24),
+                             eps_sigmaZ = rep(0, 24),
+                             embedding_orig = rep('fastsurfer', 24),
+                             embedding_obs = rep(c('boc_brainsynth', 'pooled_brainsynth'), 12),
+                             confounder = rep(rep(c("ukb_z1","ukb_z2", "ukb_z4", "ukb_z6", "ukb_z10", "ukb_z15"), each=2),2),
+                             response =  rep('squared', 24)
+)
+settings_g_z <- data.frame(dependence = rep(c('/CI/', '/No_CI/'), each = 6),
+                           fct_relation = rep('1', 12),
+                           eps_sigmaX = rep(c(0, 0, 0, 0), 3),
+                           eps_sigmaY = rep(1, 12),
+                           eps_sigmaZ = rep(0, 12),
+                           embedding_orig = rep('fastsurfer', 12),
+                           embedding_obs = rep(c('boc_brainsynth', 'pooled_brainsynth'), 6),
+                           confounder = rep("ukb_z6", 12),
+                           response =  rep(rep(c('linear', 'squared', 'realistic'), each=1), 2)
 )
 settings <- rbind(settings_g_z, settings_dim_z)
 ## remove overlapping settings for g_z and dim_z

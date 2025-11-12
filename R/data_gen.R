@@ -111,15 +111,15 @@ data_gen <- function(seed, idx_sample=NULL, n_sample=NULL, idx_beta2=NULL, beta2
   }
   write.csv(Y_id, file.path(y_dir, 'Y.csv'), row.names = FALSE)
 
-  if (embedding_obs %in% c('fastsurfer', 'condVAE', 'latentDiffusion', 'freesurfer', 'medicalnet')){
+  if (embedding_obs %in% c('fastsurfer', 'condVAE', 'latentDiffusion', 'freesurfer', 'medicalnet', 'boc_brainsynth', 'pooled_brainsynth')){
     X_obs[,c(-1)] <- scale(X_obs[,c(-1)])
     # Remove columns with NA values (zero variance columns)
     na_cols <- colSums(is.na(X_obs[, -1])) > 0
     if (any(na_cols)) {
       na_col_names <- names(X_obs[, -1])[na_cols]
-      #cat(sprintf("[INFO] Removing %d NA columns from X_obs: %s\n", 
-       #           sum(na_cols), 
-        #          paste(na_col_names, collapse=", ")))
+      cat(sprintf("[INFO] Removing %d NA columns from X_obs: %s\n", 
+                 sum(na_cols), 
+                paste(na_col_names, collapse=", ")))
       X_obs <- X_obs[, c(TRUE, !na_cols)]  # Keep id column (TRUE) and non-NA columns
     }
     Y <- Y_id
@@ -181,7 +181,7 @@ data_gen <- function(seed, idx_sample=NULL, n_sample=NULL, idx_beta2=NULL, beta2
                       "--test_size", "0.5",
                       "--val_frac", "0.1",
                       "--amp",
-                      "--lr", "1.6e-3",
+                      "--lr", "1.5e-3",
                       "--use_tensorboard")
 
         # Use the python from the active env (auto-detected via CONDA_PREFIX)
@@ -207,12 +207,12 @@ data_gen <- function(seed, idx_sample=NULL, n_sample=NULL, idx_beta2=NULL, beta2
                       "--test_size", "0.5",
                       "--val_frac", "0.1",
                       "--amp",
-                      "--lr_head", "1e-3",
-                      "--lr_backbone", "7e-5",
+                      "--lr_head", "1.2e-3",
+                      "--lr_backbone", "5e-5",
                       "--use_tensorboard",
                       "--pretrained",
                       "--simple_head",
-                      "--unfreeze_from", "layer3",
+                      "--unfreeze_from", "layer2",
                       "--unfreeze_after_epochs", "10")
 
         # Use the python from the active env (auto-detected via CONDA_PREFIX)
@@ -237,7 +237,7 @@ data_gen <- function(seed, idx_sample=NULL, n_sample=NULL, idx_beta2=NULL, beta2
                       "--test_size", "0.5",
                       "--val_frac", "0.1",
                       "--amp",
-                      "--lr", "2e-4",
+                      "--lr", "1.2e-4",
                       "--use_tensorboard",
                       "--pretrained",
                       #"--simple_head",
@@ -339,6 +339,16 @@ load_X_obs <- function(path_to_ukb_data,embedding_obs, embedding_orig, X_orig, e
     X_obs <- as.data.frame(X_obs_emb)
     medicalnet_idx <- data.table::fread(paste0(path_to_ukb_data, "/medicalnet_embeddings/embeddings_index.csv"))
     X_obs <- cbind(id = medicalnet_idx$subject_id, as.data.frame(X_obs_emb))
+  }else if(embedding_obs == 'boc_brainsynth'){
+    X_obs_emb <- arrow::read_parquet(paste0(path_to_ukb_data, '/brainsynth_embeddings/baseline_vqvae/embeddings/all_boc_embedding.parquet'))
+    X_obs <- as.data.frame(X_obs_emb)
+    boc_idx <- data.table::fread(paste0(path_to_ukb_data, "/brainsynth_embeddings/baseline_vqvae/embeddings/subject_ids.csv"))
+    X_obs <- cbind(id = boc_idx$x, as.data.frame(X_obs_emb))
+  }else if(embedding_obs == 'pooled_brainsynth'){
+    X_obs_emb <- arrow::read_parquet(paste0(path_to_ukb_data, '/brainsynth_embeddings/baseline_vqvae/embeddings/all_pooled_embeddings.parquet'))
+    X_obs <- as.data.frame(X_obs_emb)
+    pooled_idx <- data.table::fread(paste0(path_to_ukb_data, "/brainsynth_embeddings/baseline_vqvae/embeddings/subject_ids.csv"))
+    X_obs <- cbind(id = pooled_idx$x, as.data.frame(X_obs_emb))
   }
   return(X_obs)
 }

@@ -40,7 +40,7 @@ auto_diagnostic <- function(
   diagnostic_csv = NULL,
   seed = 1,
   extract_trained = TRUE,
-  baseline_embeddings = c("fastsurfer", "condVAE", "freesurfer", "medicalnet"),
+  baseline_embeddings = c("fastsurfer", "condVAE", "freesurfer", "medicalnet", "boc_brainsynth", "pooled_brainsynth"),
   alpha = 0.3,
   test_prop = 0.2,
   nfolds = 10,
@@ -184,6 +184,22 @@ auto_diagnostic <- function(
         baseline_emb_list[[emb_name]] <- emb_data
         all_datasets[[emb_name]] <- emb_data
         cat("OK (", ncol(emb_data)-1, " features)\n", sep="")
+      } else if (emb_name == "boc_brainsynth") {
+        emb_data <- arrow::read_parquet(paste0(path_to_ukb_data, '/brainsynth_embeddings/baseline_vqvae/embeddings/all_boc_embedding.parquet'))
+        emb_data <- as.data.frame(emb_data)
+        boc_idx <- data.table::fread(paste0(path_to_ukb_data, "/brainsynth_embeddings/baseline_vqvae/embeddings/subject_ids.csv"))
+        emb_data <- cbind(id = boc_idx$x, as.data.frame(emb_data))
+        baseline_emb_list[[emb_name]] <- emb_data
+        all_datasets[[emb_name]] <- emb_data
+        cat("OK (", ncol(emb_data)-1, " features)\n", sep="")
+      } else if (emb_name == "pooled_brainsynth") {
+        emb_data <- arrow::read_parquet(paste0(path_to_ukb_data, '/brainsynth_embeddings/baseline_vqvae/embeddings/all_pooled_embeddings.parquet'))
+        pooled_idx <- data.table::fread(paste0(path_to_ukb_data, "/brainsynth_embeddings/baseline_vqvae/embeddings/subject_ids.csv"))
+        emb_data <- as.data.frame(emb_data)
+        emb_data <- cbind(id = pooled_idx$x, as.data.frame(emb_data))
+        baseline_emb_list[[emb_name]] <- emb_data
+        all_datasets[[emb_name]] <- emb_data
+        cat("OK (", ncol(emb_data)-1, " features)\n", sep="")
       }
     }, error = function(e) {
       cat("SKIP (not found)\n")
@@ -192,8 +208,7 @@ auto_diagnostic <- function(
   
   # Find common IDs across all datasets
   common_ids <- Reduce(intersect, lapply(all_datasets, function(x) x$id))
-  cat("\nCommon IDs across all datasets:", length(common_ids), "\n")
-  
+  common_ids <- as.integer(common_ids) 
   if (length(common_ids) == 0) {
     stop("No common IDs found across datasets")
   }
@@ -208,6 +223,30 @@ auto_diagnostic <- function(
       match(common_ids, baseline_emb_list[[emb_name]]$id), 
     ]
   }
+
+  # ADD VERIFICATION AFTER FILTERING (after line 233):
+  cat("\n=== Verifying ID Matching After Filtering/Reordering ===\n")
+  for (emb_name in names(baseline_emb_list)) {
+    emb_ids <- baseline_emb_list[[emb_name]]$id
+    
+    # Check for NAs (shouldn't happen, but verify)
+    if (any(is.na(emb_ids))) {
+      warning("Found NA IDs in ", emb_name, " after filtering!")
+    }
+    
+    # Check if IDs match common_ids (should be TRUE after reordering)
+    ids_match <- all(emb_ids == common_ids, na.rm=TRUE)
+    cat("  ", emb_name, ": ", nrow(baseline_emb_list[[emb_name]]), " rows, IDs match: ", ids_match, "\n", sep="")
+    
+    if (!ids_match) {
+      # Show first few mismatches for debugging
+      mismatch_idx <- which(emb_ids != common_ids)[1:min(5, length(which(emb_ids != common_ids)))]
+      cat("    First mismatches at positions: ", paste(mismatch_idx, collapse=", "), "\n", sep="")
+      cat("    Expected: ", paste(common_ids[mismatch_idx], collapse=", "), "\n", sep="")
+      cat("    Got:      ", paste(emb_ids[mismatch_idx], collapse=", "), "\n", sep="")
+    }
+  }
+  cat("\n")
   
   cat("All datasets filtered and reordered to match common IDs\n\n")
   
@@ -451,26 +490,30 @@ auto_diagnostic <- function(
       
       emb_data <- baseline_emb_list[[emb_name]]
       # Scale embeddings (remove id column)
-      X_raw <- as.matrix(emb_data[,c(-1)])
+      X_raw <- scale(as.matrix(emb_data[,c(-1)]))
       
-      # Check for zero-variance columns and remove them
-      col_vars <- apply(X_raw, 2, var, na.rm = TRUE)
-      zero_var_cols <- which(col_vars == 0 | is.na(col_vars))
-      
-      if (length(zero_var_cols) > 0) {
-        cat("\n  Removing", length(zero_var_cols), "zero-variance columns... ")
-        X_raw <- X_raw[, -zero_var_cols, drop = FALSE]
+      # Remove columns with NA values (zero variance columns)
+      na_cols <- colSums(is.na(X_raw)) > 0
+      if (any(na_cols)) {
+        na_col_names <- names(X_raw)[na_cols]
+        cat(sprintf("[INFO] Removing %d NA columns from X_obs: %s\n", 
+                  sum(na_cols), 
+                  paste(na_col_names, collapse=", ")))
+        X <- X_raw[, c(!na_cols)]  # Keep id column (TRUE) and non-NA columns
+      }else{
+        X <- X_raw
       }
       
-      # Scale remaining columns
-      X <- scale(X_raw)
       # Add diagnostic output
       cat("\n  X dimensions: ", nrow(X), "x", ncol(X), 
           ", mean:", round(mean(X), 4), 
           ", sd:", round(sd(X), 4),
           ", range: [", round(min(X), 4), ",", round(max(X), 4), "]\n", sep="")
       cat("  First few values: ", paste(round(X[1, 1:min(5, ncol(X))], 4), collapse=" "), "\n")
-      
+      # Check correlation between features and Y
+      cor_with_y <- apply(X, 2, function(x) cor(x, Y))
+      cat("  Max |correlation| with Y:", max(abs(cor_with_y), na.rm=TRUE), "\n")
+      cat("  Features with |cor| > 0.1:", sum(abs(cor_with_y) > 0.1, na.rm=TRUE), "\n")
       # Run glmnet
       result <- ridge_lasso_glmnet(
         X = X, 
@@ -479,9 +522,12 @@ auto_diagnostic <- function(
         test_prop = test_prop,
         nfolds = nfolds,
         lambda_choice = lambda_choice,
-        seed = seed 
-        #standardize = standardize_ridge_lasso # already happens above
+        seed = seed, 
+        standardize = FALSE # already happens above
       )
+      cat("  Lambda used:", result$lambda, "\n")
+      cat("  Features selected:", sum(glmnet::coef.glmnet(result$cvfit, s = result$lambda)[-1] != 0), 
+            "out of", ncol(X), "\n")
 
       cat("Result for ", emb_name, " of Lasso regression: ", result$r2_test, " MSE: ", result$mse_test, "\n")
       
@@ -526,7 +572,12 @@ auto_diagnostic <- function(
         )
         next
       }
-      
+
+      # DEBUG 
+      cor_with_y <- apply(X, 2, function(x) cor(x, Y))
+      cat("  Max |correlation| with Y:", max(abs(cor_with_y), na.rm=TRUE), "\n")
+      cat("  Features with |cor| > 0.1:", sum(abs(cor_with_y) > 0.1, na.rm=TRUE), "\n")
+
       # Run glmnet with error handling
       result <- tryCatch({
         ridge_lasso_glmnet(
@@ -539,6 +590,7 @@ auto_diagnostic <- function(
           seed = seed,
           standardize = standardize_ridge_lasso
         )
+        
       }, error = function(e) {
         cat("ERROR:", conditionMessage(e), "\n")
         return(NULL)
@@ -706,7 +758,7 @@ ridge_lasso_glmnet <- function(
   seed = 42,
   standardize = TRUE,
   intercept = TRUE,
-  return_model = FALSE
+  return_model = TRUE
 ) {
   stopifnot(is.numeric(y))
   X <- as.matrix(X)
@@ -732,6 +784,13 @@ ridge_lasso_glmnet <- function(
     standardize = standardize,
     intercept = intercept
   )
+
+  # After cvfit is created, add:
+  cat("  CV error curve:\n")
+  cat("    Lambda range: [", min(cvfit$lambda), ", ", max(cvfit$lambda), "]\n")
+  cat("    CV error range: [", min(cvfit$cvm), ", ", max(cvfit$cvm), "]\n")
+  cat("    Lambda.min index:", which(cvfit$lambda == cvfit$lambda.min), 
+    "out of", length(cvfit$lambda), "\n")
   
   lambda_choice <- match.arg(lambda_choice)
   s_use <- if (lambda_choice == "min") cvfit$lambda.min else cvfit$lambda.1se

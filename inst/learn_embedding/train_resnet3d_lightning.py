@@ -705,13 +705,13 @@ def parse_args():
     ap.add_argument("--epochs", type=int, default=30)
     ap.add_argument("--batch_size", type=int, default=6)
     ap.add_argument("--lr", type=float, default=1e-3)
-    ap.add_argument("--weight_decay", type=float, default=1e-4)
-    ap.add_argument("--patience", type=int, default=15, help="Early stopping patience")
+    ap.add_argument("--weight_decay", type=float, default=5e-5)
+    ap.add_argument("--patience", type=int, default=12, help="Early stopping patience")
     ap.add_argument("--grad_clip", type=float, default=1.0, help="Gradient clipping (0 to disable)")
     ap.add_argument("--amp", action="store_true", help="Mixed precision training")
     ap.add_argument("--num_workers", type=int, default=8)
     ap.add_argument("--seed", type=int, default=1337)
-    ap.add_argument("--warmup_epochs", type=int, default=15,
+    ap.add_argument("--warmup_epochs", type=int, default=7,
                 help="Linear warm-up epochs before cosine decay (0 disables warm-up).")
     
     # Fine-tuning options
@@ -729,7 +729,7 @@ def parse_args():
                     help="Gradual unfreezing: after this many epochs, also unfreeze the next earlier block.")
     ap.add_argument("--target_norm", choices=["none", "zscore"], default="zscore",
                     help="Target normalization: 'zscore' for z-score normalization, 'none' for raw targets")
-    ap.add_argument("--head_dropout", type=float, default=0.1,
+    ap.add_argument("--head_dropout", type=float, default=0.2,
                     help="Dropout rate for head layers (default: 0.2, lower than original 0.5)")
     ap.add_argument("--simple_head", action="store_true",
                     help="Use simple Linear(512->1) head instead of 2-layer MLP")
