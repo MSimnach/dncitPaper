@@ -345,15 +345,17 @@ for (idx in seq_along(n_seeds)){
     runtime_embedding[idx, idx_sample] <- res_time[[idx]][idx_sample,3]
   }
 }
+# Create seed range subdirectory name
+seed_range_dir <- paste0("seeds_", min(n_seeds), "_", max(n_seeds), "/")
 # Create output directories
-dir.create(paste0("Results", args[1], "p-values/"), recursive = TRUE, showWarnings = FALSE)
-dir.create(paste0("Results", args[1], "runtime_cit/"), recursive = TRUE, showWarnings = FALSE)
-dir.create(paste0("Results", args[1], "runtime_embedding/"), recursive = TRUE, showWarnings = FALSE)
-dir.create(paste0("Results", args[1], "rejection_rates/"), recursive = TRUE, showWarnings = FALSE)
+dir.create(paste0("Results", args[1], "p-values/", seed_range_dir), recursive = TRUE, showWarnings = FALSE)
+dir.create(paste0("Results", args[1], "runtime_cit/", seed_range_dir), recursive = TRUE, showWarnings = FALSE)
+dir.create(paste0("Results", args[1], "runtime_embedding/", seed_range_dir), recursive = TRUE, showWarnings = FALSE)
+dir.create(paste0("Results", args[1], "rejection_rates/", seed_range_dir), recursive = TRUE, showWarnings = FALSE)
 
-write.csv(p_res,file=paste0("Results", args[1], "p-values/", paste(args[-1], collapse="_"), ".csv", collapse=''))
-write.csv(runtime_cit,file=paste0("Results", args[1], "runtime_cit/", paste(args[-1], collapse="_"), ".csv", collapse=''))
-write.csv(runtime_embedding,file=paste0("Results", args[1], "runtime_embedding/", paste(args[-1], collapse="_"), ".csv", collapse=''))
+write.csv(p_res,file=paste0("Results", args[1], "p-values/", seed_range_dir, paste(args[-1], collapse="_"), ".csv", collapse=''))
+write.csv(runtime_cit,file=paste0("Results", args[1], "runtime_cit/", seed_range_dir, paste(args[-1], collapse="_"), ".csv", collapse=''))
+write.csv(runtime_embedding,file=paste0("Results", args[1], "runtime_embedding/", seed_range_dir, paste(args[-1], collapse="_"), ".csv", collapse=''))
 
 #rejection rates
 n_seeds_ <- length(n_seeds)
@@ -363,8 +365,7 @@ for (idx_sample in seq_along(n_sample)){
 rejected <- data.frame(rejected, row.names = n_sample)
 colnames(rejected) <- cit
 #print(xtable(rejected))
-write.csv(rejected,file=paste0("Results", args[1], "rejection_rates/", paste(args[-1], collapse="_"), ".csv", collapse=''))
-
+write.csv(rejected,file=paste0("Results", args[1], "rejection_rates/", seed_range_dir, paste(args[-1], collapse="_"), ".csv", collapse=''))
 
 if (FALSE){
   if(grepl("/CI",args[1],fixed=TRUE)){
@@ -379,10 +380,14 @@ if (FALSE){
         runtime_embedding[idx, idx_sample] <- res_time[[idx]][idx_sample,3]
       }
     }
-    write.csv(p_res,file=paste0("Results", args[1], "p-values/", paste(args[-1], collapse="_"), ".csv", collapse=''))
-    write.csv(runtime_cit,file=paste0("Results", args[1], "runtime_cit/", paste(args[-1], collapse="_"), ".csv", collapse=''))
-    write.csv(runtime_embedding,file=paste0("Results", args[1], "runtime_embedding/", paste(args[-1], collapse="_"), ".csv", collapse=''))
-
+    dir.create(paste0("Results", args[1], "p-values/", seed_range_dir), recursive = TRUE, showWarnings = FALSE)
+    dir.create(paste0("Results", args[1], "runtime_cit/", seed_range_dir), recursive = TRUE, showWarnings = FALSE)
+    dir.create(paste0("Results", args[1], "runtime_embedding/", seed_range_dir), recursive = TRUE, showWarnings = FALSE)
+    dir.create(paste0("Results", args[1], "rejection_rates/", seed_range_dir), recursive = TRUE, showWarnings = FALSE)
+    
+    write.csv(p_res,file=paste0("Results", args[1], "p-values/", seed_range_dir, paste(args[-1], collapse="_"), ".csv", collapse=''))
+    write.csv(runtime_cit,file=paste0("Results", args[1], "runtime_cit/", seed_range_dir, paste(args[-1], collapse="_"), ".csv", collapse=''))
+    write.csv(runtime_embedding,file=paste0("Results", args[1], "runtime_embedding/", seed_range_dir, paste(args[-1], collapse="_"), ".csv", collapse=''))
     #rejection rates
     n_seeds_ <- length(n_seeds)
     for (idx_sample in seq_along(n_sample)){
@@ -391,7 +396,7 @@ if (FALSE){
     rejected <- data.frame(rejected, row.names = n_sample)
     colnames(rejected) <- cit
     #print(xtable(rejected))
-    write.csv(rejected,file=paste0("Results", args[1], "rejection_rates/", paste(args[-1], collapse="_"), ".csv", collapse=''))
+    write.csv(rejected,file=paste0("Results", args[1], "rejection_rates/", seed_range_dir, paste(args[-1], collapse="_"), ".csv", collapse=''))
 
     # #ks statistics
     # ks <- matrix(nrow = length(n_sample), ncol=n_cits)
@@ -403,6 +408,9 @@ if (FALSE){
     # row.names(ks_df) <- n_sample
     # write.csv(ks_df,file=paste0("Results", args[1], "Kolmogorov-Smirnov-Statistics/", paste(args[-1], collapse="_"), ".csv", collapse=''))
   }else if(grepl("/No_CI",args[1],fixed=TRUE)){
+    # Create seed range subdirectory name
+    seed_range_dir <- paste0("seeds_", min(n_seeds), "_", max(n_seeds), "/")
+    
     #save p-values and runtimes
     p_res <- matrix(nrow=length(n_seeds), ncol=length(beta2s))
     runtime_cit <- matrix(nrow=length(n_seeds), ncol=length(beta2s))
@@ -415,17 +423,21 @@ if (FALSE){
         runtime_embedding[idx, idx_beta2] <- res_time[[idx]][idx_beta2,3]
       }
     }
-    write.csv(p_res,file=paste0("Results", args[1], "p-values/", paste(args[-1], collapse="_"), ".csv", collapse=''))
-    write.csv(runtime_cit,file=paste0("Results", args[1], "runtime_cit/", paste(args[-1], collapse="_"), ".csv", collapse=''))
-    write.csv(runtime_embedding,file=paste0("Results", args[1], "runtime_embedding/", paste(args[-1], collapse="_"), ".csv", collapse=''))
-
+    dir.create(paste0("Results", args[1], "p-values/", seed_range_dir), recursive = TRUE, showWarnings = FALSE)
+    dir.create(paste0("Results", args[1], "runtime_cit/", seed_range_dir), recursive = TRUE, showWarnings = FALSE)
+    dir.create(paste0("Results", args[1], "runtime_embedding/", seed_range_dir), recursive = TRUE, showWarnings = FALSE)
+    dir.create(paste0("Results", args[1], "rejection_rates/", seed_range_dir), recursive = TRUE, showWarnings = FALSE)
+    
+    write.csv(p_res,file=paste0("Results", args[1], "p-values/", seed_range_dir, paste(args[-1], collapse="_"), ".csv", collapse=''))
+    write.csv(runtime_cit,file=paste0("Results", args[1], "runtime_cit/", seed_range_dir, paste(args[-1], collapse="_"), ".csv", collapse=''))
+    write.csv(runtime_embedding,file=paste0("Results", args[1], "runtime_embedding/", seed_range_dir, paste(args[-1], collapse="_"), ".csv", collapse=''))
     #rejection rates
     n_seeds_ <- length(n_seeds)
     rejected_ <- colSums(p_res < 0.05, na.rm=TRUE) / n_seeds_
     rejected <- data.frame(rejected_, row.names = beta2s)
     colnames(rejected) <- cit
     #print(xtable(rejected))
-    write.csv(rejected,file=paste0("Results", args[1], "rejection_rates/", paste(args[-1], collapse="_"), ".csv", collapse=''))
+    write.csv(rejected,file=paste0("Results", args[1], "rejection_rates/", seed_range_dir, paste(args[-1], collapse="_"), ".csv", collapse=''))
 
   }
 }
