@@ -3,7 +3,7 @@ setwd('inst')
 # Settings
 #### args =['/CI/ or /No_CI/', post_non_lin, eps_sigmaX, eps_sigmaY, eps_sigmaZ, embedding_orig, embedding_obs, confounder, g_z, CIT, CIT_params]
 if(FALSE){
-  args <- c("/No_CI/", "1", "0", "0.1", "0", "fastsurfer", "pooled_brainsynth", "ukb_z4", "linear", "ccit")
+  args <- c("/No_CI/", "1", "0", "0.1", "0", "fastsurfer", "scratch", "ukb_z4", "linear", "ccit")
   idx_sample=idx_beta2=i=1
   n_sample = list(350, 460, 825, 1100, 1475, 1964, 5000, 10000)
   XYZ_list <- dncitPaper::data_gen(seed=i, idx_sample=idx_sample, n_sample=n_sample, idx_beta2=NULL, beta2s=NULL,

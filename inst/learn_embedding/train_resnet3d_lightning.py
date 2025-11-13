@@ -234,16 +234,16 @@ class BrainMRIModule(pl.LightningModule):
         y = batch["y"]
         
         # DEBUG: Print raw targets
-        if batch_idx == 0 and stage == "train":
-            print(f"[DEBUG] Raw y before normalization: {y[:5]}")
+        #if batch_idx == 0 and stage == "train":
+        #    print(f"[DEBUG] Raw y before normalization: {y[:5]}")
             
         # Prepare targets
         if self.args.task == "regression":
             y = torch.as_tensor(y, dtype=torch.float32, device=self.device).view(-1, 1)
             
             # DEBUG: Print before normalization
-            if batch_idx == 0 and stage == "train":
-                print(f"[DEBUG] y as tensor: {y[:5].flatten()}")
+            #if batch_idx == 0 and stage == "train":
+            #    print(f"[DEBUG] y as tensor: {y[:5].flatten()}")
                 
             # Apply z-score normalization if enabled
             if (self.args.target_norm == "zscore" and 
@@ -251,9 +251,9 @@ class BrainMRIModule(pl.LightningModule):
                 self.y_mean_buf is not None and self.y_std_buf is not None):
                 y = (y - self.y_mean_buf) / (self.y_std_buf + 1e-6)
                 # DEBUG: Print after normalization
-                if batch_idx == 0 and stage == "train":
-                    print(f"[DEBUG] y after z-score: {y[:5].flatten()}")
-                    print(f"[DEBUG] y_mean_buf: {self.y_mean_buf}, y_std_buf: {self.y_std_buf}")
+                #if batch_idx == 0 and stage == "train":
+                #    print(f"[DEBUG] y after z-score: {y[:5].flatten()}")
+                #    print(f"[DEBUG] y_mean_buf: {self.y_mean_buf}, y_std_buf: {self.y_std_buf}")
         elif self.args.task == "binary":
             y = torch.as_tensor(y, dtype=torch.float32, device=self.device).view(-1, 1)
         else:
@@ -263,12 +263,12 @@ class BrainMRIModule(pl.LightningModule):
         logits = self(x)
         
         # DEBUG: Print predictions
-        if batch_idx == 0 and stage == "train":
-            print(f"[DEBUG] logits: {logits[:5].flatten()}")
+        #if batch_idx == 0 and stage == "train":
+        #    print(f"[DEBUG] logits: {logits[:5].flatten()}")
         loss = self.criterion(logits, y)
         # DEBUG: Print loss
-        if batch_idx == 0 and stage == "train":
-            print(f"[DEBUG] loss: {loss.item()}")
+        #if batch_idx == 0 and stage == "train":
+        #    print(f"[DEBUG] loss: {loss.item()}")
         # Log metrics
         self.log(f'{stage}_loss', loss, on_step=True, on_epoch=True, prog_bar=True, logger=True)
         
@@ -574,7 +574,7 @@ class BrainMRIDataModule(pl.LightningDataModule):
     def _build_transforms(self):
         t = [LoadImaged(keys=["image"]), EnsureChannelFirstd(keys=["image"])]
         if not self.args.no_reorient:
-            t += [Orientationd(keys=["image"], axcodes="RAS")]
+            t += [Orientationd(keys=["image"], axcodes="RAS", labels=None)]
         if not self.args.no_resample:
             t += [Spacingd(keys=["image"], pixdim=tuple(self.args.pixdim), mode=("bilinear"))]
         if not self.args.no_cropfg:

@@ -21,7 +21,7 @@ def run_command(cmd, description, env=None):
     print(f"Command: {' '.join(cmd)}")
     
     try:
-        result = subprocess.run(cmd, check=True, capture_output=True, text=True, env=env)
+        result = subprocess.run(cmd, check=True, env=env)
         print(f"✅ {description} completed successfully")
         if result.stdout:
             print("Output:", result.stdout)

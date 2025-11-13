@@ -337,11 +337,12 @@ Sys.sleep(2)
 p_res <- matrix(nrow=length(n_seeds), ncol=length(n_sample))
 runtime_cit <- matrix(nrow=length(n_seeds), ncol=length(n_sample))
 runtime_embedding <- matrix(nrow=length(n_seeds), ncol=length(n_sample))
-for (i in n_seeds){
+for (idx in seq_along(n_seeds)){
+  i <- n_seeds[idx]  # Get the actual seed value
   for (idx_sample in seq_along(n_sample)){
-    p_res[i, idx_sample] <- res_time[[i]][idx_sample,1]
-    runtime_cit[i, idx_sample] <- res_time[[i]][idx_sample,2]
-    runtime_embedding[i, idx_sample] <- res_time[[i]][idx_sample,3]
+    p_res[idx, idx_sample] <- res_time[[idx]][idx_sample,1]
+    runtime_cit[idx, idx_sample] <- res_time[[idx]][idx_sample,2]
+    runtime_embedding[idx, idx_sample] <- res_time[[idx]][idx_sample,3]
   }
 }
 # Create output directories
@@ -370,11 +371,12 @@ if (FALSE){
     p_res <- matrix(nrow=length(n_seeds), ncol=length(n_sample))
     runtime_cit <- matrix(nrow=length(n_seeds), ncol=length(n_sample))
     runtime_embedding <- matrix(nrow=length(n_seeds), ncol=length(n_sample))
-    for (i in n_seeds){
+    for (idx in seq_along(n_seeds)){
+      i <- n_seeds[idx]  # Get the actual seed value
       for (idx_sample in seq_along(n_sample)){
-        p_res[i, idx_sample] <- res_time[[i]][idx_sample,1]
-        runtime_cit[i, idx_sample] <- res_time[[i]][idx_sample,2]
-        runtime_embedding[i, idx_sample] <- res_time[[i]][idx_sample,3]
+        p_res[idx, idx_sample] <- res_time[[idx]][idx_sample,1]
+        runtime_cit[idx, idx_sample] <- res_time[[idx]][idx_sample,2]
+        runtime_embedding[idx, idx_sample] <- res_time[[idx]][idx_sample,3]
       }
     }
     write.csv(p_res,file=paste0("Results", args[1], "p-values/", paste(args[-1], collapse="_"), ".csv", collapse=''))
@@ -405,11 +407,12 @@ if (FALSE){
     p_res <- matrix(nrow=length(n_seeds), ncol=length(beta2s))
     runtime_cit <- matrix(nrow=length(n_seeds), ncol=length(beta2s))
     runtime_embedding <- matrix(nrow=length(n_seeds), ncol=length(beta2s))
-    for (i in n_seeds){
+    for (idx in seq_along(n_seeds)){
+      i <- n_seeds[idx]  # Get the actual seed value
       for (idx_beta2 in seq_along(beta2s)){
-        p_res[i, idx_beta2] <- res_time[[i]][idx_beta2,1]
-        runtime_cit[i, idx_beta2] <- res_time[[i]][idx_beta2,2]
-        runtime_embedding[i, idx_beta2] <- res_time[[i]][idx_beta2,3]
+        p_res[idx, idx_beta2] <- res_time[[idx]][idx_beta2,1]
+        runtime_cit[idx, idx_beta2] <- res_time[[idx]][idx_beta2,2]
+        runtime_embedding[idx, idx_beta2] <- res_time[[idx]][idx_beta2,3]
       }
     }
     write.csv(p_res,file=paste0("Results", args[1], "p-values/", paste(args[-1], collapse="_"), ".csv", collapse=''))
