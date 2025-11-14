@@ -171,7 +171,7 @@ data_gen <- function(seed, idx_sample=NULL, n_sample=NULL, idx_beta2=NULL, beta2
           # Run training pipeline
         train_script <- "inst/learn_embedding/run_train_test_pipeline.py"
         # Scale learning rate based on sample size
-        base_lr_scratch <- 2e-3
+        base_lr_scratch <- 5e-4
         scaled_lr <- scale_lr_by_sample_size(base_lr_scratch, n_sample[[idx_sample]])
         
         args_vec <- c("--input_csv", normalizePath(train_csv),
@@ -200,7 +200,7 @@ data_gen <- function(seed, idx_sample=NULL, n_sample=NULL, idx_beta2=NULL, beta2
           # Run training pipeline
         train_script <- "inst/learn_embedding/run_train_test_pipeline.py"
         # Scale learning rates based on sample size
-        base_lr_head <- 8e-3
+        base_lr_head <- 1e-3
         base_lr_backbone <- 5e-5
         scaled_lr_head <- scale_lr_by_sample_size(base_lr_head, n_sample[[idx_sample]])
         scaled_lr_backbone <- scale_lr_by_sample_size(base_lr_backbone, n_sample[[idx_sample]])
@@ -221,8 +221,8 @@ data_gen <- function(seed, idx_sample=NULL, n_sample=NULL, idx_beta2=NULL, beta2
                       "--use_tensorboard",
                       "--pretrained",
                       "--simple_head",
-                      "--unfreeze_from", "layer2",
-                      "--unfreeze_after_epochs", "10")
+                      "--unfreeze_from", "layer4",
+                      "--unfreeze_after_epochs", "8")
 
         # Use the python from the active env (auto-detected via CONDA_PREFIX)
         start_time <- Sys.time()

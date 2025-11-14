@@ -19,8 +19,8 @@ cat("=== Collecting Diagnostic Results ===\n")
 
 # Parameters
 n_samples <- c(460, 1100, 5000, 10000)#, 10000)#c(145, 256, 350, 460, 825, 1100, 1475, 1964, 5000, 10000)
-seeds <- c(431:460)#c(51:60, 61:64, 71:74)#1:200
-eps_sigmaY_all <- c(0.5)
+seeds <- c(461:490)#c(51:60, 61:64, 71:74)#1:200
+eps_sigmaY_all <- c(0.1)
 conditions <- c("CI", "No_CI")
 base_paths <- list(
   "CI" = "/sc/home/marco.simnacher/ukbiobank/data/CI",
@@ -117,7 +117,7 @@ prepare_plot_data <- function(combined_results) {
   }
   
   plot_data_all <- combined_results %>%
-    filter(eps_sigmaY == 0.5) %>%
+    filter(eps_sigmaY == 0.1) %>%
     mutate(
       # Convert to factors for proper ordering
       n_sample = factor(n_sample, levels = c(145, 256, 350, 460, 825, 1100, 1475, 1964, 5000, 10000)),
