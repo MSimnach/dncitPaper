@@ -170,6 +170,10 @@ data_gen <- function(seed, idx_sample=NULL, n_sample=NULL, idx_beta2=NULL, beta2
         cat("🏗️  Training model from scratch...\n")
           # Run training pipeline
         train_script <- "inst/learn_embedding/run_train_test_pipeline.py"
+        # Scale learning rate based on sample size
+        base_lr_scratch <- 2e-3
+        scaled_lr <- scale_lr_by_sample_size(base_lr_scratch, n_sample[[idx_sample]])
+        
         args_vec <- c("--input_csv", normalizePath(train_csv),
                       "--id_col", "id",
                       "--output_dir", normalizePath(embedding_dir),
@@ -181,10 +185,9 @@ data_gen <- function(seed, idx_sample=NULL, n_sample=NULL, idx_beta2=NULL, beta2
                       "--test_size", "0.5",
                       "--val_frac", "0.1",
                       "--amp",
-                      "--lr", "1.5e-3",
+                      "--lr", sprintf("%.6e", scaled_lr),
                       "--use_tensorboard")
 
-        # Use the python from the active env (auto-detected via CONDA_PREFIX)
         start_time <- Sys.time()
         res <- run_python_safe(train_script, args_vec)
         training_time <- as.numeric(difftime(Sys.time(), start_time, units = "secs"))
@@ -196,6 +199,12 @@ data_gen <- function(seed, idx_sample=NULL, n_sample=NULL, idx_beta2=NULL, beta2
         cat("🏗️  Fine-tuning pretrained MedicalNet weights...\n")
           # Run training pipeline
         train_script <- "inst/learn_embedding/run_train_test_pipeline.py"
+        # Scale learning rates based on sample size
+        base_lr_head <- 8e-3
+        base_lr_backbone <- 5e-5
+        scaled_lr_head <- scale_lr_by_sample_size(base_lr_head, n_sample[[idx_sample]])
+        scaled_lr_backbone <- scale_lr_by_sample_size(base_lr_backbone, n_sample[[idx_sample]])
+        
         args_vec <- c("--input_csv", normalizePath(train_csv),
                       "--id_col", "id",
                       "--output_dir", normalizePath(embedding_dir),
@@ -207,8 +216,8 @@ data_gen <- function(seed, idx_sample=NULL, n_sample=NULL, idx_beta2=NULL, beta2
                       "--test_size", "0.5",
                       "--val_frac", "0.1",
                       "--amp",
-                      "--lr_head", "1.2e-3",
-                      "--lr_backbone", "5e-5",
+                      "--lr_head", sprintf("%.6e", scaled_lr_head),
+                      "--lr_backbone", sprintf("%.6e", scaled_lr_backbone),
                       "--use_tensorboard",
                       "--pretrained",
                       "--simple_head",
@@ -226,6 +235,10 @@ data_gen <- function(seed, idx_sample=NULL, n_sample=NULL, idx_beta2=NULL, beta2
         cat("🏗️  Fine-tuning pretrained MedicalNet weights with frozen backbone...\n")
           # Run training pipeline
         train_script <- "inst/learn_embedding/run_train_test_pipeline.py"
+        # Scale learning rate based on sample size
+        base_lr_frozen <- 9e-5
+        scaled_lr <- scale_lr_by_sample_size(base_lr_frozen, n_sample[[idx_sample]])
+        
         args_vec <- c("--input_csv", normalizePath(train_csv),
                       "--id_col", "id",
                       "--output_dir", normalizePath(embedding_dir),
@@ -237,7 +250,7 @@ data_gen <- function(seed, idx_sample=NULL, n_sample=NULL, idx_beta2=NULL, beta2
                       "--test_size", "0.5",
                       "--val_frac", "0.1",
                       "--amp",
-                      "--lr", "1.2e-4",
+                      "--lr", sprintf("%.6e", scaled_lr),
                       "--use_tensorboard",
                       "--pretrained",
                       #"--simple_head",
@@ -403,4 +416,24 @@ run_python_safe <- function(script_path, args = character(), python = NULL) {
   status <- attr(out, "status"); if (is.null(status)) status <- 0L
   if (status != 0L) stop(sprintf("Python exited with status %s\n%s", status, paste(out, collapse = "\n")))
   out
+}
+
+#' Scale learning rate based on sample size
+#' 
+#' @param base_lr Base learning rate (at reference sample size)
+#' @param n Current sample size
+#' @param n_base Reference sample size (default: 500)
+#' @param scaling_method Scaling method: "sqrt" or "linear" (default: "sqrt")
+#' @return Scaled learning rate
+scale_lr_by_sample_size <- function(base_lr, n, n_base = 460, scaling_method = "sqrt") {
+  if (scaling_method == "sqrt") {
+    # Square root scaling: commonly used for batch size scaling
+    scaled_lr <- base_lr * sqrt(n / n_base)
+  } else if (scaling_method == "linear") {
+    # Linear scaling
+    scaled_lr <- base_lr * (n / n_base)
+  } else {
+    stop("scaling_method must be either 'sqrt' or 'linear'")
+  }
+  return(scaled_lr)
 }

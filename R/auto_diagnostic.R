@@ -73,13 +73,28 @@ auto_diagnostic <- function(
     diagnostic_csv <- paste0(path_to_ukb_data, "/t1_paths_diag.csv")
   }
   
-  # Validate that first trained embedding directory exists
-  first_emb_dir <- file.path(experiment_dir, embedding_obs[1])
-  if (!dir.exists(first_emb_dir)) {
-    stop("First trained embedding directory does not exist: ", first_emb_dir)
+  existing_embeddings <- c()
+  for (emb in embedding_obs) {
+    emb_dir <- file.path(experiment_dir, emb)
+    if (dir.exists(emb_dir)) {
+      existing_embeddings <- c(existing_embeddings, emb)
+    } else {
+      warning("Trained embedding directory does not exist, will skip: ", emb_dir)
+    }
   }
   
-  # Read config from first trained embedding
+  # If no trained embeddings exist, skip the whole auto_diagnostic
+  if (length(existing_embeddings) == 0) {
+    cat("No trained embedding directories found. Skipping auto_diagnostic.\n")
+    return(invisible(NULL))
+  }
+  
+  cat("Found", length(existing_embeddings), "out of", length(embedding_obs), 
+      "trained embedding directories\n")
+  
+  # Read config from first existing trained embedding
+  first_existing_emb <- existing_embeddings[1]
+  first_emb_dir <- file.path(experiment_dir, first_existing_emb)
   config_path <- file.path(first_emb_dir, "config.json")
   if (!file.exists(config_path)) {
     stop("Config file not found: ", config_path)
@@ -104,24 +119,7 @@ auto_diagnostic <- function(
   
   cat("Configuration: post_non_lin=", post_non_lin, ", eps_sigmaY=", eps_sigmaY, 
       ", confounder=", confounder, ", g_z=", g_z, ", xz_mode=", xz_mode, "\n", sep="")
-  
-  # Check which trained embedding directories exist (don't stop if missing)
-  existing_embeddings <- c()
-  for (emb in embedding_obs) {
-    emb_dir <- file.path(experiment_dir, emb)
-    if (dir.exists(emb_dir)) {
-      existing_embeddings <- c(existing_embeddings, emb)
-    } else {
-      warning("Trained embedding directory does not exist, will skip: ", emb_dir)
-    }
-  }
-  
-  if (length(existing_embeddings) == 0) {
-    stop("No trained embedding directories found. At least one must exist.")
-  }
-  
-  cat("Found", length(existing_embeddings), "out of", length(embedding_obs), 
-      "trained embedding directories\n\n")
+  cat("\n")
   
   # Create output directory
   out_dir_diagnostic <- file.path(experiment_dir, "diagnostic")
