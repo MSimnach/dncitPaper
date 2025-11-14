@@ -491,6 +491,18 @@ auto_diagnostic <- function(
       emb_data <- baseline_emb_list[[emb_name]]
       # Scale embeddings (remove id column)
       X_raw <- scale(as.matrix(emb_data[,c(-1)]))
+      # DEBUG: Check for zero variance BEFORE scaling
+      X_before_scale <- as.matrix(emb_data[,c(-1)])
+      zero_var_cols_before <- apply(X_before_scale, 2, function(x) {
+        var_x <- var(x, na.rm=TRUE)
+        is.na(var_x) || var_x == 0 || var_x < 1e-10
+      })
+      if (any(zero_var_cols_before)) {
+        cat(sprintf("[DEBUG] Found %d zero/low-variance columns BEFORE scaling in %s: %s\n", 
+                    sum(zero_var_cols_before),
+                    emb_name,
+                    paste(which(zero_var_cols_before), collapse=", ")))
+      }
       
       # Remove columns with NA values (zero variance columns)
       na_cols <- colSums(is.na(X_raw)) > 0
@@ -503,6 +515,18 @@ auto_diagnostic <- function(
       }else{
         X <- X_raw
       }
+
+      # DEBUG: Check for zero variance AFTER removal
+      zero_var_cols_after <- apply(X, 2, function(x) {
+        var_x <- var(x, na.rm=TRUE)
+        is.na(var_x) || var_x == 0 || var_x < 1e-10
+      })
+      if (any(zero_var_cols_after)) {
+        cat(sprintf("[WARNING] Still found %d zero/low-variance columns AFTER removal in %s: %s\n", 
+                    sum(zero_var_cols_after),
+                    emb_name,
+                    paste(which(zero_var_cols_after), collapse=", ")))
+      }
       
       # Add diagnostic output
       cat("\n  X dimensions: ", nrow(X), "x", ncol(X), 
@@ -510,10 +534,32 @@ auto_diagnostic <- function(
           ", sd:", round(sd(X), 4),
           ", range: [", round(min(X), 4), ",", round(max(X), 4), "]\n", sep="")
       cat("  First few values: ", paste(round(X[1, 1:min(5, ncol(X))], 4), collapse=" "), "\n")
-      # Check correlation between features and Y
-      cor_with_y <- apply(X, 2, function(x) cor(x, Y))
+      # DEBUG: Check Y variance
+      Y_var <- var(Y, na.rm=TRUE)
+      cat("  Y variance:", round(Y_var, 6), "\n")
+      if (Y_var == 0 || is.na(Y_var)) {
+        cat("  [WARNING] Y has zero variance!\n")
+      }
+
+      # Check correlation between features and Y (with error handling)
+      cor_with_y <- apply(X, 2, function(x) {
+        tryCatch({
+          cor(x, Y, use="complete.obs")
+        }, warning = function(w) {
+          cat(sprintf("    [WARNING in cor()] Column %d: %s\n", 
+                      which(apply(X, 2, identical, x))[1], 
+                      conditionMessage(w)))
+          return(NA)
+        }, error = function(e) {
+          cat(sprintf("    [ERROR in cor()] Column %d: %s\n", 
+                      which(apply(X, 2, identical, x))[1], 
+                      conditionMessage(e)))
+          return(NA)
+        })
+      })
       cat("  Max |correlation| with Y:", max(abs(cor_with_y), na.rm=TRUE), "\n")
       cat("  Features with |cor| > 0.1:", sum(abs(cor_with_y) > 0.1, na.rm=TRUE), "\n")
+      cat("  Features with NA correlation:", sum(is.na(cor_with_y)), "\n")
       # Run glmnet
       result <- ridge_lasso_glmnet(
         X = X, 
@@ -556,6 +602,54 @@ auto_diagnostic <- function(
       # Embeddings already scaled from extraction, just remove id
       X <- as.matrix(emb_data[,c(-1)])
       
+
+      # DEBUG: Check for zero variance columns in trained embeddings
+      zero_var_cols <- apply(X, 2, function(x) {
+        var_x <- var(x, na.rm=TRUE)
+        is.na(var_x) || var_x == 0 || var_x < 1e-10
+      })
+      if (any(zero_var_cols)) {
+        zero_var_indices <- which(zero_var_cols)
+        cat(sprintf("[INFO] Found %d zero/low-variance columns in trained embedding %s: columns %s\n", 
+                    sum(zero_var_cols),
+                    emb_name,
+                    paste(zero_var_indices, collapse=", ")))
+        cat(sprintf("      Removing these columns before correlation computation\n"))
+        X <- X[, !zero_var_cols, drop=FALSE]
+      }
+
+      # Check for missing values before running glmnet
+      if (any(is.na(X)) || any(is.infinite(X))) {
+        cat("SKIPPED (NA or Inf values detected in embeddings)\n")
+        # ... rest of error handling
+      }
+
+      # DEBUG: Check Y variance
+      Y_var <- var(Y, na.rm=TRUE)
+      cat("  Y variance:", round(Y_var, 6), "\n")
+      if (Y_var == 0 || is.na(Y_var)) {
+        cat("  [WARNING] Y has zero variance!\n")
+      }
+
+      # DEBUG 
+      cor_with_y <- apply(X, 2, function(x) {
+        tryCatch({
+          cor(x, Y, use="complete.obs")
+        }, warning = function(w) {
+          cat(sprintf("    [WARNING in cor()] Column %d: %s\n", 
+                      which(apply(X, 2, identical, x))[1], 
+                      conditionMessage(w)))
+          return(NA)
+        }, error = function(e) {
+          cat(sprintf("    [ERROR in cor()] Column %d: %s\n", 
+                      which(apply(X, 2, identical, x))[1], 
+                      conditionMessage(e)))
+          return(NA)
+        })
+      })
+      cat("  Max |correlation| with Y:", max(abs(cor_with_y), na.rm=TRUE), "\n")
+      cat("  Features with |cor| > 0.1:", sum(abs(cor_with_y) > 0.1, na.rm=TRUE), "\n")
+      cat("  Features with NA correlation:", sum(is.na(cor_with_y)), "\n")
       # Check for missing values before running glmnet
       if (any(is.na(X)) || any(is.infinite(X))) {
         cat("SKIPPED (NA or Inf values detected in embeddings)\n")
@@ -572,11 +666,6 @@ auto_diagnostic <- function(
         )
         next
       }
-
-      # DEBUG 
-      cor_with_y <- apply(X, 2, function(x) cor(x, Y))
-      cat("  Max |correlation| with Y:", max(abs(cor_with_y), na.rm=TRUE), "\n")
-      cat("  Features with |cor| > 0.1:", sum(abs(cor_with_y) > 0.1, na.rm=TRUE), "\n")
 
       # Run glmnet with error handling
       result <- tryCatch({
