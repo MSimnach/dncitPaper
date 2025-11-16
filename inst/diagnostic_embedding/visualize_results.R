@@ -19,8 +19,8 @@ cat("=== Collecting Diagnostic Results ===\n")
 
 # Parameters
 n_samples <- c(460, 1100, 5000, 10000)#, 10000)#c(145, 256, 350, 460, 825, 1100, 1475, 1964, 5000, 10000)
-seeds <- c(461:490)#c(51:60, 61:64, 71:74)#1:200
-eps_sigmaY_all <- c(0.1)
+seeds <- c(361:390)#c(51:60, 61:64, 71:74)#1:200
+eps_sigmaY_all <- c(1)
 conditions <- c("CI", "No_CI")
 base_paths <- list(
   "CI" = "/sc/home/marco.simnacher/ukbiobank/data/CI",
@@ -107,7 +107,7 @@ cat("\n")
 cat("=== Preparing Data for Visualization ===\n")
 
 # Define embedding types
-constant_embeddings <- c("fastsurfer", "freesurfer", "condVAE", "medicalnet", "boc_brainsynth", "pooled_brainsynth")
+constant_embeddings <- c("fastsurfer", "freesurfer", "condVAE", "medicalnet", "pooled_brainsynth", "tucker_brainsynth")
 varying_embeddings <- c("medicalnet_ft", "medicalnet_ft_frozen", "scratch")
 
 # Function to prepare plot data
@@ -117,7 +117,7 @@ prepare_plot_data <- function(combined_results) {
   }
   
   plot_data_all <- combined_results %>%
-    filter(eps_sigmaY == 0.1) %>%
+    filter(eps_sigmaY == 1) %>%
     mutate(
       # Convert to factors for proper ordering
       n_sample = factor(n_sample, levels = c(145, 256, 350, 460, 825, 1100, 1475, 1964, 5000, 10000)),

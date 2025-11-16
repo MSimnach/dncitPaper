@@ -111,7 +111,7 @@ data_gen <- function(seed, idx_sample=NULL, n_sample=NULL, idx_beta2=NULL, beta2
   }
   write.csv(Y_id, file.path(y_dir, 'Y.csv'), row.names = FALSE)
 
-  if (embedding_obs %in% c('fastsurfer', 'condVAE', 'latentDiffusion', 'freesurfer', 'medicalnet', 'boc_brainsynth', 'pooled_brainsynth')){
+  if (embedding_obs %in% c('fastsurfer', 'condVAE', 'latentDiffusion', 'freesurfer', 'medicalnet', 'pooled_brainsynth', 'tucker_brainsynth')){
     X_obs[,c(-1)] <- scale(X_obs[,c(-1)])
     # Remove columns with NA values (zero variance columns)
     na_cols <- colSums(is.na(X_obs[, -1])) > 0
@@ -171,7 +171,7 @@ data_gen <- function(seed, idx_sample=NULL, n_sample=NULL, idx_beta2=NULL, beta2
           # Run training pipeline
         train_script <- "inst/learn_embedding/run_train_test_pipeline.py"
         # Scale learning rate based on sample size
-        base_lr_scratch <- 5e-4
+        base_lr_scratch <- 1.8e-3
         scaled_lr <- scale_lr_by_sample_size(base_lr_scratch, n_sample[[idx_sample]])
         
         args_vec <- c("--input_csv", normalizePath(train_csv),
@@ -183,6 +183,7 @@ data_gen <- function(seed, idx_sample=NULL, n_sample=NULL, idx_beta2=NULL, beta2
                       "--epochs", "100",
                       "--batch_size", "16",
                       "--test_size", "0.5",
+                      "--weight_decay", "0.0",
                       "--val_frac", "0.1",
                       "--amp",
                       "--lr", sprintf("%.6e", scaled_lr),
@@ -200,8 +201,8 @@ data_gen <- function(seed, idx_sample=NULL, n_sample=NULL, idx_beta2=NULL, beta2
           # Run training pipeline
         train_script <- "inst/learn_embedding/run_train_test_pipeline.py"
         # Scale learning rates based on sample size
-        base_lr_head <- 1e-3
-        base_lr_backbone <- 5e-5
+        base_lr_head <- 1.2e-3
+        base_lr_backbone <- 7e-5
         scaled_lr_head <- scale_lr_by_sample_size(base_lr_head, n_sample[[idx_sample]])
         scaled_lr_backbone <- scale_lr_by_sample_size(base_lr_backbone, n_sample[[idx_sample]])
         
@@ -236,7 +237,7 @@ data_gen <- function(seed, idx_sample=NULL, n_sample=NULL, idx_beta2=NULL, beta2
           # Run training pipeline
         train_script <- "inst/learn_embedding/run_train_test_pipeline.py"
         # Scale learning rate based on sample size
-        base_lr_frozen <- 9e-5
+        base_lr_frozen <- 3e-4
         scaled_lr <- scale_lr_by_sample_size(base_lr_frozen, n_sample[[idx_sample]])
         
         args_vec <- c("--input_csv", normalizePath(train_csv),
@@ -249,6 +250,7 @@ data_gen <- function(seed, idx_sample=NULL, n_sample=NULL, idx_beta2=NULL, beta2
                       "--batch_size", "16",
                       "--test_size", "0.5",
                       "--val_frac", "0.1",
+                      "--weight_decay", "0.0",
                       "--amp",
                       "--lr", sprintf("%.6e", scaled_lr),
                       "--use_tensorboard",
@@ -362,6 +364,9 @@ load_X_obs <- function(path_to_ukb_data,embedding_obs, embedding_orig, X_orig, e
     X_obs <- as.data.frame(X_obs_emb)
     pooled_idx <- data.table::fread(paste0(path_to_ukb_data, "/brainsynth_embeddings/baseline_vqvae/embeddings/subject_ids.csv"))
     X_obs <- cbind(id = pooled_idx$x, as.data.frame(X_obs_emb))
+  }else if(embedding_obs == 'tucker_brainsynth'){
+    X_obs <- arrow::read_parquet(paste0(path_to_ukb_data, '/brainsynth_embeddings/baseline_vqvae/embeddings/all_tucker_embeddings.parquet'))
+    colnames(X_obs)[1] <- "id"
   }
   return(X_obs)
 }

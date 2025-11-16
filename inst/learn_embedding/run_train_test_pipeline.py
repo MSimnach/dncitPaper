@@ -63,6 +63,8 @@ def main():
     parser.add_argument("--epochs", type=int, default=30)
     parser.add_argument("--batch_size", type=int, default=6)
     parser.add_argument("--lr", type=float, default=3e-4)
+    parser.add_argument("--weight_decay", type=float, default=5e-5,
+                       help="Weight decay for optimizer (default: 5e-5)")
     parser.add_argument("--val_frac", type=float, default=0.2,
                        help="Validation fraction from training set")
     
@@ -146,6 +148,7 @@ def main():
         "--epochs", str(args.epochs),
         "--batch_size", str(args.batch_size),
         "--lr", str(args.lr),
+        "--weight_decay", str(args.weight_decay),
         "--val_frac", str(args.val_frac),
         "--num_workers", str(args.num_workers),
         "--seed", str(args.seed)

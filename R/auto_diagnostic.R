@@ -40,7 +40,7 @@ auto_diagnostic <- function(
   diagnostic_csv = NULL,
   seed = 1,
   extract_trained = TRUE,
-  baseline_embeddings = c("fastsurfer", "condVAE", "freesurfer", "medicalnet", "boc_brainsynth", "pooled_brainsynth"),
+  baseline_embeddings = c("fastsurfer", "condVAE", "freesurfer", "medicalnet", "pooled_brainsynth", "tucker_brainsynth"),
   alpha = 0.3,
   test_prop = 0.2,
   nfolds = 10,
@@ -195,6 +195,13 @@ auto_diagnostic <- function(
         pooled_idx <- data.table::fread(paste0(path_to_ukb_data, "/brainsynth_embeddings/baseline_vqvae/embeddings/subject_ids.csv"))
         emb_data <- as.data.frame(emb_data)
         emb_data <- cbind(id = pooled_idx$x, as.data.frame(emb_data))
+        baseline_emb_list[[emb_name]] <- emb_data
+        all_datasets[[emb_name]] <- emb_data
+        cat("OK (", ncol(emb_data)-1, " features)\n", sep="")
+      } else if (emb_name == "tucker_brainsynth") {
+        emb_data <- arrow::read_parquet(paste0(path_to_ukb_data, '/brainsynth_embeddings/baseline_vqvae/embeddings/all_tucker_embeddings.parquet'))
+        colnames(emb_data)[1] <- "id"
+        emb_data <- as.data.frame(emb_data)
         baseline_emb_list[[emb_name]] <- emb_data
         all_datasets[[emb_name]] <- emb_data
         cat("OK (", ncol(emb_data)-1, " features)\n", sep="")

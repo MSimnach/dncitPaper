@@ -241,10 +241,10 @@ print(paste0("Trained: R^2 = ", trained_results$r2_test, " MSE = ", trained_resu
 idx_samples <- 1:4
 n_sample = list(460, 1100, 5000, 10000)
 xz_modes <- c('Sigma=I_p')
-seeds <- c(461:490)
-eps_sigmaY_list <- c(0.1)
+seeds <- c(461:490, 1:50)
+eps_sigmaY_list <- c(0.5)
 embedding_obs <- c('medicalnet_ft_frozen', 'medicalnet_ft', 'scratch')
-Y_age <- FALSE
+Y_age <- TRUE
 standardize_ridge_lasso <- TRUE
 for(eps_sigmaY in eps_sigmaY_list){
   for(seed in seeds){
