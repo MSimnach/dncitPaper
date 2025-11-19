@@ -40,7 +40,7 @@ auto_diagnostic <- function(
   diagnostic_csv = NULL,
   seed = 1,
   extract_trained = TRUE,
-  baseline_embeddings = c("fastsurfer", "condVAE", "freesurfer", "medicalnet", "pooled_brainsynth", "tucker_brainsynth"),
+  baseline_embeddings = c("fastsurfer", "condVAE", "freesurfer", "medicalnet"),#"pooled_brainsynth", "tucker_brainsynth"),
   alpha = 0.3,
   test_prop = 0.2,
   nfolds = 10,

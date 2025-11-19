@@ -19,8 +19,8 @@ cat("=== Collecting Diagnostic Results ===\n")
 
 # Parameters
 n_samples <- c(460, 1100, 5000, 10000)#, 10000)#c(145, 256, 350, 460, 825, 1100, 1475, 1964, 5000, 10000)
-seeds <- c(361:390)#c(51:60, 61:64, 71:74)#1:200
-eps_sigmaY_all <- c(1)
+seeds <- c(51:150, 491:520)#c(51:60, 61:64, 71:74)#1:200
+eps_sigmaY_all <- c(0.5)
 conditions <- c("CI", "No_CI")
 base_paths <- list(
   "CI" = "/sc/home/marco.simnacher/ukbiobank/data/CI",
@@ -117,7 +117,7 @@ prepare_plot_data <- function(combined_results) {
   }
   
   plot_data_all <- combined_results %>%
-    filter(eps_sigmaY == 1) %>%
+    filter(eps_sigmaY == 0.5) %>%
     mutate(
       # Convert to factors for proper ordering
       n_sample = factor(n_sample, levels = c(145, 256, 350, 460, 825, 1100, 1475, 1964, 5000, 10000)),
@@ -393,12 +393,16 @@ cat("\n=== Summary Statistics (eps_sigmaY = 1) ===\n")
 
 if (!is.null(plot_data_y)) {
   cat("\n--- Y Diagnostics ---\n")
+  options(tibble.width = Inf)
   
   cat("\nConstant Embeddings (n=10000):\n")
   summary_stats_y_constant <- plot_data_y$constant %>%
     group_by(condition, embedding_name) %>%
     summarise(
       mean_r2 = mean(r2_test, na.rm = TRUE),
+      median_r2 = median(r2_test, na.rm = TRUE),
+      q25_r2 = quantile(r2_test, 0.25, na.rm = TRUE),
+      q75_r2 = quantile(r2_test, 0.75, na.rm = TRUE),
       sd_r2 = sd(r2_test, na.rm = TRUE),
       n = n(),
       .groups = "drop"
@@ -410,6 +414,9 @@ if (!is.null(plot_data_y)) {
     group_by(condition, n_sample, embedding_name) %>%
     summarise(
       mean_r2 = mean(r2_test, na.rm = TRUE),
+      median_r2 = median(r2_test, na.rm = TRUE),
+      q25_r2 = quantile(r2_test, 0.25, na.rm = TRUE),
+      q75_r2 = quantile(r2_test, 0.75, na.rm = TRUE),
       sd_r2 = sd(r2_test, na.rm = TRUE),
       n = n(),
       .groups = "drop"
