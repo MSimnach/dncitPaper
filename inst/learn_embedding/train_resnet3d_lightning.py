@@ -51,6 +51,38 @@ MODEL_FNS = {
 # Order of backbone layers for freeze/unfreeze operations
 BACKBONE_ORDER = ["conv1", "bn1", "act", "maxpool", "layer1", "layer2", "layer3", "layer4", "avgpool", "fc"]
 
+class GradientAndWeightLogger(pl.Callback):
+    """Log gradient and weight statistics to TensorBoard"""
+    
+    def __init__(self, log_every_n_steps=50):
+        super().__init__()
+        self.log_every_n_steps = log_every_n_steps
+    
+    def on_after_backward(self, trainer, pl_module):
+        """Log gradient norms after backward pass"""
+        if trainer.global_step % self.log_every_n_steps != 0:
+            return
+            
+        # Log gradient norms for each layer
+        for name, param in pl_module.named_parameters():
+            if param.grad is not None and param.requires_grad:
+                # Log gradient statistics
+                grad_norm = param.grad.norm(2).item()
+                pl_module.log(f'gradients/{name}_norm', grad_norm)
+                
+                # Log gradient mean and std for debugging
+                pl_module.log(f'gradients/{name}_mean', param.grad.mean().item())
+                pl_module.log(f'gradients/{name}_std', param.grad.std().item())
+    
+    def on_train_epoch_end(self, trainer, pl_module):
+        """Log weight statistics at epoch end"""
+        for name, param in pl_module.named_parameters():
+            if param.requires_grad:
+                # Log weight statistics
+                pl_module.log(f'weights/{name}_norm', param.norm(2).item())
+                pl_module.log(f'weights/{name}_mean', param.mean().item())
+                pl_module.log(f'weights/{name}_std', param.std().item())
+
 class BrainMRIModule(pl.LightningModule):
     """PyTorch Lightning module for 3D ResNet brain MRI training"""
     
@@ -118,12 +150,32 @@ class BrainMRIModule(pl.LightningModule):
             
             return model
         else:
-            return fn(
+            model = fn(
                 spatial_dims=3,
                 n_input_channels=1,
                 num_classes=out_ch,
                 pretrained=False,
             )
+            # Apply kaiming weight initialization if requested (only for scratch training)
+            if self.args.init_weights == "kaiming":
+                self._init_weights(model)
+                print(f"🎲 Applied kaiming_normal weight initialization")
+            return model
+    
+    def _init_weights(self, model):
+        """Initialize weights using Kaiming initialization for scratch training"""
+        for m in model.modules():
+            if isinstance(m, nn.Conv3d):
+                nn.init.kaiming_normal_(m.weight, mode='fan_out', nonlinearity='relu')
+                if m.bias is not None:
+                    nn.init.constant_(m.bias, 0)
+            elif isinstance(m, nn.BatchNorm3d):
+                nn.init.constant_(m.weight, 1)
+                nn.init.constant_(m.bias, 0)
+            elif isinstance(m, nn.Linear):
+                nn.init.kaiming_normal_(m.weight, mode='fan_out', nonlinearity='relu')
+                if m.bias is not None:
+                    nn.init.constant_(m.bias, 0)
     
     def _set_requires_grad(self, module, requires_grad: bool):
         """Set requires_grad for all parameters in module and handle BatchNorm eval mode"""
@@ -399,6 +451,11 @@ class BrainMRIModule(pl.LightningModule):
             #for i, g in enumerate(optimizer.param_groups):
             #    print(f"[opt] group{i} lr={g['lr']:.2e} params={sum(p.numel() for p in g['params']):,}")
 
+        # DEBUT learning rate logging
+        if hasattr(self, 'trainer') and self.trainer is not None:
+            # Log learning rate
+            print(f"[DEBUG] Initial LR: {optimizer.param_groups[0]['lr']}")
+            
         # ---------------------------
         # 2) Optional cosine warm-up scheduler
         # ---------------------------
@@ -706,12 +763,14 @@ def parse_args():
     ap.add_argument("--batch_size", type=int, default=6)
     ap.add_argument("--lr", type=float, default=1e-3)
     ap.add_argument("--weight_decay", type=float, default=5e-5)
-    ap.add_argument("--patience", type=int, default=12, help="Early stopping patience")
+    ap.add_argument("--patience", type=int, default=20, help="Early stopping patience")
     ap.add_argument("--grad_clip", type=float, default=1.0, help="Gradient clipping (0 to disable)")
     ap.add_argument("--amp", action="store_true", help="Mixed precision training")
     ap.add_argument("--num_workers", type=int, default=0)
+    ap.add_argument("--overfit_batches", type=float, default=0.0,
+                help="Overfit on a subset of batches for diagnostics (e.g., 1 for 1 batch, 0.01 for 1%%, 0 to disable)")
     ap.add_argument("--seed", type=int, default=1337)
-    ap.add_argument("--warmup_epochs", type=int, default=7,
+    ap.add_argument("--warmup_epochs", type=int, default=5,
                 help="Linear warm-up epochs before cosine decay (0 disables warm-up).")
     
     # Fine-tuning options
@@ -733,6 +792,8 @@ def parse_args():
                     help="Dropout rate for head layers (default: 0.2, lower than original 0.5)")
     ap.add_argument("--simple_head", action="store_true",
                     help="Use simple Linear(512->1) head instead of 2-layer MLP")
+    ap.add_argument("--init_weights", choices=["default", "kaiming"], default="default",
+                    help="Weight initialization method: 'default' uses MONAI defaults, 'kaiming' uses kaiming_normal")
     
     # Preprocessing
     ap.add_argument("--pixdim", type=float, nargs=3, default=[1.0,1.0,1.0], help="Target spacing")
@@ -748,6 +809,8 @@ def parse_args():
     ap.add_argument("--project_name", default="brain-mri-training", help="Project name for logging")
     ap.add_argument("--use_wandb", action="store_true", help="Use Weights & Biases logging")
     ap.add_argument("--use_tensorboard", action="store_true", help="Use TensorBoard logging")
+    ap.add_argument("--log_gradients", action="store_true",
+                help="Log gradients and weights to TensorBoard (only works with --use_tensorboard)")
     
     # Export embeddings and predictions
     ap.add_argument("--export_csv", default=None, help="CSV to embed with trained model")
@@ -896,8 +959,21 @@ def main():
     progress_bar = RichProgressBar()
     callbacks.append(progress_bar)
     
+    # Add gradient/weight logging callback if requested
+    if args.use_tensorboard and args.log_gradients:
+        grad_logger = GradientAndWeightLogger(log_every_n_steps=50)
+        callbacks.append(grad_logger)
+        print("📊 Gradient and weight logging enabled")
+    
     # Setup loggers
     loggers = setup_loggers(args)
+    # Convert overfit_batches: if exactly 1.0, use int(1) for "1 batch", otherwise use as-is
+    overfit_batches_val = 0
+    if args.overfit_batches > 0:
+        if args.overfit_batches == 1.0:
+            overfit_batches_val = 1  # Use exactly 1 batch
+        else:
+            overfit_batches_val = args.overfit_batches  # Use as fraction or count
     
     # Setup trainer
     trainer = pl.Trainer(
@@ -911,6 +987,7 @@ def main():
         deterministic='warn',  # Use 'warn' instead of True to avoid CUDA determinism issues
         enable_progress_bar=True,
         log_every_n_steps=10,
+        overfit_batches=overfit_batches_val,
     )
     
     # Train model

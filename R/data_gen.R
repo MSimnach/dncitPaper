@@ -171,8 +171,8 @@ data_gen <- function(seed, idx_sample=NULL, n_sample=NULL, idx_beta2=NULL, beta2
           # Run training pipeline
         train_script <- "inst/learn_embedding/run_train_test_pipeline.py"
         # Scale learning rate based on sample size
-        base_lr_scratch <- 5e-3
-        scaled_lr <- scale_lr_by_sample_size(base_lr_scratch, n_sample[[idx_sample]], scaling_method = "linear")
+        base_lr_scratch <- 5e-5
+        scaled_lr <- scale_lr_by_sample_size(base_lr_scratch, n_sample[[idx_sample]], scaling_method = "log")
         
         args_vec <- c("--input_csv", normalizePath(train_csv),
                       "--id_col", "id",
@@ -201,10 +201,10 @@ data_gen <- function(seed, idx_sample=NULL, n_sample=NULL, idx_beta2=NULL, beta2
           # Run training pipeline
         train_script <- "inst/learn_embedding/run_train_test_pipeline.py"
         # Scale learning rates based on sample size
-        base_lr_head <- 1.2e-3
+        base_lr_head <- 1.1e-3
         base_lr_backbone <- 7e-5
-        scaled_lr_head <- scale_lr_by_sample_size(base_lr_head, n_sample[[idx_sample]], scaling_method = "linear")
-        scaled_lr_backbone <- scale_lr_by_sample_size(base_lr_backbone, n_sample[[idx_sample]], scaling_method = "linear")
+        scaled_lr_head <- scale_lr_by_sample_size(base_lr_head, n_sample[[idx_sample]], scaling_method = "log")
+        scaled_lr_backbone <- base_lr_backbone #scale_lr_by_sample_size(base_lr_backbone, n_sample[[idx_sample]], scaling_method = "linear")
         
         args_vec <- c("--input_csv", normalizePath(train_csv),
                       "--id_col", "id",
@@ -237,8 +237,8 @@ data_gen <- function(seed, idx_sample=NULL, n_sample=NULL, idx_beta2=NULL, beta2
           # Run training pipeline
         train_script <- "inst/learn_embedding/run_train_test_pipeline.py"
         # Scale learning rate based on sample size
-        base_lr_frozen <- 3e-3
-        scaled_lr <- scale_lr_by_sample_size(base_lr_frozen, n_sample[[idx_sample]], scaling_method = "linear")
+        base_lr_frozen <- 3e-4
+        scaled_lr <- scale_lr_by_sample_size(base_lr_frozen, n_sample[[idx_sample]], scaling_method = "power", alpha = 0.05)
         
         args_vec <- c("--input_csv", normalizePath(train_csv),
                       "--id_col", "id",
@@ -429,16 +429,38 @@ run_python_safe <- function(script_path, args = character(), python = NULL) {
 #' @param n Current sample size
 #' @param n_base Reference sample size (default: 500)
 #' @param scaling_method Scaling method: "sqrt" or "linear" (default: "sqrt")
+#' @param alpha exponent for "power"/"capped_power"
+#' @param max_factor max scaling for "capped_power"
 #' @return Scaled learning rate
-scale_lr_by_sample_size <- function(base_lr, n, n_base = 460, scaling_method = "sqrt") {
-  if (scaling_method == "sqrt") {
-    # Square root scaling: commonly used for batch size scaling
-    scaled_lr <- base_lr * sqrt(n / n_base)
-  } else if (scaling_method == "linear") {
-    # Linear scaling
-    scaled_lr <- base_lr * (n / n_base)
-  } else {
-    stop("scaling_method must be either 'sqrt' or 'linear'")
-  }
+scale_lr_by_sample_size <- function(
+  base_lr,
+  n,
+  n_base = 460,
+  scaling_method = c("sqrt", "linear", "power", "log", "capped_power"),
+  alpha = 0.3,        # exponent for "power"/"capped_power"
+  max_factor = 3      # max scaling for "capped_power"
+) {
+  method <- match.arg(scaling_method)
+  ratio  <- n / n_base
+
+  if (ratio <= 0) stop("n and n_base must be > 0")
+
+  scaled_lr <- switch(
+    method,
+    "sqrt" = base_lr * sqrt(ratio),
+    "linear" = base_lr * ratio,
+    "power" = base_lr * ratio^alpha,
+    "log" = {
+      # Gentle log scaling, factor ~ 1 + k*log(ratio)
+      k <- 0.5
+      base_lr * (1 + k * log(ratio))
+    },
+    "capped_power" = {
+      raw_factor <- ratio^alpha
+      factor <- min(raw_factor, max_factor)
+      base_lr * factor
+    }
+  )
+
   return(scaled_lr)
 }

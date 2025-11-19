@@ -85,15 +85,21 @@ def main():
                        help="Dropout rate for MLP head")
     parser.add_argument("--unfreeze_after_epochs", type=int, default=0,
                        help="Gradual unfreezing: after this many epochs, also unfreeze the next earlier block.")
+    parser.add_argument("--init_weights", choices=["default", "kaiming"], default="default",
+                       help="Weight initialization: 'default' or 'kaiming'")
     
     # System
     parser.add_argument("--num_workers", type=int, default=0)
     parser.add_argument("--seed", type=int, default=1337)
     parser.add_argument("--amp", action="store_true", help="Use mixed precision training")
+    parser.add_argument("--overfit_batches", type=float, default=0.0,
+                       help="Overfit on subset of batches for diagnostics (0 to disable)")
     
     # Logging
     parser.add_argument("--use_wandb", action="store_true")
     parser.add_argument("--use_tensorboard", action="store_true")
+    parser.add_argument("--log_gradients", action="store_true",
+                       help="Log gradients and weights to TensorBoard")
     
     args = parser.parse_args()
     
@@ -175,6 +181,8 @@ def main():
         train_cmd.extend(["--unfreeze_from", args.unfreeze_from])
     if args.unfreeze_after_epochs > 0:
         train_cmd.extend(["--unfreeze_after_epochs", str(args.unfreeze_after_epochs)])
+    if args.init_weights != "default":
+        train_cmd.extend(["--init_weights", args.init_weights])
     
     # Set environment variable for the subprocess
     env = os.environ.copy()
@@ -183,10 +191,14 @@ def main():
     # Add optional flags
     if args.amp:
         train_cmd.append("--amp")
+    if args.overfit_batches > 0:
+        train_cmd.extend(["--overfit_batches", str(args.overfit_batches)])
     if args.use_wandb:
         train_cmd.append("--use_wandb")
     if args.use_tensorboard:
         train_cmd.append("--use_tensorboard")
+    if args.log_gradients:
+        train_cmd.append("--log_gradients")
     
     if not run_command(train_cmd, "Model training and embedding extraction", env=env):
         return 1
