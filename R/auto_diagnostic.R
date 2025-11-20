@@ -418,10 +418,14 @@ auto_diagnostic <- function(
   # Generate Y based on CI or No_CI
   if (is_ci == "CI" || is.null(is_ci)) {
     cat("Generating Y under Conditional Independence (CI)\n")
+    # Set seed specifically for Y generation to match training
+    set.seed(seed + 999999)  # must match offset in data_gen.R
     Y <- y_from_xz(Z[,c(-1)], eps_sigmaY, post_non_lin=post_non_lin, g_z=g_z, xz_mode=xz_mode)
     Y_info <- NULL  # Add this line
   } else if (is_ci == "No_CI") {
     cat("Generating Y under No Conditional Independence (No_CI)\n")
+    # Set seed specifically for Y generation to match training
+    set.seed(seed + 999999)  # must match offset in data_gen.R
     if (debug_Y) {
       Y_list <- y_from_xz(Z[,c(-1)], eps_sigmaY, X=as.matrix(fastsurfer_emb[,c(-1)]), 
                     gamma=0.5, post_non_lin=post_non_lin, g_z=g_z, debug=debug_Y, xz_mode=xz_mode)
@@ -604,7 +608,7 @@ auto_diagnostic <- function(
       cat("Evaluating", emb_name, "... ")
       
       emb_data <- trained_emb_list[[emb_name]]
-      # Embeddings already scaled from extraction, just remove id
+      # remove id
       X <- as.matrix(emb_data[,c(-1)])
       
 
@@ -621,12 +625,6 @@ auto_diagnostic <- function(
                     paste(zero_var_indices, collapse=", ")))
         cat(sprintf("      Removing these columns before correlation computation\n"))
         X <- X[, !zero_var_cols, drop=FALSE]
-      }
-
-      # Check for missing values before running glmnet
-      if (any(is.na(X)) || any(is.infinite(X))) {
-        cat("SKIPPED (NA or Inf values detected in embeddings)\n")
-        # ... rest of error handling
       }
 
       # DEBUG: Check Y variance
@@ -655,6 +653,99 @@ auto_diagnostic <- function(
       cat("  Max |correlation| with Y:", max(abs(cor_with_y), na.rm=TRUE), "\n")
       cat("  Features with |cor| > 0.1:", sum(abs(cor_with_y) > 0.1, na.rm=TRUE), "\n")
       cat("  Features with NA correlation:", sum(is.na(cor_with_y)), "\n")
+
+      # Check for cached predictions and evaluate them
+      predictions_path <- file.path(out_dir_diagnostic, emb_name, "predictions.parquet")
+      if (file.exists(predictions_path)) {
+        cat("\n  Found cached predictions, evaluating...\n")
+        tryCatch({
+          # Load predictions
+          predictions_df <- as.data.frame(arrow::read_parquet(predictions_path))
+          pred_ids <- data.table::fread(file.path(out_dir_diagnostic, emb_name, "embeddings_index.csv"), nThread = 1)
+          
+          # DEBUG: Show what we loaded
+          cat("  [DEBUG] Predictions shape:", nrow(predictions_df), "x", ncol(predictions_df), "\n")
+          cat("  [DEBUG] Predictions columns:", paste(colnames(predictions_df), collapse=", "), "\n")
+          cat("  [DEBUG] Pred IDs shape:", nrow(pred_ids), "\n")
+          cat("  [DEBUG] First few pred IDs:", paste(head(pred_ids$subject_id), collapse=", "), "\n")
+          cat("  [DEBUG] Y_id shape:", nrow(Y_id), "\n")
+          cat("  [DEBUG] First few Y IDs:", paste(head(Y_id$id), collapse=", "), "\n")
+          
+          # Get the prediction column (handle different naming conventions)
+          pred_col_name <- NULL
+          for (col_name in c("prediction", "pred_0", "preds")) {
+            if (col_name %in% colnames(predictions_df)) {
+              pred_col_name <- col_name
+              break
+            }
+          }
+          if (is.null(pred_col_name)) {
+            pred_col_name <- colnames(predictions_df)[1]  # Use first column
+          }
+          cat("  [DEBUG] Using prediction column:", pred_col_name, "\n")
+          
+          # Create predictions with IDs
+          preds_with_ids <- data.frame(
+            id = pred_ids$subject_id,
+            pred = predictions_df[[pred_col_name]]
+          )
+          
+          # Match predictions to Y using IDs
+          match_idx <- match(Y_id$id, preds_with_ids$id)
+          
+          # Check for missing matches
+          if (any(is.na(match_idx))) {
+            cat("  [WARNING]", sum(is.na(match_idx)), "IDs in Y not found in predictions\n")
+            cat("  [DEBUG] Missing IDs:", paste(head(Y_id$id[is.na(match_idx)], 10), collapse=", "), "\n")
+          }
+          
+          # Get matched predictions
+          y_pred <- preds_with_ids$pred[match_idx]
+          
+          # DEBUG: Check alignment
+          cat("  [DEBUG] Y length:", length(Y), "\n")
+          cat("  [DEBUG] y_pred length:", length(y_pred), "\n")
+          cat("  [DEBUG] NAs in y_pred:", sum(is.na(y_pred)), "\n")
+          cat("  [DEBUG] First few Y values:", paste(round(head(Y), 4), collapse=", "), "\n")
+          cat("  [DEBUG] First few y_pred values:", paste(round(head(y_pred, na.rm=FALSE), 4), collapse=", "), "\n")
+          
+          # Correlation check
+          if (!any(is.na(y_pred))) {
+            cor_Y_pred <- cor(Y, y_pred)
+            cat("  [DEBUG] Correlation between Y and predictions:", round(cor_Y_pred, 4), "\n")
+          }
+
+          # Ensure predictions align with Y
+          if (length(y_pred) == length(Y) && !any(is.na(y_pred))) {
+            # Calculate metrics
+            mse_cached <- mean((Y - y_pred)^2)
+            r2_cached <- 1 - sum((Y - y_pred)^2) / sum((Y - mean(Y))^2)
+            
+            cat("  Cached predictions - R²=", round(r2_cached, 4), 
+                ", MSE=", round(mse_cached, 4), "\n")
+            
+            # Add to results list with a different name to distinguish from glmnet results
+            results_list[[length(results_list) + 1]] <- data.frame(
+              embedding_type = "trained_cached",
+              embedding_name = paste0(emb_name, "_cached_pred"),
+              r2_test = r2_cached,
+              mse_test = mse_cached,
+              lambda_min = NA,
+              lambda_1se = NA,
+              lambda_used = NA,
+              stringsAsFactors = FALSE
+            )
+          } else {
+            cat("  [WARNING] Predictions length mismatch: ", length(y_pred), 
+                " vs Y length: ", length(Y), "\n")
+          }
+        }, error = function(e) {
+          cat("  [ERROR] Failed to load/evaluate cached predictions: ", 
+              conditionMessage(e), "\n")
+        })
+      }
+      
+
       # Check for missing values before running glmnet
       if (any(is.na(X)) || any(is.infinite(X))) {
         cat("SKIPPED (NA or Inf values detected in embeddings)\n")

@@ -630,16 +630,16 @@ class BrainMRIDataModule(pl.LightningDataModule):
         
     def _build_transforms(self):
         t = [LoadImaged(keys=["image"]), EnsureChannelFirstd(keys=["image"])]
-        if not self.args.no_reorient:
-            t += [Orientationd(keys=["image"], axcodes="RAS", labels=None)]
-        if not self.args.no_resample:
-            t += [Spacingd(keys=["image"], pixdim=tuple(self.args.pixdim), mode=("bilinear"))]
-        if not self.args.no_cropfg:
-            t += [CropForegroundd(keys=["image"], source_key="image")]
-        t += [ResizeWithPadOrCropd(keys=["image"], spatial_size=tuple(self.args.roi))]
-        t += [ScaleIntensityRangePercentilesd(
-                keys=["image"], lower=1, upper=99, b_min=0.0, b_max=1.0, clip=True
-             )]
+        # if not self.args.no_reorient:
+        #     t += [Orientationd(keys=["image"], axcodes="RAS", labels=None)]
+        # if not self.args.no_resample:
+        #     t += [Spacingd(keys=["image"], pixdim=tuple(self.args.pixdim), mode=("bilinear"))]
+        # if not self.args.no_cropfg:
+        #     t += [CropForegroundd(keys=["image"], source_key="image")]
+        # t += [ResizeWithPadOrCropd(keys=["image"], spatial_size=tuple(self.args.roi))]
+        # t += [ScaleIntensityRangePercentilesd(
+        #         keys=["image"], lower=1, upper=99, b_min=0.0, b_max=1.0, clip=True
+        #      )]
         t += [ToTensord(keys=["image"])]
         return Compose(t)
     

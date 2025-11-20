@@ -87,6 +87,8 @@ data_gen <- function(seed, idx_sample=NULL, n_sample=NULL, idx_beta2=NULL, beta2
   #X_obs <- scale(X_obs)
 
   if(is.null(beta2s)){
+    # Set seed specifically for Y generation (deterministic across different sample sizes)
+    set.seed(seed + 999999)  # offset to separate from data sampling seed
     if (debug) {
       Y <- y_from_xz(Z[,c(-1), drop=FALSE], eps_sigmaY, post_non_lin=post_non_lin, g_z=g_z, debug=debug)
     } else {
@@ -94,6 +96,8 @@ data_gen <- function(seed, idx_sample=NULL, n_sample=NULL, idx_beta2=NULL, beta2
     }
     is_ci <- "CI"
   }else{
+    # Set seed specifically for Y generation (deterministic across different sample sizes)
+    set.seed(seed + 999999)  # offset to separate from data sampling seed
     if (debug) {
       Y <- y_from_xz(Z[,c(-1), drop=FALSE], eps_sigmaY, X=as.matrix(X_orig[,c(-1), drop=FALSE]), gamma=beta2s[[idx_beta2]], post_non_lin=post_non_lin, g_z=g_z, debug=debug, xz_mode=xz_mode)
     } else {
