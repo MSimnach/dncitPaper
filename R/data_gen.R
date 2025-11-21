@@ -175,8 +175,8 @@ data_gen <- function(seed, idx_sample=NULL, n_sample=NULL, idx_beta2=NULL, beta2
           # Run training pipeline
         train_script <- "inst/learn_embedding/run_train_test_pipeline.py"
         # Scale learning rate based on sample size
-        base_lr_scratch <- 5e-5
-        scaled_lr <- scale_lr_by_sample_size(base_lr_scratch, n_sample[[idx_sample]], scaling_method = "log")
+        base_lr_scratch <- 3e-4
+        scaled_lr <- base_lr_scratch#scale_lr_by_sample_size(base_lr_scratch, n_sample[[idx_sample]], scaling_method = "power",alpha=0.05)
         
         args_vec <- c("--input_csv", normalizePath(train_csv),
                       "--id_col", "id",
@@ -205,10 +205,10 @@ data_gen <- function(seed, idx_sample=NULL, n_sample=NULL, idx_beta2=NULL, beta2
           # Run training pipeline
         train_script <- "inst/learn_embedding/run_train_test_pipeline.py"
         # Scale learning rates based on sample size
-        base_lr_head <- 1.1e-3
+        base_lr_head <- 1.2e-3
         base_lr_backbone <- 7e-5
-        scaled_lr_head <- scale_lr_by_sample_size(base_lr_head, n_sample[[idx_sample]], scaling_method = "log")
-        scaled_lr_backbone <- base_lr_backbone #scale_lr_by_sample_size(base_lr_backbone, n_sample[[idx_sample]], scaling_method = "linear")
+        scaled_lr_head <- base_lr_head#scale_lr_by_sample_size(base_lr_head, n_sample[[idx_sample]], scaling_method = "log")
+        scaled_lr_backbone <- base_lr_backbone#scale_lr_by_sample_size(base_lr_backbone, n_sample[[idx_sample]], scaling_method = "power", alpha = 0.05)
         
         args_vec <- c("--input_csv", normalizePath(train_csv),
                       "--id_col", "id",
@@ -241,8 +241,8 @@ data_gen <- function(seed, idx_sample=NULL, n_sample=NULL, idx_beta2=NULL, beta2
           # Run training pipeline
         train_script <- "inst/learn_embedding/run_train_test_pipeline.py"
         # Scale learning rate based on sample size
-        base_lr_frozen <- 3e-4
-        scaled_lr <- scale_lr_by_sample_size(base_lr_frozen, n_sample[[idx_sample]], scaling_method = "power", alpha = 0.05)
+        base_lr_frozen <- 1e-4
+        scaled_lr <- base_lr_frozen#scale_lr_by_sample_size(base_lr_frozen, n_sample[[idx_sample]], scaling_method = "power", alpha = 0.05)
         
         args_vec <- c("--input_csv", normalizePath(train_csv),
                       "--id_col", "id",

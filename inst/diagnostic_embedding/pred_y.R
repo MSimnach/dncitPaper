@@ -244,7 +244,110 @@ xz_modes <- c('Sigma=I_p')
 seeds <- c(521:560)
 eps_sigmaY_list <- c(0.5)
 embedding_obs <- c('medicalnet_ft_frozen', 'medicalnet_ft', 'scratch')
+Y_age <- TRUE
+standardize_ridge_lasso <- TRUE
+for(eps_sigmaY in eps_sigmaY_list){
+  for(seed in seeds){
+    # Cache baseline results per seed (constant across sample sizes)
+    baseline_cache <- NULL
+    for(xz_mode in xz_modes){
+      for(idx_sample in idx_samples){
+        if(idx_sample == 1){
+          # Compute baseline results for first sample size and cache them
+          results <- auto_diagnostic(
+            experiment_dir = paste0("/sc/home/marco.simnacher/ukbiobank/data/No_CI/", n_sample[idx_sample], "/", seed, "/eps_sigmaY=", as.character(eps_sigmaY)),
+            embedding_obs = embedding_obs,
+            seed = seed,
+            debug_Y = FALSE,
+            lambda_choice = "min",
+            Y_age = Y_age,
+            standardize_ridge_lasso = standardize_ridge_lasso,
+            xz_mode = xz_mode
+          )
+          baseline_cache <- results$baseline_results
+        } else {
+          # Reuse cached baseline results for subsequent sample sizes
+          results <- auto_diagnostic(
+            experiment_dir = paste0("/sc/home/marco.simnacher/ukbiobank/data/No_CI/", n_sample[idx_sample], "/", seed, "/eps_sigmaY=", as.character(eps_sigmaY)),
+            embedding_obs = embedding_obs,
+            seed = seed,
+            debug_Y = FALSE,
+            baseline_results_cached = baseline_cache,
+            lambda_choice = "min",
+            Y_age = Y_age,
+            standardize_ridge_lasso = standardize_ridge_lasso,
+            xz_mode = xz_mode
+          )
+        }
+      }
+    }
+  }
+}
+
+
+### for age prediction with different sample sizes
+idx_samples <- 1
+n_sample = list(10000)
+xz_modes <- c('Sigma=I_p')
+seeds <- c(1)
+eps_sigmaY_list <- c(1)
+embedding_obs <- c('scratch/lrlr1e-03', 'scratch/lrlr1e-04', 'scratch/lrlr3e-04', 'scratch/lrlr5e-04', 'scratch/lrlr5e-05',
+'medicalnet_ft_frozen/lrlr1e-02', 'medicalnet_ft_frozen/lrlr1e-03', 'medicalnet_ft_frozen/lrlr1e-04', 
+'medicalnet_ft_frozen/lrlr1e-05', 'medicalnet_ft_frozen/lrlr5e-04',
+'medicalnet_ft/lr_head1e-03_lr_backbone1e-04', 'medicalnet_ft/lr_head1e-03_lr_backbone7e-05',
+'medicalnet_ft/lr_head2e-03_lr_backbone9e-05', 'medicalnet_ft/lr_head1e-03_lr_backbone8e-04',
+'medicalnet_ft/lr_head1e-03_lr_backbone8e-05', 'medicalnet_ft/lrlr1e-03_lrlr7e-05',
+'medicalnet_ft/lrlr1e-03_lrlr8e-05', 'medicalnet_ft/lrlr3e-03_lrlr8e-05' )#c('medicalnet_ft_frozen', 'medicalnet_ft', 'scratch')
 Y_age <- FALSE
+standardize_ridge_lasso <- TRUE
+for(eps_sigmaY in eps_sigmaY_list){
+  for(seed in seeds){
+    # Cache baseline results per seed (constant across sample sizes)
+    baseline_cache <- NULL
+    for(xz_mode in xz_modes){
+      for(idx_sample in idx_samples){
+        if(idx_sample == 1){
+          # Compute baseline results for first sample size and cache them
+          results <- auto_diagnostic(
+            experiment_dir = paste0("/sc/home/marco.simnacher/ukbiobank/data/No_CI/", n_sample[idx_sample], "/", seed, "/eps_sigmaY=", as.character(eps_sigmaY)),
+            embedding_obs = embedding_obs,
+            seed = seed,
+            debug_Y = FALSE,
+            lambda_choice = "min",
+            Y_age = Y_age,
+            standardize_ridge_lasso = standardize_ridge_lasso,
+            xz_mode = xz_mode
+          )
+          baseline_cache <- results$baseline_results
+        } else {
+          # Reuse cached baseline results for subsequent sample sizes
+          results <- auto_diagnostic(
+            experiment_dir = paste0("/sc/home/marco.simnacher/ukbiobank/data/No_CI/", n_sample[idx_sample], "/", seed, "/eps_sigmaY=", as.character(eps_sigmaY)),
+            embedding_obs = embedding_obs,
+            seed = seed,
+            debug_Y = FALSE,
+            baseline_results_cached = baseline_cache,
+            lambda_choice = "min",
+            Y_age = Y_age,
+            standardize_ridge_lasso = standardize_ridge_lasso,
+            xz_mode = xz_mode
+          )
+        }
+      }
+    }
+  }
+}
+
+
+idx_samples <- 1
+n_sample = list(460)
+xz_modes <- c('Sigma=I_p')
+seeds <- c(51)
+eps_sigmaY_list <- c(1)
+embedding_obs <- c('scratch/lrlr1e-04', 'scratch/lrlr8e-05', 
+'medicalnet_ft_frozen/lrlr1e-04', 
+'medicalnet_ft/lr_head1e-03_lr_backbone8e-05', 'medicalnet_ft/lr_head1e-03_lr_backbone7e-05')#c('medicalnet_ft_frozen', 'medicalnet_ft', 'scratch')
+Y_age <- TRUE
 standardize_ridge_lasso <- TRUE
 for(eps_sigmaY in eps_sigmaY_list){
   for(seed in seeds){

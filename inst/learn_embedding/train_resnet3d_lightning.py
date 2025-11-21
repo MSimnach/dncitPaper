@@ -52,36 +52,38 @@ MODEL_FNS = {
 BACKBONE_ORDER = ["conv1", "bn1", "act", "maxpool", "layer1", "layer2", "layer3", "layer4", "avgpool", "fc"]
 
 class GradientAndWeightLogger(pl.Callback):
-    """Log gradient and weight statistics to TensorBoard"""
+    """Log weight distributions to TensorBoard"""
     
     def __init__(self, log_every_n_steps=50):
         super().__init__()
         self.log_every_n_steps = log_every_n_steps
     
-    def on_after_backward(self, trainer, pl_module):
-        """Log gradient norms after backward pass"""
-        if trainer.global_step % self.log_every_n_steps != 0:
-            return
-            
-        # Log gradient norms for each layer
-        for name, param in pl_module.named_parameters():
-            if param.grad is not None and param.requires_grad:
-                # Log gradient statistics
-                grad_norm = param.grad.norm(2).item()
-                pl_module.log(f'gradients/{name}_norm', grad_norm)
-                
-                # Log gradient mean and std for debugging
-                pl_module.log(f'gradients/{name}_mean', param.grad.mean().item())
-                pl_module.log(f'gradients/{name}_std', param.grad.std().item())
-    
     def on_train_epoch_end(self, trainer, pl_module):
-        """Log weight statistics at epoch end"""
+        """Log weight distributions to TensorBoard"""
+        # Find TensorBoard logger
+        tb_logger = None
+        if isinstance(trainer.logger, TensorBoardLogger):
+            tb_logger = trainer.logger
+        elif hasattr(trainer, 'loggers'):
+            for logger in trainer.loggers:
+                if isinstance(logger, TensorBoardLogger):
+                    tb_logger = logger
+                    break
+        
+        if tb_logger is None:
+            return  # No TensorBoard logger available
+        
+        # Log only head layers or specific layers to save memory
         for name, param in pl_module.named_parameters():
-            if param.requires_grad:
-                # Log weight statistics
-                pl_module.log(f'weights/{name}_norm', param.norm(2).item())
-                pl_module.log(f'weights/{name}_mean', param.mean().item())
-                pl_module.log(f'weights/{name}_std', param.std().item())
+            # Only log head (fc) layers to reduce memory usage
+            if param.requires_grad and ('fc' in name or 'layer4.1' in name):
+                param_cpu = param.data.detach().cpu()
+                tb_logger.experiment.add_histogram(
+                    f'weights/{name}',
+                    param_cpu,
+                    global_step=trainer.global_step
+                )
+                del param_cpu
 
 class BrainMRIModule(pl.LightningModule):
     """PyTorch Lightning module for 3D ResNet brain MRI training"""
@@ -176,15 +178,48 @@ class BrainMRIModule(pl.LightningModule):
                 nn.init.kaiming_normal_(m.weight, mode='fan_out', nonlinearity='relu')
                 if m.bias is not None:
                     nn.init.constant_(m.bias, 0)
-    
+                    
+    def _set_backbone_bn_eval(self):
+        """Force frozen backbone BatchNorm layers to eval mode"""
+        if not self.args.freeze_backbone and self.args.unfreeze_from is None:
+            return
+        
+        # Determine which layers should have frozen BN
+        frozen_layers = []
+        if self.args.freeze_backbone:
+            # All backbone layers are frozen
+            frozen_layers = [name for name in BACKBONE_ORDER if name != "fc"]
+        elif self.args.unfreeze_from is not None:
+            # Layers before unfreeze_from are frozen
+            start_idx = BACKBONE_ORDER.index(self.args.unfreeze_from)
+            frozen_layers = BACKBONE_ORDER[:start_idx]
+        
+        # Set BN in frozen layers to eval mode
+        for name in frozen_layers:
+            if hasattr(self.model, name):
+                module = getattr(self.model, name)
+                for m in module.modules():
+                    if isinstance(m, (nn.BatchNorm3d, nn.InstanceNorm3d)):
+                        m.eval()
+                        # Ensure BN params never get gradients
+                        if m.weight is not None:
+                            m.weight.requires_grad_(False)
+                        if m.bias is not None:
+                            m.bias.requires_grad_(False)
+
+    def on_train_epoch_start(self):
+        """Called by Lightning after model.train() is set"""
+        # Restore frozen backbone BN to eval mode after Lightning calls model.train()
+        self._set_backbone_bn_eval()
+        
     def _set_requires_grad(self, module, requires_grad: bool):
         """Set requires_grad for all parameters in module and handle BatchNorm eval mode"""
         for p in module.parameters():
             p.requires_grad = requires_grad
         # Set BatchNorm mode based on requires_grad
-        for m in module.modules():
-            if isinstance(m, (nn.BatchNorm3d, nn.InstanceNorm3d)):
-                m.train() if requires_grad else m.eval()
+        #for m in module.modules():
+        #    if isinstance(m, (nn.BatchNorm3d, nn.InstanceNorm3d)):
+       #         m.train() if requires_grad else m.eval()
 
     def _freeze_all(self):
         """Freeze all backbone layers"""
@@ -267,7 +302,7 @@ class BrainMRIModule(pl.LightningModule):
                 if hasattr(last_layer, 'bias') and last_layer.bias is not None:
                     last_layer.bias.fill_(y_mean)
                     # Optionally scale down the last weight matrix
-                    last_layer.weight.mul_(0.01)
+                    #last_layer.weight.mul_(0.01)
                     print(f"🎯 Initialized final layer bias to {y_mean:.1f} and scaled weights by 0.01")
     
     def _get_criterion(self):
@@ -630,16 +665,16 @@ class BrainMRIDataModule(pl.LightningDataModule):
         
     def _build_transforms(self):
         t = [LoadImaged(keys=["image"]), EnsureChannelFirstd(keys=["image"])]
-        # if not self.args.no_reorient:
-        #     t += [Orientationd(keys=["image"], axcodes="RAS", labels=None)]
-        # if not self.args.no_resample:
-        #     t += [Spacingd(keys=["image"], pixdim=tuple(self.args.pixdim), mode=("bilinear"))]
-        # if not self.args.no_cropfg:
-        #     t += [CropForegroundd(keys=["image"], source_key="image")]
-        # t += [ResizeWithPadOrCropd(keys=["image"], spatial_size=tuple(self.args.roi))]
-        # t += [ScaleIntensityRangePercentilesd(
-        #         keys=["image"], lower=1, upper=99, b_min=0.0, b_max=1.0, clip=True
-        #      )]
+        if not self.args.no_reorient:
+            t += [Orientationd(keys=["image"], axcodes="RAS", labels=None)]
+        if not self.args.no_resample:
+            t += [Spacingd(keys=["image"], pixdim=tuple(self.args.pixdim), mode=("bilinear"))]
+        if not self.args.no_cropfg:
+            t += [CropForegroundd(keys=["image"], source_key="image")]
+        t += [ResizeWithPadOrCropd(keys=["image"], spatial_size=tuple(self.args.roi))]
+        t += [ScaleIntensityRangePercentilesd(
+                keys=["image"], lower=1, upper=99, b_min=0.0, b_max=1.0, clip=True
+             )]
         t += [ToTensord(keys=["image"])]
         return Compose(t)
     
@@ -763,14 +798,14 @@ def parse_args():
     ap.add_argument("--batch_size", type=int, default=6)
     ap.add_argument("--lr", type=float, default=1e-3)
     ap.add_argument("--weight_decay", type=float, default=5e-5)
-    ap.add_argument("--patience", type=int, default=20, help="Early stopping patience")
+    ap.add_argument("--patience", type=int, default=25, help="Early stopping patience")
     ap.add_argument("--grad_clip", type=float, default=1.0, help="Gradient clipping (0 to disable)")
     ap.add_argument("--amp", action="store_true", help="Mixed precision training")
     ap.add_argument("--num_workers", type=int, default=0)
     ap.add_argument("--overfit_batches", type=float, default=0.0,
                 help="Overfit on a subset of batches for diagnostics (e.g., 1 for 1 batch, 0.01 for 1%%, 0 to disable)")
     ap.add_argument("--seed", type=int, default=1337)
-    ap.add_argument("--warmup_epochs", type=int, default=5,
+    ap.add_argument("--warmup_epochs", type=int, default=7,
                 help="Linear warm-up epochs before cosine decay (0 disables warm-up).")
     
     # Fine-tuning options
@@ -810,7 +845,7 @@ def parse_args():
     ap.add_argument("--use_wandb", action="store_true", help="Use Weights & Biases logging")
     ap.add_argument("--use_tensorboard", action="store_true", help="Use TensorBoard logging")
     ap.add_argument("--log_gradients", action="store_true",
-                help="Log gradients and weights to TensorBoard (only works with --use_tensorboard)")
+                help="Log weight distributions to TensorBoard (only works with --use_tensorboard)")
     
     # Export embeddings and predictions
     ap.add_argument("--export_csv", default=None, help="CSV to embed with trained model")
@@ -959,11 +994,11 @@ def main():
     progress_bar = RichProgressBar()
     callbacks.append(progress_bar)
     
-    # Add gradient/weight logging callback if requested
+    # Add weight distribution logging callback if requested
     if args.use_tensorboard and args.log_gradients:
         grad_logger = GradientAndWeightLogger(log_every_n_steps=50)
         callbacks.append(grad_logger)
-        print("📊 Gradient and weight logging enabled")
+        print("📊 Weight distribution logging enabled")
     
     # Setup loggers
     loggers = setup_loggers(args)

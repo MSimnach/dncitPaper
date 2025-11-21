@@ -18,9 +18,9 @@ library(RColorBrewer)
 cat("=== Collecting Diagnostic Results ===\n")
 
 # Parameters
-n_samples <- c(460, 1100, 5000, 10000)#, 10000)#c(145, 256, 350, 460, 825, 1100, 1475, 1964, 5000, 10000)
-seeds <- c(521:560)#c(51:60, 61:64, 71:74)#1:200
-eps_sigmaY_all <- c(0.5)
+n_samples <- c(460)#c(460, 1100, 5000, 10000)#, 10000)#c(145, 256, 350, 460, 825, 1100, 1475, 1964, 5000, 10000)
+seeds <- c(51)#c(51:60, 61:64, 71:74)#1:200
+eps_sigmaY_all <- c(1)
 conditions <- c("CI", "No_CI")
 base_paths <- list(
   "CI" = "/sc/home/marco.simnacher/ukbiobank/data/CI",
@@ -108,7 +108,14 @@ cat("=== Preparing Data for Visualization ===\n")
 
 # Define embedding types
 constant_embeddings <- c("fastsurfer", "freesurfer", "condVAE", "medicalnet", "pooled_brainsynth", "tucker_brainsynth")
-varying_embeddings <- c("medicalnet_ft", "medicalnet_ft_frozen", "scratch")
+varying_embeddings <- c('scratch/lrlr1e-04', 'medicalnet_ft_frozen/lrlr1e-04', 
+'medicalnet_ft/lr_head1e-03_lr_backbone8e-05', 'medicalnet_ft/lr_head1e-03_lr_backbone7e-05')
+# varying_embeddings <- c('scratch/lrlr1e-03', 'scratch/lrlr1e-04', 'scratch/lrlr3e-04', 'scratch/lrlr5e-04', 'scratch/lrlr5e-05',
+# 'medicalnet_ft_frozen/lrlr1e-02', 'medicalnet_ft_frozen/lrlr1e-03', 'medicalnet_ft_frozen/lrlr1e-04', 
+# 'medicalnet_ft_frozen/lrlr1e-05', 'medicalnet_ft_frozen/lrlr5e-04',
+# 'medicalnet_ft/lr_head1e-03_lr_backbone1e-04', 'medicalnet_ft/lr_head1e-03_lr_backbone7e-05',
+# 'medicalnet_ft/lr_head2e-03_lr_backbone9e-05', 'medicalnet_ft/lr_head1e-03_lr_backbone8e-04', 'medicalnet_ft/lrlr1e-03_lrlr7e-05',
+# 'medicalnet_ft/lrlr1e-03_lrlr8e-05', 'medicalnet_ft/lrlr3e-03_lrlr8e-05' )#c("medicalnet_ft", "medicalnet_ft_frozen", "scratch")
 
 # Function to prepare plot data
 prepare_plot_data <- function(combined_results) {
@@ -117,7 +124,7 @@ prepare_plot_data <- function(combined_results) {
   }
   
   plot_data_all <- combined_results %>%
-    filter(eps_sigmaY == 0.5) %>%
+    filter(eps_sigmaY == 1) %>%
     mutate(
       # Convert to factors for proper ordering
       n_sample = factor(n_sample, levels = c(145, 256, 350, 460, 825, 1100, 1475, 1964, 5000, 10000)),

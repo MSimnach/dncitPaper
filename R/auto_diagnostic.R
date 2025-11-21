@@ -663,14 +663,6 @@ auto_diagnostic <- function(
           predictions_df <- as.data.frame(arrow::read_parquet(predictions_path))
           pred_ids <- data.table::fread(file.path(out_dir_diagnostic, emb_name, "embeddings_index.csv"), nThread = 1)
           
-          # DEBUG: Show what we loaded
-          cat("  [DEBUG] Predictions shape:", nrow(predictions_df), "x", ncol(predictions_df), "\n")
-          cat("  [DEBUG] Predictions columns:", paste(colnames(predictions_df), collapse=", "), "\n")
-          cat("  [DEBUG] Pred IDs shape:", nrow(pred_ids), "\n")
-          cat("  [DEBUG] First few pred IDs:", paste(head(pred_ids$subject_id), collapse=", "), "\n")
-          cat("  [DEBUG] Y_id shape:", nrow(Y_id), "\n")
-          cat("  [DEBUG] First few Y IDs:", paste(head(Y_id$id), collapse=", "), "\n")
-          
           # Get the prediction column (handle different naming conventions)
           pred_col_name <- NULL
           for (col_name in c("prediction", "pred_0", "preds")) {
@@ -702,10 +694,6 @@ auto_diagnostic <- function(
           # Get matched predictions
           y_pred <- preds_with_ids$pred[match_idx]
           
-          # DEBUG: Check alignment
-          cat("  [DEBUG] Y length:", length(Y), "\n")
-          cat("  [DEBUG] y_pred length:", length(y_pred), "\n")
-          cat("  [DEBUG] NAs in y_pred:", sum(is.na(y_pred)), "\n")
           cat("  [DEBUG] First few Y values:", paste(round(head(Y), 4), collapse=", "), "\n")
           cat("  [DEBUG] First few y_pred values:", paste(round(head(y_pred, na.rm=FALSE), 4), collapse=", "), "\n")
           

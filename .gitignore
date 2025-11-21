@@ -4,6 +4,9 @@
 .Ruserdata
 .Renviron
 .Rprofile
+
+#logs
+logs/*
 inst/logs
 inst/Results
 Results/
