@@ -187,7 +187,7 @@ data_gen <- function(seed, idx_sample=NULL, n_sample=NULL, idx_beta2=NULL, beta2
                       "--epochs", "100",
                       "--batch_size", "16",
                       "--test_size", "0.5",
-                      "--weight_decay", "0.0",
+                      "--weight_decay", "0.000001",
                       "--val_frac", "0.1",
                       "--amp",
                       "--lr", sprintf("%.6e", scaled_lr),
@@ -206,7 +206,7 @@ data_gen <- function(seed, idx_sample=NULL, n_sample=NULL, idx_beta2=NULL, beta2
         train_script <- "inst/learn_embedding/run_train_test_pipeline.py"
         # Scale learning rates based on sample size
         base_lr_head <- 1.2e-3
-        base_lr_backbone <- 7e-5
+        base_lr_backbone <- 8e-5
         scaled_lr_head <- base_lr_head#scale_lr_by_sample_size(base_lr_head, n_sample[[idx_sample]], scaling_method = "log")
         scaled_lr_backbone <- base_lr_backbone#scale_lr_by_sample_size(base_lr_backbone, n_sample[[idx_sample]], scaling_method = "power", alpha = 0.05)
         
@@ -254,7 +254,7 @@ data_gen <- function(seed, idx_sample=NULL, n_sample=NULL, idx_beta2=NULL, beta2
                       "--batch_size", "16",
                       "--test_size", "0.5",
                       "--val_frac", "0.1",
-                      "--weight_decay", "0.0",
+                      "--weight_decay", "0.000001",
                       "--amp",
                       "--lr", sprintf("%.6e", scaled_lr),
                       "--use_tensorboard",
