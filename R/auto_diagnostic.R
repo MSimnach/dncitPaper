@@ -363,7 +363,7 @@ auto_diagnostic <- function(
   
   # Add noise
   epsZ <- matrix(stats::rnorm((nrow(Z)*(ncol(Z)-1)), 0, eps_sigmaZ), nrow=nrow(Z), ncol=ncol(Z)-1)
-  Z[,c(-1)] <- Z[,c(-1)]+epsZ
+  Z[,c(-1)] <- Z[,c(-1), drop=FALSE]+epsZ
   
   # Filter to common IDs
   Z <- Z[match(common_ids, Z$id), ]
@@ -391,7 +391,7 @@ auto_diagnostic <- function(
   }
   
   # Standardize continuous confounders
-  Z[,c(-1)] <- Z[,c(-1)] %>% 
+  Z[,c(-1)] <- Z[,c(-1), drop=FALSE] %>% 
     dplyr::mutate(dplyr::across(dplyr::where(function(x) !is_binary(x)), scale))
   
   cat("Processed confounders:", ncol(Z)-1, "variables after preprocessing\n\n")
@@ -420,19 +420,19 @@ auto_diagnostic <- function(
     cat("Generating Y under Conditional Independence (CI)\n")
     # Set seed specifically for Y generation to match training
     set.seed(seed + 999999)  # must match offset in data_gen.R
-    Y <- y_from_xz(Z[,c(-1)], eps_sigmaY, post_non_lin=post_non_lin, g_z=g_z, xz_mode=xz_mode)
+    Y <- y_from_xz(Z[,c(-1), drop=FALSE], eps_sigmaY, post_non_lin=post_non_lin, g_z=g_z, xz_mode=xz_mode)
     Y_info <- NULL  # Add this line
   } else if (is_ci == "No_CI") {
     cat("Generating Y under No Conditional Independence (No_CI)\n")
     # Set seed specifically for Y generation to match training
     set.seed(seed + 999999)  # must match offset in data_gen.R
     if (debug_Y) {
-      Y_list <- y_from_xz(Z[,c(-1)], eps_sigmaY, X=as.matrix(fastsurfer_emb[,c(-1)]), 
+      Y_list <- y_from_xz(Z[,c(-1), drop=FALSE], eps_sigmaY, X=as.matrix(fastsurfer_emb[,c(-1)]), 
                     gamma=0.5, post_non_lin=post_non_lin, g_z=g_z, debug=debug_Y, xz_mode=xz_mode)
       Y <- Y_list$Y
       Y_info <- Y_list$info
     } else {
-      Y <- y_from_xz(Z[,c(-1)], eps_sigmaY, X=as.matrix(fastsurfer_emb[,c(-1)]), 
+      Y <- y_from_xz(Z[,c(-1), drop=FALSE], eps_sigmaY, X=as.matrix(fastsurfer_emb[,c(-1)]), 
                     gamma=0.5, post_non_lin=post_non_lin, g_z=g_z, xz_mode=xz_mode)
       Y_info <- NULL  # Add this line
     }

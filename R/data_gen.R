@@ -139,6 +139,16 @@ data_gen <- function(seed, idx_sample=NULL, n_sample=NULL, idx_beta2=NULL, beta2
     ## Train or skip if embeddings already exist
     if (file.exists(embeddings_path)){
       cat("✅ Embedding directory already exists. Skipping training...\n")
+      # Read the saved training time from previous run
+      training_time_path <- file.path(embedding_dir, 'training_time.csv')
+      if (file.exists(training_time_path)) {
+        training_time_df <- read.csv(training_time_path)
+        training_time <- training_time_df$training_time_seconds[1]
+        cat(sprintf("📊 Retrieved training time from previous run: %.2f seconds\n", training_time))
+      } else {
+        cat("⚠️  Warning: training_time.csv not found. Setting training_time to 0.\n")
+        training_time <- 0
+      }
     } else {
       dir.create(embedding_dir, recursive = TRUE, showWarnings = FALSE)
       script_dir <- "inst/learn_embedding"
