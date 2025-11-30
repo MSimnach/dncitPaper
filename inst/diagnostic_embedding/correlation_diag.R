@@ -66,7 +66,7 @@ large_fast_rois_ids <- colnames_fast[large_fast_rois_idx]
 ids_fast[as.character(ids_fast$ID) %in% large_fast_rois_ids,]
 
 # for all seeds, get weights for X_orig in data gen
-seeds <- c(601:625)
+seeds <- c(601:604)
 debug_Y <- TRUE
 eps_sigmaY <- 0.5
 post_non_lin <- 1
@@ -160,11 +160,11 @@ combined_results_y <- rbindlist(all_results_y)
 constant_embeddings <- c("fastsurfer", "freesurfer", "condVAE", "medicalnet")#, "pooled_brainsynth", "tucker_brainsynth")
 varying_embeddings <- c('medicalnet_ft', 'scratch')
 embeddings <- c(constant_embeddings, varying_embeddings)
+
+
 # correlation R^2 per embedding and large share rank
 cor_results <- data.frame(embedding = embeddings, r2_share = NA, test_p_val = NA, r2_share_rank = NA, r2_scratch_medicalnet = NA)
 # Create a list of matrices for R^2 values, one matrix per sample size and condition
-# Rows: seeds, Columns: embeddings
-# Create a list of matrices for R^2 values, one matrix per sample size
 # Rows: seeds, Columns: embeddings
 r2_matrices_by_sample_size_and_condition <- list()
 

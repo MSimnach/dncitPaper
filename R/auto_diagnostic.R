@@ -444,7 +444,7 @@ auto_diagnostic <- function(
       stop("Age column not found in Z")
     }
   }
-  
+  Y <- as.vector(Y)
   # Save Y
   Y_id <- data.frame(id = fastsurfer_emb$id, Y = Y)
   if (is_ci == "Y_age") {
@@ -474,6 +474,101 @@ auto_diagnostic <- function(
     cat("  - Gamma:", Y_info$gamma, "\n")
     cat("  - Tau:", Y_info$tau, "\n\n")
   }
+  
+  # ============================================================================
+  # 5b. Fit GAM to Regress Y on Z and Compute Residuals
+  # ============================================================================
+  cat("=== Fitting GAM to Regress Y on Z[,c(-1)] ===\n")
+  
+  # Create 20%/80% split for GAM fitting
+  set.seed(seed)
+  n_total <- length(Y)
+  gam_split_prop <- 0.2
+  idx_gam_fit <- sample.int(n_total, size = round(gam_split_prop * n_total))
+  idx_gam_residual <- setdiff(seq_len(n_total), idx_gam_fit)
+  
+  cat("GAM split: ", length(idx_gam_fit), " samples for fitting (", 
+      round(100 * gam_split_prop), "%), ", 
+      length(idx_gam_residual), " samples for residuals (", 
+      round(100 * (1 - gam_split_prop)), "%)\n", sep="")
+  
+  # Build GAM formula dynamically based on Z column types
+  Z_data <- as.data.frame(Z[, c(-1), drop=FALSE])  # Remove id column
+  Z_varnames <- colnames(Z_data)
+  
+  # Identify continuous vs binary/categorical variables
+  continuous_vars <- character()
+  binary_vars <- character()
+  
+  for (var in Z_varnames) {
+    if (is_binary(Z_data[[var]])) {
+      binary_vars <- c(binary_vars, var)
+    } else {
+      continuous_vars <- c(continuous_vars, var)
+    }
+  }
+  
+  cat("  Continuous variables (", length(continuous_vars), "): ", 
+      paste(head(continuous_vars, 5), collapse=", "), 
+      if(length(continuous_vars) > 5) "..." else "", "\n", sep="")
+  cat("  Binary/categorical variables (", length(binary_vars), "): ", 
+      paste(head(binary_vars, 5), collapse=", "), 
+      if(length(binary_vars) > 5) "..." else "", "\n", sep="")
+  
+  # Build formula terms
+  formula_terms <- character()
+  
+  # Add smooth terms for continuous variables
+  for (var in continuous_vars) {
+    formula_terms <- c(formula_terms, paste0("s(", var, ")"))
+  }
+  
+  # Add linear terms for binary/categorical variables
+  for (var in binary_vars) {
+    formula_terms <- c(formula_terms, var)
+  }
+  
+  # Combine into formula
+  formula_str <- paste("Y ~", paste(formula_terms, collapse=" + "))
+  gam_formula <- as.formula(formula_str)
+  
+  cat("  GAM formula: Y ~ ", 
+      paste(head(formula_terms, 3), collapse=" + "),
+      if(length(formula_terms) > 3) " + ..." else "", "\n", sep="")
+  
+  # Prepare data for GAM fitting
+  gam_data_fit <- cbind(Y = Y[idx_gam_fit], Z_data[idx_gam_fit, , drop=FALSE])
+  
+  # Fit GAM using mgcv
+  suppressPackageStartupMessages(require(mgcv))
+  gam_fit <- mgcv::gam(gam_formula, data = gam_data_fit, method = "REML")
+  
+  cat("  GAM fitted successfully\n")
+  cat("  Deviance explained: ", round(summary(gam_fit)$dev.expl * 100, 2), "%\n", sep="")
+  cat("  R-squared (adjusted): ", round(summary(gam_fit)$r.sq, 4), "\n", sep="")
+  
+  # Predict on the 80% split
+  gam_data_residual <- Z_data[idx_gam_residual, , drop=FALSE]
+  Y_predicted <- predict(gam_fit, newdata = gam_data_residual, type = "response")
+  
+  # Compute residuals
+  Y_residual <- as.vector(Y[idx_gam_residual]) - as.vector(Y_predicted)
+  
+  cat("  Residuals computed on ", length(Y_residual), " samples\n", sep="")
+  cat("  Residuals: mean=", round(mean(Y_residual), 4), 
+      ", sd=", round(sd(Y_residual), 4), "\n\n", sep="")
+  
+  # Save GAM results
+  gam_results <- list(
+    formula = formula_str,
+    deviance_explained = summary(gam_fit)$dev.expl,
+    r_squared_adj = summary(gam_fit)$r.sq,
+    n_fit = length(idx_gam_fit),
+    n_residual = length(idx_gam_residual)
+  )
+  gam_results_path <- file.path(out_dir_diagnostic, 'gam_results.json')
+  jsonlite::write_json(gam_results, gam_results_path, pretty = TRUE, auto_unbox = TRUE)
+  cat("Saved GAM results to:", gam_results_path, "\n\n")
   
   # ============================================================================
   # 6. Evaluate All Embeddings
@@ -569,35 +664,77 @@ auto_diagnostic <- function(
       cat("  Max |correlation| with Y:", max(abs(cor_with_y), na.rm=TRUE), "\n")
       cat("  Features with |cor| > 0.1:", sum(abs(cor_with_y) > 0.1, na.rm=TRUE), "\n")
       cat("  Features with NA correlation:", sum(is.na(cor_with_y)), "\n")
-      # Run glmnet
-      result <- ridge_lasso_glmnet(
-        X = X, 
-        y = Y,
-        alpha = alpha,
-        test_prop = test_prop,
-        nfolds = nfolds,
-        lambda_choice = lambda_choice,
-        seed = seed, 
-        standardize = FALSE # already happens above
-      )
-      cat("  Lambda used:", result$lambda, "\n")
-      cat("  Features selected:", sum(glmnet::coef.glmnet(result$cvfit, s = result$lambda)[-1] != 0), 
-            "out of", ncol(X), "\n")
+      
+      # Filter X to the 80% split (GAM residual split)
+      X_residual_split <- X[idx_gam_residual, , drop=FALSE]
+      Y_residual_split <- as.vector(Y[idx_gam_residual])
+      
+      # Run glmnet twice: once with original Y, once with residuals
+      for (y_type in c("original", "residual")) {
+        cat("\n  --- Running with Y type:", y_type, "---\n")
+        
+        if (y_type == "original") {
+          y_current <- Y_residual_split
+          f_test_pvalue <- NA
+        } else {
+          y_current <- Y_residual
+          # Compute F-test for joint significance of all embedding features
+          tryCatch({
+            lm_full <- lm(y_current ~ X_residual_split)
+            f_stat <- summary(lm_full)$fstatistic
+            if (!is.null(f_stat) && length(f_stat) == 3) {
+              f_test_pvalue <- pf(f_stat[1], f_stat[2], f_stat[3], lower.tail = FALSE)
+              cat("  F-test p-value:", format(f_test_pvalue, scientific = TRUE, digits = 4), "\n")
+            } else {
+              f_test_pvalue <- NA
+            }
+          }, error = function(e) {
+            cat("  [WARNING] Failed to compute F-test: ", conditionMessage(e), "\n")
+            f_test_pvalue <<- NA
+          })
+        }
+        
+        # Run glmnet
+        result <- ridge_lasso_glmnet(
+          X = X_residual_split, 
+          y = y_current,
+          alpha = alpha,
+          test_prop = test_prop,
+          nfolds = nfolds,
+          lambda_choice = lambda_choice,
+          seed = seed, 
+          standardize = FALSE # already happens above
+        )
+        cat("  Lambda used:", result$lambda, "\n")
+        cat("  Features selected:", sum(glmnet::coef.glmnet(result$cvfit, s = result$lambda)[-1] != 0), 
+              "out of", ncol(X_residual_split), "\n")
 
-      cat("Result for ", emb_name, " of Lasso regression: ", result$r2_test, " MSE: ", result$mse_test, "\n")
+        cat("Result for ", emb_name, " (", y_type, ") of Lasso regression: R²=", 
+            round(result$r2_test, 4), ", MSE=", round(result$mse_test, 4), "\n", sep="")
+        
+        # check for coding errors by running lm 
+        tryCatch({
+          lm_result <- lm(y_current ~ X_residual_split)
+          cat("  LM R²=", round(summary(lm_result)$r.squared, 4), "\n")
+        }, error = function(e) {
+          cat("  [ERROR] Failed to run LM: ", conditionMessage(e), "\n")
+        })
+
+        results_list[[length(results_list) + 1]] <- data.frame(
+          embedding_type = "baseline",
+          embedding_name = emb_name,
+          y_type = y_type,
+          r2_test = result$r2_test,
+          mse_test = result$mse_test,
+          lambda_min = result$lambda_min,
+          lambda_1se = result$lambda_1se,
+          lambda_used = result$lambda,
+          f_test_pvalue = f_test_pvalue,
+          stringsAsFactors = FALSE
+        )
+      }
       
-      results_list[[length(results_list) + 1]] <- data.frame(
-        embedding_type = "baseline",
-        embedding_name = emb_name,
-        r2_test = result$r2_test,
-        mse_test = result$mse_test,
-        lambda_min = result$lambda_min,
-        lambda_1se = result$lambda_1se,
-        lambda_used = result$lambda,
-        stringsAsFactors = FALSE
-      )
-      
-      cat("R²=", round(result$r2_test, 4), ", MSE=", round(result$mse_test, 4), "\n", sep="")
+      cat("\n")
     }
   }
   
@@ -716,11 +853,13 @@ auto_diagnostic <- function(
             results_list[[length(results_list) + 1]] <- data.frame(
               embedding_type = "trained_cached",
               embedding_name = paste0(emb_name, "_cached_pred"),
+              y_type = "original",
               r2_test = r2_cached,
               mse_test = mse_cached,
               lambda_min = NA,
               lambda_1se = NA,
               lambda_used = NA,
+              f_test_pvalue = NA,
               stringsAsFactors = FALSE
             )
           } else {
@@ -738,63 +877,113 @@ auto_diagnostic <- function(
       if (any(is.na(X)) || any(is.infinite(X))) {
         cat("SKIPPED (NA or Inf values detected in embeddings)\n")
         
-        results_list[[length(results_list) + 1]] <- data.frame(
-          embedding_type = "trained",
-          embedding_name = emb_name,
-          r2_test = NA,
-          mse_test = NA,
-          lambda_min = NA,
-          lambda_1se = NA,
-          lambda_used = NA,
-          stringsAsFactors = FALSE
-        )
+        for (y_type in c("original", "residual")) {
+          results_list[[length(results_list) + 1]] <- data.frame(
+            embedding_type = "trained",
+            embedding_name = emb_name,
+            y_type = y_type,
+            r2_test = NA,
+            mse_test = NA,
+            lambda_min = NA,
+            lambda_1se = NA,
+            lambda_used = NA,
+            f_test_pvalue = NA,
+            stringsAsFactors = FALSE
+          )
+        }
         next
       }
 
-      # Run glmnet with error handling
-      result <- tryCatch({
-        ridge_lasso_glmnet(
-          X = X, 
-          y = Y,
-          alpha = alpha,
-          test_prop = test_prop,
-          nfolds = nfolds,
-          lambda_choice = lambda_choice,
-          seed = seed,
-          standardize = standardize_ridge_lasso
-        )
-        
-      }, error = function(e) {
-        cat("ERROR:", conditionMessage(e), "\n")
-        return(NULL)
-      })
+      # Filter X to the 80% split (GAM residual split)
+      X_residual_split <- X[idx_gam_residual, , drop=FALSE]
+      Y_residual_split <- as.vector(Y[idx_gam_residual])
       
-      if (is.null(result)) {
+      # Run glmnet twice: once with original Y, once with residuals
+      for (y_type in c("original", "residual")) {
+        cat("\n  --- Running with Y type:", y_type, "---\n")
+        
+        if (y_type == "original") {
+          y_current <- Y_residual_split
+          f_test_pvalue <- NA
+        } else {
+          y_current <- Y_residual
+          # Compute F-test for joint significance of all embedding features
+          tryCatch({
+            lm_full <- lm(y_current ~ X_residual_split)
+            f_stat <- summary(lm_full)$fstatistic
+            if (!is.null(f_stat) && length(f_stat) == 3) {
+              f_test_pvalue <- pf(f_stat[1], f_stat[2], f_stat[3], lower.tail = FALSE)
+              cat("  F-test p-value:", format(f_test_pvalue, scientific = TRUE, digits = 4), "\n")
+            } else {
+              f_test_pvalue <- NA
+            }
+          }, error = function(e) {
+            cat("  [WARNING] Failed to compute F-test: ", conditionMessage(e), "\n")
+            f_test_pvalue <<- NA
+          })
+        }
+        # check for coding errors by running lm 
+        tryCatch({
+          lm_result <- lm(y_current ~ X_residual_split)
+          cat("  LM R²=", round(summary(lm_result)$r.squared, 4), "\n")
+        }, error = function(e) {
+          cat("  [ERROR] Failed to run LM: ", conditionMessage(e), "\n")
+        })
+        # Run glmnet with error handling
+        result <- tryCatch({
+          ridge_lasso_glmnet(
+            X = X_residual_split, 
+            y = y_current,
+            alpha = alpha,
+            test_prop = test_prop,
+            nfolds = nfolds,
+            lambda_choice = lambda_choice,
+            seed = seed,
+            standardize = standardize_ridge_lasso
+          )
+          
+        }, error = function(e) {
+          cat("ERROR:", conditionMessage(e), "\n")
+          return(NULL)
+        })
+        
+        if (is.null(result)) {
+          results_list[[length(results_list) + 1]] <- data.frame(
+            embedding_type = "trained",
+            embedding_name = emb_name,
+            y_type = y_type,
+            r2_test = NA,
+            mse_test = NA,
+            lambda_min = NA,
+            lambda_1se = NA,
+            lambda_used = NA,
+            stringsAsFactors = FALSE
+          )
+          next
+        }
+        
+        cat("  Lambda used:", result$lambda, "\n")
+        cat("  Features selected:", sum(glmnet::coef.glmnet(result$cvfit, s = result$lambda)[-1] != 0), 
+              "out of", ncol(X_residual_split), "\n")
+        
+        cat("Result for ", emb_name, " (", y_type, ") of Lasso regression: R²=", 
+            round(result$r2_test, 4), ", MSE=", round(result$mse_test, 4), "\n", sep="")
+        
         results_list[[length(results_list) + 1]] <- data.frame(
           embedding_type = "trained",
           embedding_name = emb_name,
-          r2_test = NA,
-          mse_test = NA,
-          lambda_min = NA,
-          lambda_1se = NA,
-          lambda_used = NA,
+          y_type = y_type,
+          r2_test = result$r2_test,
+          mse_test = result$mse_test,
+          lambda_min = result$lambda_min,
+          lambda_1se = result$lambda_1se,
+          lambda_used = result$lambda,
+          f_test_pvalue = f_test_pvalue,
           stringsAsFactors = FALSE
         )
-        next
       }
       
-      results_list[[length(results_list) + 1]] <- data.frame(
-        embedding_type = "trained",
-        embedding_name = emb_name,
-        r2_test = result$r2_test,
-        mse_test = result$mse_test,
-        lambda_min = result$lambda_min,
-        lambda_1se = result$lambda_1se,
-        lambda_used = result$lambda,
-        stringsAsFactors = FALSE
-      )
-      
-      cat("R²=", round(result$r2_test, 4), ", MSE=", round(result$mse_test, 4), "\n", sep="")
+      cat("\n")
     }
   }
   
@@ -828,6 +1017,14 @@ auto_diagnostic <- function(
       test_prop = test_prop,
       nfolds = nfolds,
       lambda_choice = lambda_choice
+    ),
+    gam_params = list(
+      formula = formula_str,
+      split_prop = gam_split_prop,
+      n_fit = length(idx_gam_fit),
+      n_residual = length(idx_gam_residual),
+      deviance_explained = summary(gam_fit)$dev.expl,
+      r_squared_adj = summary(gam_fit)$r.sq
     ),
     data_gen_params = list(
       post_non_lin = post_non_lin,
