@@ -676,6 +676,9 @@ auto_diagnostic <- function(
         if (y_type == "original") {
           y_current <- Y_residual_split
           f_test_pvalue <- NA
+          globaltest_pvalue <- NA
+          lmperm_pvalue <- NA
+          dcor_pvalue <- NA
         } else {
           y_current <- Y_residual
           # Compute F-test for joint significance of all embedding features
@@ -691,6 +694,39 @@ auto_diagnostic <- function(
           }, error = function(e) {
             cat("  [WARNING] Failed to compute F-test: ", conditionMessage(e), "\n")
             f_test_pvalue <<- NA
+          })
+          
+          # Compute globaltest
+          tryCatch({
+            suppressPackageStartupMessages(require(globaltest))
+            gt_result <- globaltest::gt(y_current, X_residual_split)
+            globaltest_pvalue <- gt_result@result[1, "p-value"]
+            cat("  globaltest p-value:", format(globaltest_pvalue, scientific = TRUE, digits = 4), "\n")
+          }, error = function(e) {
+            cat("  [WARNING] Failed to compute globaltest: ", conditionMessage(e), "\n")
+            globaltest_pvalue <<- NA
+          })
+          
+          # Compute lmPerm permutation test
+          tryCatch({
+            suppressPackageStartupMessages(require(lmPerm))
+            lmp_result <- lmPerm::lmp(y_current ~ X_residual_split, perm="Prob", maxIter=1000)
+            lmperm_pvalue <- anova(lmp_result)[1, "Pr(Prob)"]
+            cat("  lmPerm p-value:", format(lmperm_pvalue, scientific = TRUE, digits = 4), "\n")
+          }, error = function(e) {
+            cat("  [WARNING] Failed to compute lmPerm test: ", conditionMessage(e), "\n")
+            lmperm_pvalue <<- NA
+          })
+          
+          # Compute distance correlation test
+          tryCatch({
+            suppressPackageStartupMessages(require(energy))
+            dcor_result <- energy::dcor.test(X_residual_split, y_current, R=1000)
+            dcor_pvalue <- dcor_result$p.value
+            cat("  dcor.test p-value:", format(dcor_pvalue, scientific = TRUE, digits = 4), "\n")
+          }, error = function(e) {
+            cat("  [WARNING] Failed to compute dcor.test: ", conditionMessage(e), "\n")
+            dcor_pvalue <<- NA
           })
         }
         
@@ -712,13 +748,7 @@ auto_diagnostic <- function(
         cat("Result for ", emb_name, " (", y_type, ") of Lasso regression: R²=", 
             round(result$r2_test, 4), ", MSE=", round(result$mse_test, 4), "\n", sep="")
         
-        # check for coding errors by running lm 
-        tryCatch({
-          lm_result <- lm(y_current ~ X_residual_split)
-          cat("  LM R²=", round(summary(lm_result)$r.squared, 4), "\n")
-        }, error = function(e) {
-          cat("  [ERROR] Failed to run LM: ", conditionMessage(e), "\n")
-        })
+
 
         results_list[[length(results_list) + 1]] <- data.frame(
           embedding_type = "baseline",
@@ -730,6 +760,9 @@ auto_diagnostic <- function(
           lambda_1se = result$lambda_1se,
           lambda_used = result$lambda,
           f_test_pvalue = f_test_pvalue,
+          globaltest_pvalue = globaltest_pvalue,
+          lmperm_pvalue = lmperm_pvalue,
+          dcor_pvalue = dcor_pvalue,
           stringsAsFactors = FALSE
         )
       }
@@ -860,6 +893,9 @@ auto_diagnostic <- function(
               lambda_1se = NA,
               lambda_used = NA,
               f_test_pvalue = NA,
+              globaltest_pvalue = NA,
+              lmperm_pvalue = NA,
+              dcor_pvalue = NA,
               stringsAsFactors = FALSE
             )
           } else {
@@ -888,6 +924,9 @@ auto_diagnostic <- function(
             lambda_1se = NA,
             lambda_used = NA,
             f_test_pvalue = NA,
+            globaltest_pvalue = NA,
+            lmperm_pvalue = NA,
+            dcor_pvalue = NA,
             stringsAsFactors = FALSE
           )
         }
@@ -905,6 +944,9 @@ auto_diagnostic <- function(
         if (y_type == "original") {
           y_current <- Y_residual_split
           f_test_pvalue <- NA
+          globaltest_pvalue <- NA
+          lmperm_pvalue <- NA
+          dcor_pvalue <- NA
         } else {
           y_current <- Y_residual
           # Compute F-test for joint significance of all embedding features
@@ -921,14 +963,41 @@ auto_diagnostic <- function(
             cat("  [WARNING] Failed to compute F-test: ", conditionMessage(e), "\n")
             f_test_pvalue <<- NA
           })
+          
+          # Compute globaltest
+          tryCatch({
+            suppressPackageStartupMessages(require(globaltest))
+            gt_result <- globaltest::gt(y_current, X_residual_split)
+            globaltest_pvalue <- gt_result@result[1, "p-value"]
+            cat("  globaltest p-value:", format(globaltest_pvalue, scientific = TRUE, digits = 4), "\n")
+          }, error = function(e) {
+            cat("  [WARNING] Failed to compute globaltest: ", conditionMessage(e), "\n")
+            globaltest_pvalue <<- NA
+          })
+          
+          # Compute lmPerm permutation test
+          tryCatch({
+            suppressPackageStartupMessages(require(lmPerm))
+            lmp_result <- lmPerm::lmp(y_current ~ X_residual_split, perm="Prob", maxIter=1000)
+            lmperm_pvalue <- anova(lmp_result)[1, "Pr(Prob)"]
+            cat("  lmPerm p-value:", format(lmperm_pvalue, scientific = TRUE, digits = 4), "\n")
+          }, error = function(e) {
+            cat("  [WARNING] Failed to compute lmPerm test: ", conditionMessage(e), "\n")
+            lmperm_pvalue <<- NA
+          })
+          
+          # Compute distance correlation test
+          tryCatch({
+            suppressPackageStartupMessages(require(energy))
+            dcor_result <- energy::dcor.test(X_residual_split, y_current, R=1000)
+            dcor_pvalue <- dcor_result$p.value
+            cat("  dcor.test p-value:", format(dcor_pvalue, scientific = TRUE, digits = 4), "\n")
+          }, error = function(e) {
+            cat("  [WARNING] Failed to compute dcor.test: ", conditionMessage(e), "\n")
+            dcor_pvalue <<- NA
+          })
         }
-        # check for coding errors by running lm 
-        tryCatch({
-          lm_result <- lm(y_current ~ X_residual_split)
-          cat("  LM R²=", round(summary(lm_result)$r.squared, 4), "\n")
-        }, error = function(e) {
-          cat("  [ERROR] Failed to run LM: ", conditionMessage(e), "\n")
-        })
+
         # Run glmnet with error handling
         result <- tryCatch({
           ridge_lasso_glmnet(
@@ -957,6 +1026,10 @@ auto_diagnostic <- function(
             lambda_min = NA,
             lambda_1se = NA,
             lambda_used = NA,
+            f_test_pvalue = f_test_pvalue,
+            globaltest_pvalue = globaltest_pvalue,
+            lmperm_pvalue = lmperm_pvalue,
+            dcor_pvalue = dcor_pvalue,
             stringsAsFactors = FALSE
           )
           next
@@ -979,6 +1052,9 @@ auto_diagnostic <- function(
           lambda_1se = result$lambda_1se,
           lambda_used = result$lambda,
           f_test_pvalue = f_test_pvalue,
+          globaltest_pvalue = globaltest_pvalue,
+          lmperm_pvalue = lmperm_pvalue,
+          dcor_pvalue = dcor_pvalue,
           stringsAsFactors = FALSE
         )
       }
