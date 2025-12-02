@@ -241,8 +241,8 @@ print(paste0("Trained: R^2 = ", trained_results$r2_test, " MSE = ", trained_resu
 idx_samples <- 1:4
 n_sample = list(460, 1100, 5000, 10000)
 xz_modes <- c('Sigma=I_p')
-seeds <- c(563:585)
-eps_sigmaY_list <- c(0.1)
+seeds <- c(561:585)
+eps_sigmaY_list <- c(0.5)
 embedding_obs <- c('scratch', 'medicalnet_ft')#, 'medicalnet_ft')#, 'medicalnet_ft')#, 'medicalnet_ft_frozen', 'scratch')
 Y_age <- FALSE
 standardize_ridge_lasso <- TRUE
@@ -255,7 +255,7 @@ for(eps_sigmaY in eps_sigmaY_list){
         if(idx_sample == 1){
           # Compute baseline results for first sample size and cache them
           results <- auto_diagnostic(
-            experiment_dir = paste0("/sc/home/marco.simnacher/ukbiobank/data/No_CI/", n_sample[idx_sample], "/", seed, "/eps_sigmaY=", as.character(eps_sigmaY)),
+            experiment_dir = paste0("/sc/home/marco.simnacher/ukbiobank/data/CI/", n_sample[idx_sample], "/", seed, "/eps_sigmaY=", as.character(eps_sigmaY)),
             embedding_obs = embedding_obs,
             seed = seed,
             debug_Y = FALSE,
@@ -268,7 +268,7 @@ for(eps_sigmaY in eps_sigmaY_list){
         } else {
           # Reuse cached baseline results for subsequent sample sizes
           results <- auto_diagnostic(
-            experiment_dir = paste0("/sc/home/marco.simnacher/ukbiobank/data/No_CI/", n_sample[idx_sample], "/", seed, "/eps_sigmaY=", as.character(eps_sigmaY)),
+            experiment_dir = paste0("/sc/home/marco.simnacher/ukbiobank/data/CI/", n_sample[idx_sample], "/", seed, "/eps_sigmaY=", as.character(eps_sigmaY)),
             embedding_obs = embedding_obs,
             seed = seed,
             debug_Y = FALSE,

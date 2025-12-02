@@ -13,7 +13,7 @@ Results/
 inst/Results_jmlr_1
 inst/old_results
 inst/raw_code/
-
+inst/cvae_inference/
 
 inst/withdraws_ukb.R
 inst/learn_embedding/back_up
@@ -34,6 +34,7 @@ inst/old_code/
 
 # figures
 inst/diagnostic_embedding/figures/
+inst/diagnostic_embedding/results/
 
 # temporary execution files
 inst/simulation_study/sim_ukb_brainmri_*.R

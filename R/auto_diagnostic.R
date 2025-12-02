@@ -677,7 +677,6 @@ auto_diagnostic <- function(
           y_current <- Y_residual_split
           f_test_pvalue <- NA
           globaltest_pvalue <- NA
-          lmperm_pvalue <- NA
           dcor_pvalue <- NA
         } else {
           y_current <- Y_residual
@@ -705,17 +704,6 @@ auto_diagnostic <- function(
           }, error = function(e) {
             cat("  [WARNING] Failed to compute globaltest: ", conditionMessage(e), "\n")
             globaltest_pvalue <<- NA
-          })
-          
-          # Compute lmPerm permutation test
-          tryCatch({
-            suppressPackageStartupMessages(require(lmPerm))
-            lmp_result <- lmPerm::lmp(y_current ~ X_residual_split, perm="Prob", maxIter=1000)
-            lmperm_pvalue <- anova(lmp_result)[1, "Pr(Prob)"]
-            cat("  lmPerm p-value:", format(lmperm_pvalue, scientific = TRUE, digits = 4), "\n")
-          }, error = function(e) {
-            cat("  [WARNING] Failed to compute lmPerm test: ", conditionMessage(e), "\n")
-            lmperm_pvalue <<- NA
           })
           
           # Compute distance correlation test
@@ -761,7 +749,6 @@ auto_diagnostic <- function(
           lambda_used = result$lambda,
           f_test_pvalue = f_test_pvalue,
           globaltest_pvalue = globaltest_pvalue,
-          lmperm_pvalue = lmperm_pvalue,
           dcor_pvalue = dcor_pvalue,
           stringsAsFactors = FALSE
         )
@@ -894,7 +881,6 @@ auto_diagnostic <- function(
               lambda_used = NA,
               f_test_pvalue = NA,
               globaltest_pvalue = NA,
-              lmperm_pvalue = NA,
               dcor_pvalue = NA,
               stringsAsFactors = FALSE
             )
@@ -925,7 +911,6 @@ auto_diagnostic <- function(
             lambda_used = NA,
             f_test_pvalue = NA,
             globaltest_pvalue = NA,
-            lmperm_pvalue = NA,
             dcor_pvalue = NA,
             stringsAsFactors = FALSE
           )
@@ -945,7 +930,6 @@ auto_diagnostic <- function(
           y_current <- Y_residual_split
           f_test_pvalue <- NA
           globaltest_pvalue <- NA
-          lmperm_pvalue <- NA
           dcor_pvalue <- NA
         } else {
           y_current <- Y_residual
@@ -973,17 +957,6 @@ auto_diagnostic <- function(
           }, error = function(e) {
             cat("  [WARNING] Failed to compute globaltest: ", conditionMessage(e), "\n")
             globaltest_pvalue <<- NA
-          })
-          
-          # Compute lmPerm permutation test
-          tryCatch({
-            suppressPackageStartupMessages(require(lmPerm))
-            lmp_result <- lmPerm::lmp(y_current ~ X_residual_split, perm="Prob", maxIter=1000)
-            lmperm_pvalue <- anova(lmp_result)[1, "Pr(Prob)"]
-            cat("  lmPerm p-value:", format(lmperm_pvalue, scientific = TRUE, digits = 4), "\n")
-          }, error = function(e) {
-            cat("  [WARNING] Failed to compute lmPerm test: ", conditionMessage(e), "\n")
-            lmperm_pvalue <<- NA
           })
           
           # Compute distance correlation test
@@ -1028,7 +1001,6 @@ auto_diagnostic <- function(
             lambda_used = NA,
             f_test_pvalue = f_test_pvalue,
             globaltest_pvalue = globaltest_pvalue,
-            lmperm_pvalue = lmperm_pvalue,
             dcor_pvalue = dcor_pvalue,
             stringsAsFactors = FALSE
           )
@@ -1053,7 +1025,6 @@ auto_diagnostic <- function(
           lambda_used = result$lambda,
           f_test_pvalue = f_test_pvalue,
           globaltest_pvalue = globaltest_pvalue,
-          lmperm_pvalue = lmperm_pvalue,
           dcor_pvalue = dcor_pvalue,
           stringsAsFactors = FALSE
         )
