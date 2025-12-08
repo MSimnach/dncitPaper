@@ -7,29 +7,34 @@ library(ggrepel)
 library(paletteer)
 library('DNCIT')
 library(fastDummies)
+library(momentchi2)
 
 
 ####### Real-world application
 # paths to data repository
-path_to_ukb <- ''
-path_to_ukb_data <- paste0(path_to_ukb,'ukb49727.csv')
-path_to_fastsurfer_ids <- paste0(path_to_ukb,'ids/ids_IDPs.csv')
-path_to_fractional_anisotropy_ids <- paste0(path_to_ukb,'ids/ids_FA_measures.csv')
-path_to_freesurfer_dk_atlas_ids <- paste0(path_to_ukb,'ids/ids_freesurfer_Desikan-Killiany_atlas.csv')
-path_to_freesurfer_aseg_ids <- paste0(path_to_ukb,'ids/ids_freesurfer_ASEG.csv')
-path_to_save_ids_brain_avinun <- paste0(path_to_ukb,'ids/ids_brain_avinun.csv')
-path_to_save_ids_confounder_avinun <- paste0(path_to_ukb,'ids/ids_confounder_avinun.csv')
-path_to_save_ids_personality_avinun <- paste0(path_to_ukb,'ids/ids_personality_avinun.csv')
-path_to_save_ids_personality <- paste0(path_to_ukb,'ids/ids_personality.csv')
+path_to_ukb <- '/sc/home/marco.simnacher/ukbiobank/data/'
+path_to_phenotypes <- '/sc/projects/sci-lippert/ukbiobank/coldstore/original/phenotypes/'
+path_to_ukb_ids <- '/sc/home/marco.simnacher/dncitPaper/inst/extdata/'
+path_to_ukb_data <- paste0(path_to_phenotypes,'ukb49727.csv')
+path_to_fastsurfer_ids <- paste0(path_to_ukb_ids,'ids/ids_IDPs.csv')
+path_to_fractional_anisotropy_ids <- paste0(path_to_ukb_ids,'ids/ids_FA_measures.csv')
+path_to_freesurfer_dk_atlas_ids <- paste0(path_to_ukb_ids,'ids/ids_freesurfer_Desikan-Killiany_atlas.csv')
+path_to_freesurfer_aseg_ids <- paste0(path_to_ukb_ids,'ids/ids_freesurfer_ASEG.csv')
+path_to_save_ids_brain_avinun <- paste0(path_to_ukb_ids,'ids/ids_brain_avinun.csv')
+path_to_save_ids_confounder_avinun <- paste0(path_to_ukb_ids,'ids/ids_confounder_avinun.csv')
+path_to_save_ids_personality_avinun <- paste0(path_to_ukb_ids,'ids/ids_personality_avinun.csv')
+path_to_save_ids_personality <- paste0(path_to_ukb_ids,'ids/ids_personality.csv')
+path_to_scratch_embedding <- paste0(path_to_ukb,'brain_behavior/scratch_model/test_embeddings.parquet')
 # paths to save results
 path_to_save_preprocessed_data <- paste0(path_to_ukb,'ukb_free_fast_behavior_healthy.csv')
 path_to_save_ukb_avinun <- paste0(path_to_ukb,'ukb_avinun.csv')
 path_to_save_ukb_fast_behavior <- paste0(path_to_ukb,'ukb_fast_behavior.csv')
-path_to_pval_brain_trait_each <- paste0(path_to_ukb,'Real-world_application/p_val_structure_trait.csv')
-path_to_pval_brain_trait_each_w_joint <- paste0(path_to_ukb,'Real-world_application/p_val_structure_trait_w_joint_structures.csv')
-path_to_pval_brain_trait_joint_rcot <- paste0(path_to_ukb,'Real-world_application/p_val_structures_trait.csv')
-path_to_pval_brain_trait_confounder_control <- paste0(path_to_ukb,'Real-world_application/p_val_structures_trait_confounder_control.csv')
-path_to_save_plots <- ''
+path_to_save_plots <- '/sc/home/marco.simnacher/dncitPaper/inst/brain_and_behavior/figures/'
+path_to_pval_brain_trait_each <- paste0(path_to_save_plots,'p_val_structure_trait.csv')
+path_to_pval_brain_trait_each_w_joint <- paste0(path_to_save_plots,'p_val_structure_trait_w_joint_structures.csv')
+path_to_pval_brain_trait_joint_rcot <- paste0(path_to_save_plots,'p_val_structures_trait.csv')
+path_to_pval_brain_trait_confounder_control <- paste0(path_to_save_plots,'p_val_structures_trait_confounder_control.csv')
+
 
 ##color palettes for plotting
 #palet_discrete <- paletteer::paletteer_d("colorBlindness::Blue2Orange10Steps")
@@ -49,6 +54,8 @@ subset_ukb_data_mri <- as.data.frame(data.table::fread(file=path_to_save_preproc
 ##Variables used and data subset
 ids_ukb_mri_neuroticism_analyis <- c(ids_confounders, ids_brain_structure, ids_personality)
 mri_neuroticism <- stats::na.omit(subset_ukb_data_mri[,ids_ukb_mri_neuroticism_analyis])
+subjects_brain_behaviour_analysis <- stats::na.omit(subset_ukb_data_mri[,c('eid',ids_ukb_mri_neuroticism_analyis)])$eid
+#write.csv(subjects_brain_behaviour_analysis, file = paste0(path_to_ukb, 'subjects_brain_behaviour_analysis.csv'), row.names = FALSE)
 
 ##Standardize Y
 #ids for Y
@@ -101,6 +108,17 @@ mri_neuroticism$diligence <- scale(rowSums(mri_neuroticism[, ids_diligence]))
 mri_neuroticism$curiosity <- scale(rowSums(mri_neuroticism[, ids_curiosity]))
 # Nervousness score
 mri_neuroticism$nervousness <- scale(rowSums(mri_neuroticism[, ids_nervousness]))
+
+#### save ids and behavior scores in files to learn embedding maps
+## Create dataframe with subject IDs, T1 scan paths, and neuroticism values
+subjects_df <- data.frame(
+  id = subjects_brain_behaviour_analysis,
+  path = paste0("/sc/projects/sci-lippert/ukbiobank/imaging/brain_mri/T1_structural_brain_mri/unzipped/",
+                subjects_brain_behaviour_analysis,
+                "_20252_2_0/T1/T1_brain_to_MNI.nii.gz"),
+  y = mri_neuroticism$neuroticism
+)
+#write.csv(subjects_df, file = paste0(path_to_ukb, 'brain_behavior/x_obs_for_train.csv'), row.names = FALSE)
 
 ## remove all original columns used to obtain the scores
 mri_neuroticism <- mri_neuroticism[, !names(mri_neuroticism) %in% unique(ids_personality)]
@@ -197,7 +215,7 @@ labels <- c('medialorbitofrontal', 'rostralanteriorcingulate', 'thalamic radiati
 log_p_bonferroni_individual <- -log10(0.05/642)
 
 # Plotting similar to a Manhattan plot
-plot_each_struc_trait <- ggplot2::ggplot(p_structure_trait, ggplot2::aes(x = X_Axis, y = -log10(p_unadj), color = Trait), alpha=0.8, size=1.3) +
+plot_each_struc_trait <- ggplot2::ggplot(p_structure_trait, ggplot2::aes(x = X_Axis, y = -log10(p_unadj), color = Trait))+#, alpha=0.8, size=1.3)) +
   ggplot2::geom_point(alpha = 0.5) +
   ggplot2::scale_x_continuous(labels = unique(p_structure_trait$Trait), breaks = seq(53, max(p_structure_trait$X_Axis), by = 107)) +
   ggplot2::scale_color_manual(values = rep(c(palet_discrete[7], palet_discrete[5]), 22 )) +
@@ -226,7 +244,7 @@ plot_each_struc_trait <- ggplot2::ggplot(p_structure_trait, ggplot2::aes(x = X_A
   ggplot2::geom_point(data=subset(p_structure_trait, is_annotate=="yes"), color="red2", size=2.5) +
   # Add label using ggrepel to avoid overlapping
   ggrepel::geom_label_repel( data=subset(p_structure_trait, is_annotate=="yes"),  ggplot2::aes(label=labels), size=4, max.overlaps = 11)
-#ggplot2::ggsave(paste0(path_to_save_plots, 'individual_p_values_wald.png'), plot_each_struc_trait, width = 7, height = 7, dpi = 300)
+#ggplot2::ggsave(paste0(path_to_save_plots, 'individual_p_values_wald.png'), plot_each_struc_trait, width = 8, height = 8, dpi = 300)
 
 #### joint significance of brain structures
 ## Wald test for each trait separately
@@ -250,8 +268,9 @@ p_total_wald <- rbind(p_val_df, p_joint_df)
 p_total_wald$p_adj <- stats::p.adjust(p_total_wald[,1], method='BH')
 #data.table::fwrite(p_total_wald, file = path_to_pval_brain_trait_each_w_joint)
 
-### Deep-RCoT
+### Freesurfer-RCoT
 rcots_p_joint_traits <- list()
+pcm_p_joint_traits <- list()
 Z <- sapply(as.data.frame(mri_neuroticism_dummy[, confounders]), as.numeric)
 X <- as.matrix(mri_neuroticism_dummy[, brain_structures])
 # for each trait
@@ -266,6 +285,9 @@ for (trait in personality_traits){
     rcots_p_joint_trait[seed] <- rcot_p
   }
   rcots_p_joint_traits[[trait]] <- mean(rcots_p_joint_trait)
+  cit_params_pcm <- list(cit='comets', params_cit=list(rep=3))
+  pcm_p_joint_traits[[trait]] <- DNCIT::DNCIT(X, Y, Z, embedding_map_with_parameters = 'feature_representations',
+                                               cit_with_parameters = cit_params_pcm)$p
 }
 # for all traits together
 Y <- as.matrix(mri_neuroticism_dummy[, personality_traits])
@@ -277,7 +299,10 @@ for(seed in 1:20){
   rcots_p_joint_all_traits[seed] <- rcot_p
 }
 rcots_p_joint_traits[['all_traits']] <- mean(rcots_p_joint_all_traits)
+pcm_p_joint_traits[['all_traits']] <- NA
 #data.table::fwrite(as.data.frame(rcots_p_joint_traits), file = path_to_pval_brain_trait_joint_rcot)
+#path_to_pval_brain_trait_joint_pcm <- paste0(path_to_save_plots, 'pval_brain_trait_joint_pcm.csv')
+#data.table::fwrite(as.data.frame(pcm_p_joint_traits), file = path_to_pval_brain_trait_joint_pcm)
 
 ##plot joint p-values also as Manhattan plot
 p_joint_df <- p_joint_df %>%
@@ -296,7 +321,7 @@ p_joint <- rbind(p_joint_df, p_joint_rcot)%>%
   mutate( is_annotate=ifelse(-log10(p_unadj)>2.5, "yes", "no"))
 p_joint$X_Axis <- 1:nrow(p_joint)
 
-plot_joint <- ggplot2::ggplot(p_joint, ggplot2::aes(x = X_Axis, y = -log10(p_unadj), color = Test), alpha=0.8, size=1.3) +
+plot_joint <- ggplot2::ggplot(p_joint, ggplot2::aes(x = X_Axis, y = -log10(p_unadj), color = Test))+#, alpha=0.8, size=1.3) +
   ggplot2::geom_point(alpha = 0.5) +
   ggplot2::scale_x_continuous(labels = unique(p_joint$Test), breaks = seq(3.5, max(p_joint$X_Axis), by = 7)) +
   ggplot2::scale_color_manual(values = rep(c(palet_discrete[8], palet_discrete[3]), 22 )) +
@@ -372,7 +397,7 @@ confounders <- c(grep("^site_", colnames(mrifast_trait_dummy), value=TRUE),
                  'head_size', 'head_location1', 'head_location2','head_location3','head_location4',
                  'qc_discrepancy', 'gene1', 'gene2', 'gene3', 'gene4', 'gene5')
 
-### Deep-RCoT
+### FAST-RCoT
 rcots_p_joint_fast <- list()
 Z <- sapply(as.data.frame(mrifast_trait_dummy[, confounders]), as.numeric)
 X <- as.matrix(mrifast_trait_dummy[brain_structures_fast])
@@ -400,14 +425,47 @@ for(seed in 1:20){
 }
 rcots_p_joint_fast[['all_traits']] <- mean(rcots_p_joint_all_traits_fast)
 
+### FAST-PCM
+pcm_p_joint_fast <- list()
+Z <- sapply(as.data.frame(mrifast_trait_dummy[, confounders]), as.numeric)
+X <- as.matrix(mrifast_trait_dummy[brain_structures_fast])
+# for each trait
+for (trait in personality_traits){
+  print(trait)
+  Y <- as.matrix(mrifast_trait_dummy[, trait])
+  cit_params_pcm <- list(cit='comets', params_cit=list(rep=3))
+  pcm_p_joint_fast[[trait]] <- DNCIT::DNCIT(X, Y, Z, embedding_map_with_parameters = 'feature_representations',
+                                             cit_with_parameters = cit_params_pcm)$p
+}
+# for all traits together
+pcm_p_joint_fast[['all_traits']] <- NA
+
 #plot next to joint tests
+# Format Freesurfer-PCM
+p_joint_pcm <- t(as.data.frame(pcm_p_joint_traits))
+p_joint_pcm <- data.frame(p_joint_pcm) %>%
+  tibble::rownames_to_column(var = "Trait")%>%
+  arrange(Trait) %>%
+  dplyr::mutate(Test=rep('Freesurfer-PCM', length(pcm_p_joint_traits)))
+colnames(p_joint_pcm) <- c('Trait', 'p_unadj', 'Test')
+
+# Format Fastsurfer-RCoT
 p_joint_rcot_fast <- t(as.data.frame(rcots_p_joint_fast))
 p_joint_rcot_fast <- data.frame(p_joint_rcot_fast) %>%
   tibble::rownames_to_column(var = "Trait")%>%
   arrange(Trait) %>%
-  dplyr::mutate(Test=rep('Deep-RCoT', length(p_joint_rcot_fast)))
+  dplyr::mutate(Test=rep('Deep-RCoT', length(rcots_p_joint_fast)))
 colnames(p_joint_rcot_fast) <- c('Trait', 'p_unadj', 'Test')
-p_joint <- rbind(p_joint_df, p_joint_rcot, p_joint_rcot_fast)%>%
+
+# Format Fastsurfer-PCM
+p_joint_pcm_fast <- t(as.data.frame(pcm_p_joint_fast))
+p_joint_pcm_fast <- data.frame(p_joint_pcm_fast) %>%
+  tibble::rownames_to_column(var = "Trait")%>%
+  arrange(Trait) %>%
+  dplyr::mutate(Test=rep('Fastsurfer-PCM', length(pcm_p_joint_fast)))
+colnames(p_joint_pcm_fast) <- c('Trait', 'p_unadj', 'Test')
+
+p_joint <- rbind(p_joint_df, p_joint_rcot, p_joint_pcm, p_joint_rcot_fast, p_joint_pcm_fast)%>%
   # Add highlight and annotation information
   mutate( is_annotate=ifelse(-log10(p_unadj)>2.5, "yes", "no"))
 p_joint$X_Axis <- 1:nrow(p_joint)
@@ -452,6 +510,198 @@ plot_joint <- ggplot2::ggplot(p_joint, ggplot2::aes(x = X_Axis, y = -log10(p_una
   # Add label using ggrepel to avoid overlapping
   ggrepel::geom_label_repel( data=subset(p_joint, is_annotate=="yes"),  ggplot2::aes(label=Trait), size=4)
 #ggplot2::ggsave(paste0(path_to_save_plots, 'deep_joint_p_values.png'), plot_joint, width = 7, height = 7, dpi = 300)
+
+
+## Scratch-RCoT and Scratch-PCM
+rcots_p_joint_traits_scratch <- list()
+pcm_p_joint_traits_scratch <- list()
+Z <- sapply(as.data.frame(mri_neuroticism_dummy[, confounders]), as.numeric)
+X_obs_test_trained <- arrow::read_parquet(path_to_scratch_embedding)
+X_obs_test_trained_idx <- data.table::fread("/sc/home/marco.simnacher/ukbiobank/data/brain_behavior/scratch_model/test_embeddings_index.csv")
+X_test <- cbind(id = X_obs_test_trained_idx$subject_id, as.data.frame(X_obs_test_trained))
+# CHECK FOR INF/NAN VALUES - COLUMN BY COLUMN:
+na_count <- sum(sapply(X_test[,-1], function(x) sum(is.na(x))))
+inf_count <- sum(sapply(X_test[,-1], function(x) sum(is.infinite(x) & x > 0)))
+neginf_count <- sum(sapply(X_test[,-1], function(x) sum(is.infinite(x) & x < 0)))
+nan_count <- sum(sapply(X_test[,-1], function(x) sum(is.nan(x))))
+# only ids from test set
+test_ids <- X_test$id
+Z_id <- cbind(id = subjects_df$id, as.data.frame(Z))
+Z_test <- Z[match(test_ids, Z_id$id), ]
+
+# apply CITs to embedding scratch on test set
+for (trait in personality_traits){
+  print(trait)
+  Y <- as.matrix(mri_neuroticism_dummy[, trait])
+  Y_id <- cbind(id = subjects_df$id, as.data.frame(Y))
+  Y_test <- Y[match(test_ids, Y_id$id), , drop=FALSE]
+  rcots_p_joint_traits_scratch_ <- rep(1,20)
+  for(seed in 1:20){
+    cit_params <- list(cit='RCOT', params_cit=list(seed=seed))
+    rcot_p <- DNCIT::DNCIT(as.matrix(X_test), as.matrix(Y_test), as.matrix(Z_test), embedding_map_with_parameters = 'feature_representations',
+                           cit_with_parameters = cit_params)$p
+    rcots_p_joint_traits_scratch_[seed] <- rcot_p
+  }
+  rcots_p_joint_traits_scratch[[trait]] <- mean(rcots_p_joint_traits_scratch_)
+  cit_params_pcm <- list(cit='comets', params_cit=list(rep=3))
+  #pcm_p_joint_traits_scratch[[trait]] <- DNCIT::DNCIT(as.matrix(X_test), as.matrix(Y_test), as.matrix(Z_test), embedding_map_with_parameters = 'feature_representations',
+  #                                             cit_with_parameters = cit_params_pcm)$p
+}
+# for all traits together
+Y <- as.matrix(mri_neuroticism_dummy[, personality_traits])
+Y_id <- cbind(id = subjects_df$id, as.data.frame(Y))
+Y_test <- Y[match(test_ids, Y_id$id), , drop=FALSE]
+rcots_p_joint_all_traits_scratch <- rep(1,20)
+for(seed in 1:20){
+  cit_params <- list(cit='RCOT', params_cit=list(seed=seed))
+  rcot_p <- DNCIT::DNCIT(as.matrix(X_test), as.matrix(Y_test), as.matrix(Z_test), embedding_map_with_parameters = 'feature_representations',
+                         cit_with_parameters = cit_params)$p
+  rcots_p_joint_all_traits_scratch[seed] <- rcot_p
+}
+rcots_p_joint_traits_scratch[['all_traits']] <- mean(rcots_p_joint_all_traits_scratch)
+
+## Scratch-PCM
+pcm_p_joint_traits_scratch <- list()
+Z <- sapply(as.data.frame(mri_neuroticism_dummy[, confounders]), as.numeric)
+Z_test <- Z[match(test_ids, Z_id$id), ]
+# for each trait
+for (trait in personality_traits){
+  print(trait)
+  Y <- as.matrix(mri_neuroticism_dummy[, trait])
+  Y_id <- cbind(id = subjects_df$id, as.data.frame(Y))
+  Y_test <- Y[match(test_ids, Y_id$id), , drop=FALSE]
+  cit_params_pcm <- list(cit='comets', params_cit=list(rep=3))
+  pcm_p_joint_traits_scratch[[trait]] <- DNCIT::DNCIT(as.matrix(X_test), as.matrix(Y_test), as.matrix(Z_test), 
+                                                       embedding_map_with_parameters = 'feature_representations',
+                                                       cit_with_parameters = cit_params_pcm)$p
+}
+# for all traits together
+pcm_p_joint_traits_scratch[['all_traits']] <- NA
+
+#plot scratch p-values next to joint tests
+# Format Scratch-RCoT
+p_joint_rcot_scratch <- t(as.data.frame(rcots_p_joint_traits_scratch))
+p_joint_rcot_scratch <- data.frame(p_joint_rcot_scratch) %>%
+  tibble::rownames_to_column(var = "Trait")%>%
+  arrange(Trait) %>%
+  dplyr::mutate(Test=rep('Scratch-RCoT', length(rcots_p_joint_traits_scratch)))
+colnames(p_joint_rcot_scratch) <- c('Trait', 'p_unadj', 'Test')
+
+# Format Scratch-PCM
+p_joint_pcm_scratch <- t(as.data.frame(pcm_p_joint_traits_scratch))
+p_joint_pcm_scratch <- data.frame(p_joint_pcm_scratch) %>%
+  tibble::rownames_to_column(var = "Trait")%>%
+  arrange(Trait) %>%
+  dplyr::mutate(Test=rep('Scratch-PCM', length(pcm_p_joint_traits_scratch)))
+colnames(p_joint_pcm_scratch) <- c('Trait', 'p_unadj', 'Test')
+
+# Combine all tests
+p_joint <- rbind(p_joint_df, p_joint_rcot, p_joint_pcm, p_joint_rcot_fast, p_joint_pcm_fast, 
+                 p_joint_rcot_scratch, p_joint_pcm_scratch)%>%
+  # Add highlight and annotation information
+  mutate( is_annotate=ifelse(-log10(p_unadj)>2.5, "yes", "no"))
+
+# Rename tests before assigning X_Axis
+p_joint <- p_joint %>% mutate(Test = recode(Test,
+                                 "Wald"="Freesurfer-Wald",
+                                 "RCoT"="Freesurfer-RCoT",
+                                 "Deep-RCoT"="Fastsurfer-RCoT",
+                                 "Scratch-RCoT"="Scratch-RCoT"))
+
+# Custom X_Axis positioning: PCM at RCoT position + 0.3
+# Create positions manually for side-by-side display
+n_traits <- 7  # number of traits per test
+p_joint <- p_joint %>%
+  arrange(Test, Trait) %>%
+  mutate(X_Axis = case_when(
+    Test == "Freesurfer-Wald" ~ row_number(),
+    Test == "Freesurfer-RCoT" ~ n_traits + row_number(),
+    Test == "Freesurfer-PCM" ~ n_traits + row_number() + 0.3,
+    Test == "Fastsurfer-RCoT" ~ 2*n_traits + row_number(),
+    Test == "Fastsurfer-PCM" ~ 2*n_traits + row_number() + 0.3,
+    Test == "Scratch-RCoT" ~ 3*n_traits + row_number(),
+    Test == "Scratch-PCM" ~ 3*n_traits + row_number() + 0.3,
+    TRUE ~ row_number()
+  ))
+
+log_p_bonferroni_joint <- -log10(0.05/6)
+p_joint <- p_joint %>% mutate(all_traits = ifelse(Trait == 'all_traits', 'yes', 'no'))
+p_joint$is_annotate <- ifelse(is.na(p_joint$is_annotate), "no", p_joint$is_annotate)
+
+#Fastsurfer-RCoT fill color for points
+rgb_vals <- col2rgb(palet_discrete[1])
+new_rgb_vals <- pmin(rgb_vals + 90, 255)  # Making the color slightly lighter
+fastsurfer_rcot_fill_col <- rgb(new_rgb_vals[1], new_rgb_vals[2], new_rgb_vals[3], maxColorValue = 255)
+
+p_joint_plot <- p_joint %>%
+  arrange(Test, Trait) %>%
+  group_by(Test) %>%
+  mutate(trait_num = row_number()) %>%
+  ungroup() %>%
+  mutate(X_Axis = case_when(
+    Test == "Freesurfer-Wald" ~ trait_num,
+    Test == "Freesurfer-RCoT" ~ n_traits + trait_num,
+    Test == "Freesurfer-PCM" ~ n_traits + trait_num + 0.0,
+    Test == "Fastsurfer-RCoT" ~ 2*n_traits + trait_num,
+    Test == "Fastsurfer-PCM" ~ 2*n_traits + trait_num + 0.0,
+    Test == "Scratch-RCoT" ~ 3*n_traits + trait_num,
+    Test == "Scratch-PCM" ~ 3*n_traits + trait_num + 0.0,
+    TRUE ~ trait_num
+  )) %>%
+  select(-trait_num)
+
+# Create color and shape vectors dynamically based on actual data
+test_order <- p_joint_plot %>% arrange(Test, Trait) %>% pull(Test)
+color_vec <- ifelse(test_order == "Freesurfer-Wald", palet_discrete[7], palet_discrete[1])
+shape_vec <- ifelse(grepl("PCM", test_order), 17, 19)  # triangles for PCM, circles for others
+
+plot_joint <- ggplot2::ggplot(p_joint_plot, ggplot2::aes(x = X_Axis, y = -log10(p_unadj), color = Test)) +
+  ggplot2::geom_point(size=3, 
+                      color=color_vec,
+                      fill='grey',
+                      shape=shape_vec) +
+  ggplot2::scale_x_continuous(labels = c("Freesurfer-\nWald", "Freesurfer-\nRCoT/PCM", 
+                                         "FAST-\nRCoT/PCM", "Scratch-\nRCoT/PCM"), 
+                              breaks = c(4, 11, 18, 25)) +
+  ggplot2::labs(x = "DNCITs - Trait(s) - All brain structures",
+                y = expression("-log"[10] * "(p)"),
+                color = "Test") +
+  # Custom the theme:
+  ggplot2::theme_bw() +
+  # add column separation for each test group
+  geom_vline(xintercept = c(0.5, 7.5, 14.5, 21.5, 28.5), linetype = "dashed", color = "black") +
+  geom_hline(yintercept=c(0, log_p_bonferroni_joint), linetype=c("dashed", "solid"))+
+  ggplot2::theme(
+    axis.title.x = element_text(size = 20),  # Change x-axis label size
+    axis.title.y = element_blank(), #element_text(size = 20),  # Change y-axis label size
+    axis.text.x = element_text(size = 15),   # Change x-axis tick label size
+    axis.text.y = element_text(size = 15),   # Change y-axis tick label size
+    legend.position="none",
+    panel.border = ggplot2::element_blank(),
+    panel.grid.major.x = ggplot2::element_blank(),
+    panel.grid.minor.x = ggplot2::element_blank()
+  )+
+  ggplot2::ylim(0,4.2)+
+  ggplot2::geom_point(data=subset(p_joint_plot, all_traits=="yes"), 
+                      color=palet_discrete[1], 
+                      fill='grey', stroke=1.8, size=3.3, 
+                      shape=ifelse(grepl("PCM", subset(p_joint_plot, all_traits=="yes")$Test), 24, 21)) +  # triangles for PCM, circles for RCoT
+  ggplot2::geom_point(data=subset(p_joint_plot, is_annotate=="yes"), color="red2", size=3.5) +
+  # Add label using ggrepel to avoid overlapping
+  ggrepel::geom_label_repel( data=subset(p_joint_plot, is_annotate=="yes"),  ggplot2::aes(label=Trait), size=4)
+ggplot2::ggsave(paste0(path_to_save_plots, 'deep_joint_p_values.png'), plot_joint, width = 7, height = 7, dpi = 300)
+#save all p-values
+#write.csv(p_joint_plot, paste0(path_to_save_plots, 'p_joint_plot.csv'), row.names = FALSE)
+
+
+
+
+
+
+
+
+
+
 
 
 

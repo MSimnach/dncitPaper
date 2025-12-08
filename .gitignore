@@ -14,6 +14,7 @@ inst/Results_jmlr_1
 inst/old_results
 inst/raw_code/
 inst/cvae_inference/
+inst/brain_and_behavior/figures/*
 
 inst/withdraws_ukb.R
 inst/learn_embedding/back_up

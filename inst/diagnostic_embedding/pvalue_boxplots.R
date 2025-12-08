@@ -14,10 +14,10 @@ library(RColorBrewer)
 # ============================================================================
 
 # Seeds to analyze
-seeds <- c(601:625)
+seeds <- c(561:585)
 
 # Sample sizes to include
-n_samples <- c(460, 1100, 5000, 10000)
+n_samples <- c(256, 460, 825, 1100, 5000)#c(460, 1100, 5000, 10000)
 
 # Conditions to analyze
 conditions <- c("CI", "No_CI")
@@ -98,8 +98,10 @@ for (cond in conditions) {
     next
   }
   
-  # Get all CSV files in the directory
-  csv_files <- list.files(pval_dir, pattern = "\\.csv$", full.names = TRUE)
+  # Get all CSV files in the directory that match the specified eps_sigmaY
+  # Pattern: 1_0_[eps_sigmaY]_0_...csv
+  pattern_with_eps <- sprintf("^1_0_%d_0_.*\\.csv$", eps_sigmaY)
+  csv_files <- list.files(pval_dir, pattern = pattern_with_eps, full.names = TRUE)
   
   cat(sprintf("\nCondition: %s - Found %d CSV files\n", cond, length(csv_files)))
   cat(sprintf("  Directory: %s\n", pval_dir))

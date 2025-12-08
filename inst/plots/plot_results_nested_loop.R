@@ -249,16 +249,16 @@ palet_discrete <- paletteer::paletteer_d("ggthemes::Classic_10_Medium")
 path_to_save_nested_loop_plots <- ""
 
 #### split into CI and No CI
-folder_path <- "Results\\CI\\rejection_rates"
+folder_path <- "/sc/home/marco.simnacher/dncitPaper/Results/CI/rejection_rates"
 #folder_path <- "Results\\No_CI\\rejection_rates"
 all_files <- list.files(folder_path, full.names = TRUE)
-all_files <- all_files[setdiff(1:length(all_files), grep('2_0_1_0|2_3_1_0|3_0_1_0|3_3_1_0|4_0_1_0|4_3_1_0|5_0_1_0|5_3_1_0', all_files))]
+all_files <- all_files[setdiff(1:length(all_files), grep('1_0_0.5_0|2_0_1_0|2_3_1_0|3_0_1_0|3_3_1_0|4_0_1_0|4_3_1_0|5_0_1_0|5_3_1_0', all_files))]
 
 ### 1) Data preparation for nested loop over
 # loop 1: confounder dimension (1,2,4,6,10,15) [APPENDIX] vs confounder dimension (1,2,10) [MAIN TEXT]
 # loop 2: sample size
 # fixed confounder relationship (squared terms of all continuous confounders)
-cit_patterns <- "WALD|RCOT|kpc_graph|FCIT|CMIknn|comets_pcm"
+cit_patterns <- "WALD|RCOT_1.csv|kpc_graph|FCIT|CMIknn|comets_pcm"
 cit_files <- grep(cit_patterns, all_files, value=TRUE)
 files_conf_dim <- grep("squared", cit_files, value=TRUE)
 
@@ -284,9 +284,15 @@ design <- design %>%
          "condVAE-kpc_graph" = rep(NA, nrow(design)),
          "condVAE-FCIT" = rep(NA, nrow(design)),
          "condVAE-CMIknn" = rep(NA, nrow(design)),
-         "condVAE-comets_pcm" = rep(NA, nrow(design)))
+         "condVAE-comets_pcm" = rep(NA, nrow(design)),
+         "medicalnet-RCOT" = rep(NA, nrow(design)),
+         "medicalnet-WALD" = rep(NA, nrow(design)),
+         "medicalnet-kpc_graph" = rep(NA, nrow(design)),
+         "medicalnet-FCIT" = rep(NA, nrow(design)),
+         "medicalnet-CMIknn" = rep(NA, nrow(design)),
+         "medicalnet-comets_pcm" = rep(NA, nrow(design))))
 
-embedding_maps <- c('fastsurfer_fastsurfer', 'freesurfer', 'condVAE')
+embedding_maps <- c('fastsurfer_fastsurfer', 'freesurfer', 'condVAE', 'medicalnet')
 dncits <- c('RCOT', 'WALD', 'kpc_graph', 'FCIT', 'CMIknn', 'comets_pcm')
 # [APPENDIX]
 confounder <- c('ukb_z1_', 'ukb_z2', 'ukb_z4', 'ukb_z6', 'ukb_z10', 'ukb_z15')
