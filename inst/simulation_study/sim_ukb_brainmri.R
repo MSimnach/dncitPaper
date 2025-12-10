@@ -100,7 +100,7 @@ res_time <- foreach::foreach (i= n_seeds, .packages = pkgs_for_each) %dopar% {
                                                       }
                                                      }else if(args[10] == 'CMIknn'){
                                                        cit_params <- list(cit='cmiknn', params_cit=list())
-                                                     }else if(args[10] == 'kpc_graph'){
+                                                     }else if(args[10] == 'kpc_graph' || args[10] == 'dcor_cpt'){
                                                       if (args[11]=='1'){
                                                           k = kernlab::vanilladot()
                                                       }else if (args[11]=='2') {
@@ -154,7 +154,11 @@ res_time <- foreach::foreach (i= n_seeds, .packages = pkgs_for_each) %dopar% {
                                                         lin_covs_string <- paste(lin_covs, collapse = "+")
                                                         model_formula_YZ <- paste('V1~1+s(V2)+s(V3)+s(V', date_diff, ')+s(V', qc, ')+s(V', head_loc_1, ', k=3)+s(V', head_loc_2, ', k=3)+s(V', head_loc_3, ', k=3)+s(V', head_loc_4, ', k=3)+s(V', gene_1, ', k=3)+s(V', gene_2, ', k=3)+s(V', gene_3, ', k=3)+s(V', gene_4, ', k=3)+s(V', gene_5, ', k=3)+', lin_covs_string, sep="")
                                                       }
-                                                      cit_params <- list(cit='cpt_kpc', params_cit=list(k=k, Knn = as.numeric(args[12]), model.formula.YZ=model_formula_YZ))
+                                                      if(args[10] == 'dcor_cpt'){
+                                                        cit_params <- list(cit='cpt_dcor', params_cit=list(model.formula.YZ=model_formula_YZ))
+                                                      }else{
+                                                        cit_params <- list(cit='cpt_kpc', params_cit=list(k=k, Knn = as.numeric(args[12]), model.formula.YZ=model_formula_YZ))
+                                                      }
                                                      }else if(args[10]=='FCIT'){
                                                         cit_params <- list(cit='fcit')
                                                      }else if(args[10]=='cpi'){
@@ -227,7 +231,7 @@ res_time <- foreach::foreach (i= n_seeds, .packages = pkgs_for_each) %dopar% {
                                                         }
                                                        }else if(args[10] == 'CMIknn'){
                                                          cit_params <- list(cit='cmiknn', params_cit=list())
-                                                       }else if(args[10] == 'kpc_graph'){
+                                                       }else if(args[10] == 'kpc_graph' || args[10] == 'dcor_cpt'){
                                                           if (args[11]=='1'){
                                                               k = kernlab::vanilladot()
                                                           }else if (args[11]=='2') {
@@ -281,7 +285,11 @@ res_time <- foreach::foreach (i= n_seeds, .packages = pkgs_for_each) %dopar% {
                                                             lin_covs_string <- paste(lin_covs, collapse = "+")
                                                             model_formula_YZ <- paste('V1~1+s(V2)+s(V3)+s(V', date_diff, ')+s(V', qc, ')+s(V', head_loc_1, ', k=3)+s(V', head_loc_2, ', k=3)+s(V', head_loc_3, ', k=3)+s(V', head_loc_4, ', k=3)+s(V', gene_1, ', k=3)+s(V', gene_2, ', k=3)+s(V', gene_3, ', k=3)+s(V', gene_4, ', k=3)+s(V', gene_5, ', k=3)+', lin_covs_string, sep="")
                                                           }
-                                                          cit_params <- list(cit='cpt_kpc', params_cit=list(k=k, Knn = as.numeric(args[12]), model.formula.YZ=model_formula_YZ))
+                                                          if(args[10] == 'dcor_cpt'){
+                                                            cit_params <- list(cit='cpt_dcor', params_cit=list(model.formula.YZ=model_formula_YZ))
+                                                          }else{
+                                                            cit_params <- list(cit='cpt_kpc', params_cit=list(k=k, Knn = as.numeric(args[12]), model.formula.YZ=model_formula_YZ))
+                                                          }
                                                        }else if(args[10]=='FCIT'){
                                                           cit_params <- list(cit='fcit')
                                                        }else if(args[10]=='cpi'){
