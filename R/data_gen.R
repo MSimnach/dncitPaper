@@ -115,7 +115,7 @@ data_gen <- function(seed, idx_sample=NULL, n_sample=NULL, idx_beta2=NULL, beta2
   }
   write.csv(Y_id, file.path(y_dir, 'Y.csv'), row.names = FALSE)
 
-  if (embedding_obs %in% c('fastsurfer', 'condVAE', 'latentDiffusion', 'freesurfer', 'medicalnet', 'pooled_brainsynth', 'tucker_brainsynth')){
+  if (embedding_obs %in% c('fastsurfer', 'condVAE', 'latentDiffusion', 'freesurfer', 'medicalnet', 'cVAE_long', 'pooled_brainsynth', 'tucker_brainsynth')){
     X_obs[,c(-1)] <- scale(X_obs[,c(-1)])
     # Remove columns with NA values (zero variance columns)
     na_cols <- colSums(is.na(X_obs[, -1])) > 0
@@ -353,7 +353,7 @@ load_X_obs <- function(path_to_ukb_data,embedding_obs, embedding_orig, X_orig, e
   }else if(embedding_obs == 'fastsurfer'){
     X_obs <- data.table::fread(paste0(path_to_ukb_data, "/ukb_fastsurfer.csv"), header=TRUE, nThread = 1)
   }else if(embedding_obs == 'condVAE'){
-    X_obs <- data.table::fread(paste0(path_to_ukb_data, "/ukb_condVAE.csv"), header=TRUE, nThread = 1)
+    X_obs <- data.table::fread(paste0(path_to_ukb_data, "/cvae_embeddings/cvae_latent_embeddings_encoder_256_penultimate.csv"), header=TRUE, nThread = 1)
   }else if(embedding_obs == 'latentDiffusion'){
     X_obs <- data.table::fread(paste0(path_to_ukb_data, "/ukb_latentDiffusion.csv"), header=TRUE, nThread = 1)
   }else if(embedding_obs == 'freesurfer'){
@@ -368,6 +368,8 @@ load_X_obs <- function(path_to_ukb_data,embedding_obs, embedding_orig, X_orig, e
     X_obs <- as.data.frame(X_obs_emb)
     medicalnet_idx <- data.table::fread(paste0(path_to_ukb_data, "/medicalnet_embeddings/embeddings_index.csv"))
     X_obs <- cbind(id = medicalnet_idx$subject_id, as.data.frame(X_obs_emb))
+  }else if(embedding_obs == 'cVAE_long'){
+    X_obs <- data.table::fread(paste0(path_to_ukb_data, '/cvae_embeddings/cvae_latent_embeddings_encoder_256_penultimate.csv'), header=TRUE, nThread = 1)
   }else if(embedding_obs == 'boc_brainsynth'){
     X_obs_emb <- arrow::read_parquet(paste0(path_to_ukb_data, '/brainsynth_embeddings/baseline_vqvae/embeddings/all_boc_embedding.parquet'))
     X_obs <- as.data.frame(X_obs_emb)
