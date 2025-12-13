@@ -353,7 +353,7 @@ load_X_obs <- function(path_to_ukb_data,embedding_obs, embedding_orig, X_orig, e
   }else if(embedding_obs == 'fastsurfer'){
     X_obs <- data.table::fread(paste0(path_to_ukb_data, "/ukb_fastsurfer.csv"), header=TRUE, nThread = 1)
   }else if(embedding_obs == 'condVAE'){
-    X_obs <- data.table::fread(paste0(path_to_ukb_data, "/cvae_embeddings/cvae_latent_embeddings_encoder_256_penultimate.csv"), header=TRUE, nThread = 1)
+    X_obs <- data.table::fread(paste0(path_to_ukb_data, "/cvae_embeddings/cvae_latent_embeddings_encoder_256_mni.csv"), header=TRUE, nThread = 1)
   }else if(embedding_obs == 'latentDiffusion'){
     X_obs <- data.table::fread(paste0(path_to_ukb_data, "/ukb_latentDiffusion.csv"), header=TRUE, nThread = 1)
   }else if(embedding_obs == 'freesurfer'){

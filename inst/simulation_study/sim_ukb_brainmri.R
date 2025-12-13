@@ -101,14 +101,16 @@ res_time <- foreach::foreach (i= n_seeds, .packages = pkgs_for_each) %dopar% {
                                                      }else if(args[10] == 'CMIknn'){
                                                        cit_params <- list(cit='cmiknn', params_cit=list())
                                                      }else if(args[10] == 'kpc_graph' || args[10] == 'dcor_cpt'){
-                                                      if (args[11]=='1'){
-                                                          k = kernlab::vanilladot()
-                                                      }else if (args[11]=='2') {
-                                                          k = kernlab::rbfdot(1/(2*stats::median(stats::dist(X))^2))
-                                                      }else if (args[11]=='3') {
-                                                          k = kernlab::laplacedot(1/(2*stats::median(stats::dist(X))^2))
-                                                      }else if (args[11]=='4') {
-                                                          k = kernlab::tanhdot()
+                                                      if(args[10] == 'kpc_graph'){
+                                                        if (args[11]=='1'){
+                                                            k = kernlab::vanilladot()
+                                                        }else if (args[11]=='2') {
+                                                            k = kernlab::rbfdot(1/(2*stats::median(stats::dist(X))^2))
+                                                        }else if (args[11]=='3') {
+                                                            k = kernlab::laplacedot(1/(2*stats::median(stats::dist(X))^2))
+                                                        }else if (args[11]=='4') {
+                                                            k = kernlab::tanhdot()
+                                                        }
                                                       }
                                                       if(args[8]=='ukb_z1'){
                                                         model_formula_YZ <- "V1~1+s(V2)"
@@ -232,14 +234,16 @@ res_time <- foreach::foreach (i= n_seeds, .packages = pkgs_for_each) %dopar% {
                                                        }else if(args[10] == 'CMIknn'){
                                                          cit_params <- list(cit='cmiknn', params_cit=list())
                                                        }else if(args[10] == 'kpc_graph' || args[10] == 'dcor_cpt'){
-                                                          if (args[11]=='1'){
-                                                              k = kernlab::vanilladot()
-                                                          }else if (args[11]=='2') {
-                                                              k = kernlab::rbfdot(1/(2*stats::median(stats::dist(X))^2))
-                                                          }else if (args[11]=='3') {
-                                                              k = kernlab::laplacedot(1/(2*stats::median(stats::dist(X))^2))
-                                                          }else if (args[11]=='4') {
-                                                              k = kernlab::tanhdot()
+                                                          if(args[10] == 'kpc_graph'){
+                                                            if (args[11]=='1'){
+                                                                k = kernlab::vanilladot()
+                                                            }else if (args[11]=='2') {
+                                                                k = kernlab::rbfdot(1/(2*stats::median(stats::dist(X))^2))
+                                                            }else if (args[11]=='3') {
+                                                                k = kernlab::laplacedot(1/(2*stats::median(stats::dist(X))^2))
+                                                            }else if (args[11]=='4') {
+                                                                k = kernlab::tanhdot()
+                                                            }
                                                           }
                                                           if(args[8]=='ukb_z1'){
                                                             model_formula_YZ <- "V1~1+s(V2)"
