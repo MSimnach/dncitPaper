@@ -24,7 +24,7 @@ n_samples <- c(256, 460, 825, 1100, 5000)#c(460, 1100, 5000, 10000)
 conditions <- c("CI", "No_CI")
 
 # Epsilon sigma Y parameter
-eps_sigmaY <- 0.5
+eps_sigmaY <- 0.1
 
 # Define p-values base directories
 results_base_path <- "/sc/home/marco.simnacher/dncitPaper/Results"
@@ -241,6 +241,9 @@ plot_data_pval <- combined_pvals %>%
     condition = factor(condition, levels = conditions),
     embedding = factor(embedding),
     cit = factor(cit)
+  ) %>%
+  mutate(
+    condition = factor(condition, levels = conditions, labels = c("T1E", "power"))
   )
 
 # Report how many p-values were adjusted
@@ -288,22 +291,27 @@ for (cit_name in available_cits) {
     labs(
       x = "Sample Size",
       y = "P-value",
-      fill = "Embedding",
-      title = bquote("CIT P-values for" ~ .(cit_name) ~ "(" * epsilon[sigma[Y]] * " = " * .(eps_sigmaY) * ")")
+      fill = "Embedding"#,
+      # title = bquote("CIT P-values for" ~ .(cit_name) ~ "(" * epsilon[sigma[Y]] * " = " * .(eps_sigmaY) * ")")
     ) +
-    theme_bw(base_size = 12) +
+    theme_bw(base_size = 18) +
     theme(
-      plot.title = element_text(hjust = 0.5, face = "bold", size = 14),
+      plot.title = element_text(hjust = 0.5, size = 20),
       panel.grid.minor = element_blank(),
-      axis.text.x = element_text(angle = 45, hjust = 1),
+      axis.text.x = element_text(angle = 45, hjust = 1, size = 16),
+      axis.text.y = element_text(size = 16),
+      axis.title.x = element_text(size = 18),
+      axis.title.y = element_text(size = 18),
       legend.position = "right",
-      legend.title = element_text(face = "bold"),
+      legend.title = element_text(size = 16),
+      legend.text = element_text(size = 14),
       strip.background = element_rect(fill = "lightgray"),
-      strip.text = element_text(face = "bold")
+      strip.text = element_text(size = 20)
     ) +
     scale_fill_manual(values = color_palette_pval) +
+    scale_x_discrete(breaks = c("256", "460", "825", "1100", "5000")) +
     scale_y_log10(
-      breaks = c(1e-16, 1e-12, 1e-9, 1e-6, 1e-3, 0.01, 0.05, 0.1, 0.5, 1),
+      breaks = c(1e-16, 1e-12, 1e-9, 1e-6, 1e-3, 0.01, 0.1, 1),
       labels = scales::trans_format("log10", scales::math_format(10^.x)),
       limits = y_limits_pval
     )
@@ -354,6 +362,13 @@ if (!is.null(combined_rr)) {
       embedding = factor(embedding, levels = all_embeddings_plot),
       cit = factor(cit, levels = available_cits),
       condition = factor(condition, levels = conditions)
+    ) %>%
+    mutate(
+      condition = factor(condition, levels = conditions, labels = c("T1E", "power"))
+    ) %>%
+    mutate(
+      # Create equidistant position mapping
+      n_sample_pos = match(n_sample, sort(unique(n_sample)))
     )
   
   # Create color palette for embeddings (same as plot_results_nested_loop.R)
@@ -373,9 +388,13 @@ if (!is.null(combined_rr)) {
     available_cits
   )
   
-  # Create line plot
+  # Create line plot with equidistant x-axis
+  # Get unique sample sizes in order for labels
+  sample_size_labels <- sort(unique(plot_data_rr$n_sample))
+  sample_size_positions <- 1:length(sample_size_labels)
+  
   p_rejection_rates_combined <- plot_data_rr %>%
-    ggplot(aes(x = n_sample, y = rejection_rate, 
+    ggplot(aes(x = n_sample_pos, y = rejection_rate, 
                color = embedding, shape = cit, linetype = cit,
                group = interaction(cit, embedding))) +
     geom_line(linewidth = 1) +
@@ -387,20 +406,27 @@ if (!is.null(combined_rr)) {
       y = "Rejection Rate",
       color = "Embedding",
       shape = "CIT",
-      linetype = "CIT",
-      title = bquote("Rejection Rates Across CITs and Embeddings (" * epsilon[sigma[Y]] * " = " * .(eps_sigmaY) * ")")
+      linetype = "CIT"#,
+      # title = bquote("Rejection Rates Across CITs and Embeddings (" * epsilon[sigma[Y]] * " = " * .(eps_sigmaY) * ")")
     ) +
-    theme_bw(base_size = 12) +
+    theme_bw(base_size = 18) +
     theme(
-      plot.title = element_text(hjust = 0.5, face = "bold", size = 14),
+      plot.title = element_text(hjust = 0.5, size = 20),
       legend.position = "right",
       panel.grid.minor = element_blank(),
+      axis.text.x = element_text(size = 18),
+      axis.text.y = element_text(size = 18),
+      axis.title.x = element_text(size = 20),
+      axis.title.y = element_text(size = 20),
+      legend.title = element_text(size = 16),
+      legend.text = element_text(size = 14),
       strip.background = element_rect(fill = "lightgray"),
-      strip.text = element_text(face = "bold")
+      strip.text = element_text(size = 20)
     ) +
     scale_color_manual(values = embedding_colors) +
     scale_shape_manual(values = cit_shapes) +
     scale_linetype_manual(values = cit_linetypes) +
+    scale_x_continuous(breaks = sample_size_positions, labels = sample_size_labels) +
     scale_y_continuous(limits = c(0, 1), breaks = seq(0, 1, 0.1))
   
   # Save combined rejection rate plot

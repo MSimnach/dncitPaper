@@ -709,7 +709,7 @@ auto_diagnostic <- function(
           # Compute distance correlation test
           tryCatch({
             suppressPackageStartupMessages(require(energy))
-            dcor_result <- energy::dcor.test(X_residual_split, y_current, R=1000)
+            dcor_result <- energy::dcor.test(X_residual_split, y_current, R=10000)
             dcor_pvalue <- dcor_result$p.value
             cat("  dcor.test p-value:", format(dcor_pvalue, scientific = TRUE, digits = 4), "\n")
           }, error = function(e) {
@@ -962,7 +962,7 @@ auto_diagnostic <- function(
           # Compute distance correlation test
           tryCatch({
             suppressPackageStartupMessages(require(energy))
-            dcor_result <- energy::dcor.test(X_residual_split, y_current, R=1000)
+            dcor_result <- energy::dcor.test(X_residual_split, y_current, R=10000)
             dcor_pvalue <- dcor_result$p.value
             cat("  dcor.test p-value:", format(dcor_pvalue, scientific = TRUE, digits = 4), "\n")
           }, error = function(e) {
