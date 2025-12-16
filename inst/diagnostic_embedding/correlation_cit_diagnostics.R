@@ -6,9 +6,11 @@ library(data.table)
 library(dplyr)
 library(ggplot2)
 library(RColorBrewer)
+library(patchwork)
+library(paletteer)
 
 # Configuration
-seeds <- c(601:625)
+seeds <- c(1:100)
 n_samples <- c(460, 1100, 5000, 10000)
 conditions <- c("CI", "No_CI")
 eps_sigmaY <- 0.5
@@ -35,15 +37,17 @@ results_base_path <- "/sc/home/marco.simnacher/dncitPaper/Results"
 pval_data_list <- list()
 
 for (cond in conditions) {
-  pval_dir <- file.path(results_base_path, cond, "p-values", "seeds_601_625")
+  pval_dir <- file.path(results_base_path, cond, "p-values", sprintf("seeds_%d_%d", min(seeds), max(seeds)))
   
   if (!dir.exists(pval_dir)) {
     warning(sprintf("Directory not found: %s", pval_dir))
     next
   }
   
-  csv_files <- list.files(pval_dir, pattern = "\\.csv$", full.names = TRUE)
-  cat(sprintf("Condition: %s - Found %d CSV files\n", cond, length(csv_files)))
+  # Filter CSV files by eps_sigmaY pattern (e.g., 1_0_0.5_0_...)
+  pattern_with_eps <- sprintf("^1_0_%g_0_.*\\.csv$", eps_sigmaY)
+  csv_files <- list.files(pval_dir, pattern = pattern_with_eps, full.names = TRUE)
+  cat(sprintf("Condition: %s - Found %d CSV files for eps_sigmaY=%s\n", cond, length(csv_files), eps_sigmaY))
   
   for (csv_file in csv_files) {
     filename <- basename(csv_file)
@@ -173,6 +177,13 @@ for (cit_name in unique(combined_pvals$cit)) {
         if (nrow(merged_data) < 3) next  # Need at least 3 observations
         
         # Compute correlations
+        # Try globaltest correlation with error handling
+        cor_globaltest <- tryCatch({
+          cor(merged_data$p_value, merged_data$globaltest_pvalue, use = "complete.obs")
+        }, error = function(e) {
+          NA
+        })
+        
         cor_results <- data.frame(
           cit = cit_name,
           embedding = emb,
@@ -181,7 +192,7 @@ for (cit_name in unique(combined_pvals$cit)) {
           cor_r2_orig = cor(merged_data$p_value, merged_data$r2_original, use = "complete.obs"),
           cor_r2_resid = cor(merged_data$p_value, merged_data$r2_residual, use = "complete.obs"),
           cor_ftest = cor(merged_data$p_value, merged_data$f_test_pvalue, use = "complete.obs"),
-          cor_globaltest = cor(merged_data$p_value, merged_data$globaltest_pvalue, use = "complete.obs"),
+          cor_globaltest = cor_globaltest,
           cor_dcor = cor(merged_data$p_value, merged_data$dcor_pvalue, use = "complete.obs"),
           n_obs = nrow(merged_data)
         )
@@ -220,6 +231,13 @@ for (cit_name in unique(combined_pvals$cit)) {
       if (nrow(merged_data) < 3) next
       
       # Compute correlations across all embeddings
+      # Try globaltest correlation with error handling
+      cor_globaltest <- tryCatch({
+        cor(merged_data$p_value, merged_data$globaltest_pvalue, use = "complete.obs")
+      }, error = function(e) {
+        NA
+      })
+      
       cor_results <- data.frame(
         cit = cit_name,
         condition = cond,
@@ -227,7 +245,7 @@ for (cit_name in unique(combined_pvals$cit)) {
         cor_r2_orig = cor(merged_data$p_value, merged_data$r2_original, use = "complete.obs"),
         cor_r2_resid = cor(merged_data$p_value, merged_data$r2_residual, use = "complete.obs"),
         cor_ftest = cor(merged_data$p_value, merged_data$f_test_pvalue, use = "complete.obs"),
-        cor_globaltest = cor(merged_data$p_value, merged_data$globaltest_pvalue, use = "complete.obs"),
+        cor_globaltest = cor_globaltest,
         cor_dcor = cor(merged_data$p_value, merged_data$dcor_pvalue, use = "complete.obs"),
         n_obs = nrow(merged_data)
       )
@@ -245,7 +263,7 @@ cat(sprintf("Computed %d across-all-embeddings correlations\n\n", nrow(correlati
 # ============================================================================
 cat("=== Saving Results ===\n")
 
-output_dir <- "/sc/home/marco.simnacher/dncitPaper/inst/diagnostic_embedding"
+output_dir <- "/sc/home/marco.simnacher/dncitPaper/inst/diagnostic_embedding/results"
 
 # Save per-embedding correlations
 output_file_per_emb <- file.path(output_dir, "correlation_cit_diagnostics_per_embedding.csv")
@@ -264,9 +282,9 @@ cat("\nPooled correlations:\n")
 print(head(correlation_pooled_df))
 
 # ============================================================================
-# Create Diagnostic Boxplots
+# Create Combined Diagnostic Plots (Boxplots + Correlation Lineplots)
 # ============================================================================
-cat("\n=== Creating Diagnostic Boxplots ===\n")
+cat("\n=== Creating Combined Diagnostic Plots ===\n")
 
 # Define embeddings
 constant_embeddings <- c("fastsurfer", "freesurfer", "condVAE", "medicalnet")
@@ -275,250 +293,253 @@ available_embeddings <- unique(combined_pvals$embedding)
 
 constant_embeddings_plot <- intersect(constant_embeddings, available_embeddings)
 varying_embeddings_plot <- intersect(varying_embeddings, available_embeddings)
-all_embeddings_plot <- c(constant_embeddings_plot, varying_embeddings_plot)
 
-# Create color palette
-n_colors <- length(all_embeddings_plot)
-base_colors <- RColorBrewer::brewer.pal(min(8, n_colors), "Set2")
-color_palette <- setNames(
-  colorRampPalette(base_colors)(n_colors),
-  all_embeddings_plot
+# Define embedding order: fastsurfer, freesurfer, condVAE, medicalnet, scratch, medicalnet_ft
+embedding_order <- c("fastsurfer", "freesurfer", "condVAE", "medicalnet", "scratch", "medicalnet_ft")
+all_embeddings_plot <- intersect(embedding_order, c(constant_embeddings_plot, varying_embeddings_plot))
+
+# Create display name mapping for embeddings
+embedding_display_names <- c(
+  "fastsurfer" = "FAST",
+  "freesurfer" = "Freesurfer",
+  "condVAE" = "cVAE",
+  "medicalnet" = "MedicalNet",
+  "medicalnet_ft" = "MedicalNet-ft",
+  "scratch" = "Scratch"
 )
 
-# Merge CIT p-values with diagnostics for plotting
-plot_data <- merge(combined_pvals, diagnostics_wide,
-                   by.x = c("seed", "n_sample", "condition", "embedding"),
-                   by.y = c("seed", "n_sample", "condition", "embedding_name"),
-                   all = FALSE)
+# Get display names for plotting
+all_embeddings_display <- embedding_display_names[all_embeddings_plot]
 
-# Convert to factors for plotting
-plot_data <- plot_data %>%
+# Create color palette using paletteer (same as pvalue_boxplots.R)
+palet_discrete <- paletteer::paletteer_d("ggthemes::Classic_10_Medium")
+color_palette <- setNames(
+  palet_discrete[1:length(all_embeddings_plot)],
+  all_embeddings_display
+)
+
+# Prepare diagnostic data for plotting (without CIT-specific merge)
+# Use display names for embeddings and rename conditions
+plot_data_diag <- diagnostics_wide %>%
+  filter(embedding_name %in% all_embeddings_plot) %>%
   mutate(
     n_sample = factor(n_sample, levels = n_samples),
-    condition = factor(condition, levels = conditions),
-    embedding = factor(embedding, levels = all_embeddings_plot),
-    cit = factor(cit)
-  ) %>%
-  filter(embedding %in% all_embeddings_plot)
+    condition = factor(condition, levels = conditions, labels = c("T1E", "Power")),
+    embedding = factor(embedding_name, levels = all_embeddings_plot, labels = all_embeddings_display)
+  )
+
+# Debug: Check data availability
+cat("\n=== Data Availability Check ===\n")
+cat(sprintf("Total rows in plot_data_diag: %d\n", nrow(plot_data_diag)))
+cat("\nRows by condition:\n")
+print(table(plot_data_diag$condition))
+cat("\nRows by condition and embedding:\n")
+print(table(plot_data_diag$condition, plot_data_diag$embedding))
+cat("\nNA counts for key metrics:\n")
+cat(sprintf("  r2_original: %d NAs\n", sum(is.na(plot_data_diag$r2_original))))
+cat(sprintf("  r2_residual: %d NAs\n", sum(is.na(plot_data_diag$r2_residual))))
+
+# Prepare correlation data for lineplots
+# Map CIT names for display and use display names for embeddings
+correlation_df_plot <- correlation_df %>%
+  filter(embedding %in% all_embeddings_plot) %>%
+  mutate(
+    n_sample = factor(n_sample, levels = n_samples),
+    condition = factor(condition, levels = conditions, labels = c("T1E", "Power")),
+    embedding = factor(embedding, levels = all_embeddings_plot, labels = all_embeddings_display),
+    cit_label = case_when(
+      grepl("RCOT", cit, ignore.case = TRUE) ~ "RCoT",
+      grepl("comets_pcm", cit, ignore.case = TRUE) ~ "PCM",
+      TRUE ~ as.character(cit)
+    )
+  )
 
 # Create figures directory
 figures_dir <- file.path(output_dir, "figures")
 dir.create(figures_dir, recursive = TRUE, showWarnings = FALSE)
 
-# Minimum p-value for plotting
+# Define diagnostic metrics to plot
+# is_pvalue: TRUE for metrics that should use log10 scale
+diagnostic_metrics <- list(
+  r2_original = list(
+    col = "r2_original",
+    cor_col = "cor_r2_orig",
+    y_label = expression(R^2 ~ "(Original)"),
+    is_pvalue = FALSE
+  ),
+  r2_residual = list(
+    col = "r2_residual",
+    cor_col = "cor_r2_resid",
+    y_label = expression(R^2 ~ "(Residual)"),
+    is_pvalue = FALSE
+  ),
+  ftest = list(
+    col = "f_test_pvalue",
+    cor_col = "cor_ftest",
+    y_label = "F-test P-value",
+    is_pvalue = TRUE
+  ),
+  globaltest = list(
+    col = "globaltest_pvalue",
+    cor_col = "cor_globaltest",
+    y_label = "Globaltest P-value",
+    is_pvalue = TRUE
+  ),
+  dcor = list(
+    col = "dcor_pvalue",
+    cor_col = "cor_dcor",
+    y_label = "Dcor P-value",
+    is_pvalue = TRUE
+  )
+)
+
+# Minimum p-value for log scale plotting
 min_pval_plot <- 1e-16
 
-# Get unique CITs
-available_cits <- unique(plot_data$cit)
+# Common theme for all plots (matching pvalue_boxplots.R style)
+base_theme <- theme_bw(base_size = 18) +
+  theme(
+    panel.grid.minor = element_blank(),
+    legend.title = element_text(size = 16),
+    legend.text = element_text(size = 16),
+    strip.background = element_rect(fill = "lightgray"),
+    strip.text = element_text(size = 20),
+    axis.text.x = element_text(size = 16),
+    axis.text.y = element_text(size = 16),
+    axis.title.x = element_text(size = 18),
+    axis.title.y = element_text(size = 18)
+  )
 
-# Create plots for each CIT
-for (cit_name in available_cits) {
-  cat(sprintf("\nCreating diagnostic plots for CIT: %s\n", cit_name))
+# Create combined plots for each diagnostic metric
+for (metric_name in names(diagnostic_metrics)) {
+  cat(sprintf("\nCreating combined plot for: %s\n", metric_name))
   
-  # Filter data for this CIT
-  plot_data_cit <- plot_data %>% filter(cit == cit_name)
+  metric_info <- diagnostic_metrics[[metric_name]]
   
-  if (nrow(plot_data_cit) == 0) {
-    warning(sprintf("No data available for CIT: %s", cit_name))
-    next
-  }
-  
-  # ===== R^2 Original =====
-  p_r2_orig <- plot_data_cit %>%
-    ggplot(aes(x = n_sample, y = r2_original, fill = embedding)) +
-    geom_boxplot(position = position_dodge(width = 0.8), outlier.size = 0.8) +
-    facet_wrap(~ condition, ncol = 2) +
-    labs(
-      x = "Sample Size",
-      y = expression(R^2 ~ "(Original)"),
-      fill = "Embedding",
-      title = bquote("R"^2 ~ "Original for" ~ .(cit_name) ~ "(" * epsilon[sigma[Y]] * " = " * .(eps_sigmaY) * ")")
-    ) +
-    theme_bw(base_size = 12) +
-    theme(
-      plot.title = element_text(hjust = 0.5, face = "bold", size = 14),
-      panel.grid.minor = element_blank(),
-      axis.text.x = element_text(angle = 45, hjust = 1),
-      legend.position = "right",
-      legend.title = element_text(face = "bold"),
-      strip.background = element_rect(fill = "lightgray"),
-      strip.text = element_text(face = "bold")
-    ) +
-    scale_fill_manual(values = color_palette) +
-    ylim(0, NA)
-  
-  # Save R^2 Original
-  png_path <- file.path(figures_dir, sprintf("diagnostic_r2_original_%s_%d_%d.png", 
-                                             cit_name, min(seeds), max(seeds)))
-  ggsave(png_path, plot = p_r2_orig, width = 16, height = 7, units = "in", dpi = 300)
-  cat(sprintf("  Saved: %s\n", basename(png_path)))
-  
-  pdf_path <- file.path(figures_dir, sprintf("diagnostic_r2_original_%s_%d_%d.pdf", 
-                                             cit_name, min(seeds), max(seeds)))
-  ggsave(pdf_path, plot = p_r2_orig, width = 16, height = 7, units = "in")
-  
-  # ===== R^2 Residual =====
-  p_r2_resid <- plot_data_cit %>%
-    ggplot(aes(x = n_sample, y = r2_residual, fill = embedding)) +
-    geom_boxplot(position = position_dodge(width = 0.8), outlier.size = 0.8) +
-    facet_wrap(~ condition, ncol = 2) +
-    labs(
-      x = "Sample Size",
-      y = expression(R^2 ~ "(Residual)"),
-      fill = "Embedding",
-      title = bquote("R"^2 ~ "Residual for" ~ .(cit_name) ~ "(" * epsilon[sigma[Y]] * " = " * .(eps_sigmaY) * ")")
-    ) +
-    theme_bw(base_size = 12) +
-    theme(
-      plot.title = element_text(hjust = 0.5, face = "bold", size = 14),
-      panel.grid.minor = element_blank(),
-      axis.text.x = element_text(angle = 45, hjust = 1),
-      legend.position = "right",
-      legend.title = element_text(face = "bold"),
-      strip.background = element_rect(fill = "lightgray"),
-      strip.text = element_text(face = "bold")
-    ) +
-    scale_fill_manual(values = color_palette) +
-    ylim(0, NA)
-  
-  # Save R^2 Residual
-  png_path <- file.path(figures_dir, sprintf("diagnostic_r2_residual_%s_%d_%d.png", 
-                                             cit_name, min(seeds), max(seeds)))
-  ggsave(png_path, plot = p_r2_resid, width = 16, height = 7, units = "in", dpi = 300)
-  cat(sprintf("  Saved: %s\n", basename(png_path)))
-  
-  pdf_path <- file.path(figures_dir, sprintf("diagnostic_r2_residual_%s_%d_%d.pdf", 
-                                             cit_name, min(seeds), max(seeds)))
-  ggsave(pdf_path, plot = p_r2_resid, width = 16, height = 7, units = "in")
-  
-  # ===== F-test P-value =====
-  plot_data_ftest <- plot_data_cit %>%
-    mutate(f_test_pvalue = ifelse(f_test_pvalue < min_pval_plot | f_test_pvalue == 0, 
-                                   min_pval_plot, f_test_pvalue))
-  
-  p_ftest <- plot_data_ftest %>%
-    ggplot(aes(x = n_sample, y = f_test_pvalue, fill = embedding)) +
-    geom_boxplot(position = position_dodge(width = 0.8), outlier.size = 0.8) +
-    geom_hline(yintercept = 0.05, linetype = "dashed", color = "red", alpha = 0.6) +
-    facet_wrap(~ condition, ncol = 2) +
-    labs(
-      x = "Sample Size",
-      y = "F-test P-value",
-      fill = "Embedding",
-      title = bquote("F-test P-values for" ~ .(cit_name) ~ "(" * epsilon[sigma[Y]] * " = " * .(eps_sigmaY) * ")")
-    ) +
-    theme_bw(base_size = 12) +
-    theme(
-      plot.title = element_text(hjust = 0.5, face = "bold", size = 14),
-      panel.grid.minor = element_blank(),
-      axis.text.x = element_text(angle = 45, hjust = 1),
-      legend.position = "right",
-      legend.title = element_text(face = "bold"),
-      strip.background = element_rect(fill = "lightgray"),
-      strip.text = element_text(face = "bold")
-    ) +
-    scale_fill_manual(values = color_palette) +
-    scale_y_log10(
-      breaks = c(1e-16, 1e-12, 1e-9, 1e-6, 1e-3, 0.01, 0.05, 0.1, 0.5, 1),
-      labels = scales::trans_format("log10", scales::math_format(10^.x)),
-      limits = c(min_pval_plot, 1)
-    )
-  
-  # Save F-test
-  png_path <- file.path(figures_dir, sprintf("diagnostic_ftest_%s_%d_%d.png", 
-                                             cit_name, min(seeds), max(seeds)))
-  ggsave(png_path, plot = p_ftest, width = 16, height = 7, units = "in", dpi = 300)
-  cat(sprintf("  Saved: %s\n", basename(png_path)))
-  
-  pdf_path <- file.path(figures_dir, sprintf("diagnostic_ftest_%s_%d_%d.pdf", 
-                                             cit_name, min(seeds), max(seeds)))
-  ggsave(pdf_path, plot = p_ftest, width = 16, height = 7, units = "in")
-  
-  # ===== Globaltest P-value =====
-  plot_data_globaltest <- plot_data_cit %>%
-    mutate(globaltest_pvalue = ifelse(globaltest_pvalue < min_pval_plot | globaltest_pvalue == 0, 
-                                       min_pval_plot, globaltest_pvalue))
-  
-  p_globaltest <- plot_data_globaltest %>%
-    ggplot(aes(x = n_sample, y = globaltest_pvalue, fill = embedding)) +
-    geom_boxplot(position = position_dodge(width = 0.8), outlier.size = 0.8) +
-    geom_hline(yintercept = 0.05, linetype = "dashed", color = "red", alpha = 0.6) +
-    facet_wrap(~ condition, ncol = 2) +
-    labs(
-      x = "Sample Size",
-      y = "Globaltest P-value",
-      fill = "Embedding",
-      title = bquote("Globaltest P-values for" ~ .(cit_name) ~ "(" * epsilon[sigma[Y]] * " = " * .(eps_sigmaY) * ")")
-    ) +
-    theme_bw(base_size = 12) +
-    theme(
-      plot.title = element_text(hjust = 0.5, face = "bold", size = 14),
-      panel.grid.minor = element_blank(),
-      axis.text.x = element_text(angle = 45, hjust = 1),
-      legend.position = "right",
-      legend.title = element_text(face = "bold"),
-      strip.background = element_rect(fill = "lightgray"),
-      strip.text = element_text(face = "bold")
-    ) +
-    scale_fill_manual(values = color_palette) +
-    scale_y_log10(
-      breaks = c(1e-16, 1e-12, 1e-9, 1e-6, 1e-3, 0.01, 0.05, 0.1, 0.5, 1),
-      labels = scales::trans_format("log10", scales::math_format(10^.x)),
-      limits = c(min_pval_plot, 1)
-    )
-  
-  # Save Globaltest
-  png_path <- file.path(figures_dir, sprintf("diagnostic_globaltest_%s_%d_%d.png", 
-                                             cit_name, min(seeds), max(seeds)))
-  ggsave(png_path, plot = p_globaltest, width = 16, height = 7, units = "in", dpi = 300)
-  cat(sprintf("  Saved: %s\n", basename(png_path)))
-  
-  pdf_path <- file.path(figures_dir, sprintf("diagnostic_globaltest_%s_%d_%d.pdf", 
-                                             cit_name, min(seeds), max(seeds)))
-  ggsave(pdf_path, plot = p_globaltest, width = 16, height = 7, units = "in")
-  
-  # ===== Dcor P-value =====
-  plot_data_dcor <- plot_data_cit %>%
-    mutate(dcor_pvalue = ifelse(dcor_pvalue < min_pval_plot | dcor_pvalue == 0, 
-                                 min_pval_plot, dcor_pvalue))
-  
-  p_dcor <- plot_data_dcor %>%
-    ggplot(aes(x = n_sample, y = dcor_pvalue, fill = embedding)) +
-    geom_boxplot(position = position_dodge(width = 0.8), outlier.size = 0.8) +
-    geom_hline(yintercept = 0.05, linetype = "dashed", color = "red", alpha = 0.6) +
-    facet_wrap(~ condition, ncol = 2) +
-    labs(
-      x = "Sample Size",
-      y = "Dcor P-value",
-      fill = "Embedding",
-      title = bquote("Dcor P-values for" ~ .(cit_name) ~ "(" * epsilon[sigma[Y]] * " = " * .(eps_sigmaY) * ")")
-    ) +
-    theme_bw(base_size = 12) +
-    theme(
-      plot.title = element_text(hjust = 0.5, face = "bold", size = 14),
-      panel.grid.minor = element_blank(),
-      axis.text.x = element_text(angle = 45, hjust = 1),
-      legend.position = "right",
-      legend.title = element_text(face = "bold"),
-      strip.background = element_rect(fill = "lightgray"),
-      strip.text = element_text(face = "bold")
-    ) +
-    scale_fill_manual(values = color_palette) +
-    scale_y_log10(
-      breaks = c(1e-16, 1e-12, 1e-9, 1e-6, 1e-3, 0.01, 0.05, 0.1, 0.5, 1),
-      labels = scales::trans_format("log10", scales::math_format(10^.x)),
-      limits = c(min_pval_plot, 1)
-    )
-  
-  # Save Dcor
-  png_path <- file.path(figures_dir, sprintf("diagnostic_dcor_%s_%d_%d.png", 
-                                             cit_name, min(seeds), max(seeds)))
-  ggsave(png_path, plot = p_dcor, width = 16, height = 7, units = "in", dpi = 300)
-  cat(sprintf("  Saved: %s\n", basename(png_path)))
-  
-  pdf_path <- file.path(figures_dir, sprintf("diagnostic_dcor_%s_%d_%d.pdf", 
-                                             cit_name, min(seeds), max(seeds)))
-  ggsave(pdf_path, plot = p_dcor, width = 16, height = 7, units = "in")
+  tryCatch({
+    # ===== TOP ROW: Boxplots =====
+    boxplot_data <- plot_data_diag %>%
+      select(seed, n_sample, condition, embedding, !!sym(metric_info$col)) %>%
+      rename(metric_value = !!sym(metric_info$col)) %>%
+      filter(!is.na(metric_value))
+    
+    # For p-value metrics, apply floor at min_pval_plot
+    if (metric_info$is_pvalue) {
+      boxplot_data <- boxplot_data %>%
+        mutate(metric_value = ifelse(metric_value < min_pval_plot | metric_value == 0, 
+                                      min_pval_plot, metric_value))
+    }
+    
+    if (nrow(boxplot_data) == 0) {
+      cat(sprintf("  Skipping %s - no data available\n", metric_name))
+      next
+    }
+    
+    p_boxplot <- ggplot(boxplot_data, aes(x = n_sample, y = metric_value, fill = embedding)) +
+      geom_boxplot(position = position_dodge(width = 0.8), outlier.size = 0.8) +
+      facet_wrap(~ condition, ncol = 2) +
+      labs(
+        y = metric_info$y_label,
+        fill = "Embedding"
+      ) +
+      base_theme +
+      theme(
+        axis.title.x = element_blank(),
+        axis.text.x = element_blank(),
+        axis.ticks.x = element_blank(),
+        legend.position = "right"
+      ) +
+      scale_fill_manual(values = color_palette)
+    
+    # Add log10 scale for p-value metrics
+    if (metric_info$is_pvalue) {
+      p_boxplot <- p_boxplot +
+        scale_y_log10(
+          breaks = c(1e-16, 1e-12, 1e-9, 1e-6, 1e-3, 0.01, 0.1, 1),
+          labels = scales::trans_format("log10", scales::math_format(10^.x)),
+          limits = c(min_pval_plot, 1)
+        ) +
+        geom_hline(yintercept = 0.05, color = "black", alpha = 0.6)
+    }
+    
+    # ===== MIDDLE ROW: PCM Correlation Lineplots =====
+    # Get correlation data for this metric - PCM only
+    cor_data_pcm <- correlation_df_plot %>%
+      filter(cit_label == "PCM") %>%
+      select(cit, cit_label, embedding, condition, n_sample, !!sym(metric_info$cor_col)) %>%
+      rename(correlation = !!sym(metric_info$cor_col)) %>%
+      filter(!is.na(correlation))
+    
+    # ===== BOTTOM ROW: RCoT Correlation Lineplots =====
+    # Get correlation data for this metric - RCoT only
+    cor_data_rcot <- correlation_df_plot %>%
+      filter(cit_label == "RCoT") %>%
+      select(cit, cit_label, embedding, condition, n_sample, !!sym(metric_info$cor_col)) %>%
+      rename(correlation = !!sym(metric_info$cor_col)) %>%
+      filter(!is.na(correlation))
+    
+    if (nrow(cor_data_pcm) == 0 && nrow(cor_data_rcot) == 0) {
+      cat(sprintf("  No correlation data for %s - creating boxplot only\n", metric_name))
+      combined_plot <- p_boxplot
+    } else {
+      # PCM correlation lineplot (middle row)
+      p_lineplot_pcm <- ggplot(cor_data_pcm, aes(x = n_sample, y = correlation, 
+                                                   color = embedding, group = embedding)) +
+        geom_line(linetype = "solid", linewidth = 0.8) +
+        geom_point(shape = 16, size = 2.5) +  # 16 = circle for PCM
+        facet_wrap(~ condition, ncol = 2) +
+        labs(
+          y = "Correlation (PCM)",
+          color = "Embedding"
+        ) +
+        base_theme +
+        theme(
+          axis.title.x = element_blank(),
+          axis.text.x = element_blank(),
+          axis.ticks.x = element_blank(),
+          legend.position = "right"
+        ) +
+        scale_color_manual(values = color_palette) +
+        geom_hline(yintercept = 0, linetype = "dotted", color = "gray50", alpha = 0.7)
+      
+      # RCoT correlation lineplot (bottom row)
+      p_lineplot_rcot <- ggplot(cor_data_rcot, aes(x = n_sample, y = correlation, 
+                                                     color = embedding, group = embedding)) +
+        geom_line(linetype = "dashed", linewidth = 0.8) +
+        geom_point(shape = 17, size = 2.5) +  # 17 = triangle for RCoT
+        facet_wrap(~ condition, ncol = 2) +
+        labs(
+          x = "Sample Size",
+          y = "Correlation (RCoT)",
+          color = "Embedding"
+        ) +
+        base_theme +
+        theme(
+          axis.text.x = element_text(angle = 45, hjust = 1),
+          legend.position = "right"
+        ) +
+        scale_color_manual(values = color_palette) +
+        geom_hline(yintercept = 0, linetype = "dotted", color = "gray50", alpha = 0.7)
+      
+      # ===== Combine plots using patchwork (3 rows) =====
+      combined_plot <- p_boxplot / p_lineplot_pcm / p_lineplot_rcot +
+        plot_layout(heights = c(1, 1, 1), guides = "collect") &
+        theme(legend.position = "right")
+    }
+    
+    # Save combined plot
+    png_path <- file.path(figures_dir, sprintf("diagnostic_%s_%d_%d.png", 
+                                               metric_name, min(seeds), max(seeds)))
+    ggsave(png_path, plot = combined_plot, width = 14, height = 14, units = "in", dpi = 300)
+    cat(sprintf("  Saved: %s\n", basename(png_path)))
+    
+    pdf_path <- file.path(figures_dir, sprintf("diagnostic_%s_%d_%d.pdf", 
+                                               metric_name, min(seeds), max(seeds)))
+    ggsave(pdf_path, plot = combined_plot, width = 14, height = 14, units = "in")
+    
+  }, error = function(e) {
+    cat(sprintf("  Warning: Plot failed for %s: %s\n", metric_name, e$message))
+  })
 }
 
 cat("\n=== Diagnostic Visualization Complete ===\n")
