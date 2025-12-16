@@ -8,7 +8,7 @@ library(grid)
 #### For presentations
 ##color palettes for plotting
 palet_discrete <- paletteer::paletteer_d("colorBlindness::Blue2Orange10Steps")
-path_to_save_nested_loop_plots <- ""
+path_to_save_nested_loop_plots <- "/sc/home/marco.simnacher/dncitPaper/inst/diagnostic_embedding/figures"
 
 #### split into CI and No CI
 #path to results (no ci and ci rejection rates)
@@ -246,13 +246,13 @@ print(p_conf_dim)
 #palet_discrete <- paletteer::paletteer_d("colorBlindness::Blue2Orange10Steps")
 palet_discrete <- paletteer::paletteer_d("ggthemes::Classic_10_Medium")
 #palet_discrete <- palet_discrete[seq(1,15, length.out=12)]
-path_to_save_nested_loop_plots <- ""
+path_to_save_nested_loop_plots <- "/sc/home/marco.simnacher/dncitPaper/inst/plots"
 
 #### split into CI and No CI
-folder_path <- "/sc/home/marco.simnacher/dncitPaper/Results/CI/rejection_rates"
+folder_path <- "/sc/home/marco.simnacher/dncitPaper/Results/No_CI/rejection_rates/seeds_1_200"
 #folder_path <- "Results\\No_CI\\rejection_rates"
 all_files <- list.files(folder_path, full.names = TRUE)
-all_files <- all_files[setdiff(1:length(all_files), grep('1_0_0.5_0|2_0_1_0|2_3_1_0|3_0_1_0|3_3_1_0|4_0_1_0|4_3_1_0|5_0_1_0|5_3_1_0', all_files))]
+all_files <- all_files[setdiff(1:length(all_files), grep('1_0_0.5_0', all_files))]
 
 ### 1) Data preparation for nested loop over
 # loop 1: confounder dimension (1,2,4,6,10,15) [APPENDIX] vs confounder dimension (1,2,10) [MAIN TEXT]
@@ -290,7 +290,7 @@ design <- design %>%
          "medicalnet-kpc_graph" = rep(NA, nrow(design)),
          "medicalnet-FCIT" = rep(NA, nrow(design)),
          "medicalnet-CMIknn" = rep(NA, nrow(design)),
-         "medicalnet-comets_pcm" = rep(NA, nrow(design))))
+         "medicalnet-comets_pcm" = rep(NA, nrow(design)))
 
 embedding_maps <- c('fastsurfer_fastsurfer', 'freesurfer', 'condVAE', 'medicalnet')
 dncits <- c('RCOT', 'WALD', 'kpc_graph', 'FCIT', 'CMIknn', 'comets_pcm')
@@ -313,14 +313,15 @@ design$confounder <- rep(c(1,2,4,6,10,15), each=10)
 colnames(design) <- c("sample_sizes", "confounder",
                       "Fastsurfer-RCOT", "Fastsurfer-WALD", "Fastsurfer-CPT_KPC", "Fastsurfer-FCIT", "Fastsurfer-CMIknn", "Fastsurfer-PCM",
                       "Freesurfer-RCOT", "Freesurfer-WALD", "Freesurfer-CPT_KPC", "Freesurfer-FCIT", "Freesurfer-CMIknn", "Freesurfer-PCM",
-                      "cVAE-RCOT", "cVAE-WALD", "cVAE-CPT_KPC", "cVAE-FCIT", "cVAE-CMIknn", "cVAE-PCM")
+                      "cVAE-RCOT", "cVAE-WALD", "cVAE-CPT_KPC", "cVAE-FCIT", "cVAE-CMIknn", "cVAE-PCM",
+                      "MedicalNet-RCOT", "MedicalNet-WALD", "MedicalNet-CPT_KPC", "MedicalNet-FCIT", "MedicalNet-CMIknn", "MedicalNet-PCM")
 custom_order <- c("sample_sizes", "confounder",
-                  "Fastsurfer-RCOT", "Freesurfer-RCOT","cVAE-RCOT",
-                  "Fastsurfer-CPT_KPC", "Freesurfer-CPT_KPC", "cVAE-CPT_KPC",
-                  "Fastsurfer-FCIT", "Freesurfer-FCIT", "cVAE-FCIT",
-                  "Fastsurfer-CMIknn","Freesurfer-CMIknn", "cVAE-CMIknn",
-                  "Fastsurfer-PCM","Freesurfer-PCM", "cVAE-PCM",
-                  "Fastsurfer-WALD", "Freesurfer-WALD","cVAE-WALD")
+                  "Fastsurfer-RCOT", "Freesurfer-RCOT","cVAE-RCOT", "MedicalNet-RCOT",
+                  "Fastsurfer-CPT_KPC", "Freesurfer-CPT_KPC", "cVAE-CPT_KPC", "MedicalNet-CPT_KPC",
+                  "Fastsurfer-FCIT", "Freesurfer-FCIT", "cVAE-FCIT", "MedicalNet-FCIT",
+                  "Fastsurfer-CMIknn","Freesurfer-CMIknn", "cVAE-CMIknn", "MedicalNet-CMIknn",
+                  "Fastsurfer-PCM","Freesurfer-PCM", "cVAE-PCM", "MedicalNet-PCM",
+                  "Fastsurfer-WALD", "Freesurfer-WALD","cVAE-WALD", "MedicalNet-WALD")
 #resort columns
 design <- design[, custom_order]
 design_conf_dim_ci <- design
@@ -359,9 +360,15 @@ design <- design %>%
          "condVAE-kpc_graph" = rep(NA, nrow(design)),
          "condVAE-FCIT" = rep(NA, nrow(design)),
          "condVAE-CMIknn" = rep(NA, nrow(design)),
-         "condVAE-comets_pcm" = rep(NA, nrow(design)))
+         "condVAE-comets_pcm" = rep(NA, nrow(design)),
+         "medicalnet-RCOT" = rep(NA, nrow(design)),
+         "medicalnet-WALD" = rep(NA, nrow(design)),
+         "medicalnet-kpc_graph" = rep(NA, nrow(design)),
+         "medicalnet-FCIT" = rep(NA, nrow(design)),
+         "medicalnet-CMIknn" = rep(NA, nrow(design)),
+         "medicalnet-comets_pcm" = rep(NA, nrow(design)))
 
-embedding_maps <- c('fastsurfer_fastsurfer', 'freesurfer', 'condVAE')
+embedding_maps <- c('fastsurfer_fastsurfer', 'freesurfer', 'condVAE', 'medicalnet')
 dncits <- c('RCOT', 'WALD', 'kpc_graph', 'FCIT', 'CMIknn', 'comets_pcm')
 confounder <- c('linear', 'squared', 'realistic')#, 'breakpoint3')
 for(dncit in dncits){
@@ -381,14 +388,15 @@ design$confounder <- rep(c('linear', 'squared', 'complex'), each=10)
 colnames(design) <- c("sample_sizes", "confounder",
                       "Fastsurfer-RCOT", "Fastsurfer-WALD", "Fastsurfer-CPT_KPC", "Fastsurfer-FCIT", "Fastsurfer-CMIknn", "Fastsurfer-PCM",
                       "Freesurfer-RCOT", "Freesurfer-WALD", "Freesurfer-CPT_KPC", "Freesurfer-FCIT", "Freesurfer-CMIknn", "Freesurfer-PCM",
-                      "cVAE-RCOT", "cVAE-WALD", "cVAE-CPT_KPC", "cVAE-FCIT", "cVAE-CMIknn", "cVAE-PCM")
+                      "cVAE-RCOT", "cVAE-WALD", "cVAE-CPT_KPC", "cVAE-FCIT", "cVAE-CMIknn", "cVAE-PCM",
+                      "MedicalNet-RCOT", "MedicalNet-WALD", "MedicalNet-CPT_KPC", "MedicalNet-FCIT", "MedicalNet-CMIknn", "MedicalNet-PCM")
 custom_order <- c("sample_sizes", "confounder",
-                  "Fastsurfer-RCOT", "Freesurfer-RCOT","cVAE-RCOT",
-                  "Fastsurfer-CPT_KPC", "Freesurfer-CPT_KPC", "cVAE-CPT_KPC",
-                  "Fastsurfer-FCIT", "Freesurfer-FCIT", "cVAE-FCIT",
-                  "Fastsurfer-CMIknn","Freesurfer-CMIknn", "cVAE-CMIknn",
-                  "Fastsurfer-PCM","Freesurfer-PCM", "cVAE-PCM",
-                  "Fastsurfer-WALD", "Freesurfer-WALD","cVAE-WALD")
+                  "Fastsurfer-RCOT", "Freesurfer-RCOT","cVAE-RCOT", "MedicalNet-RCOT",
+                  "Fastsurfer-CPT_KPC", "Freesurfer-CPT_KPC", "cVAE-CPT_KPC", "MedicalNet-CPT_KPC",
+                  "Fastsurfer-FCIT", "Freesurfer-FCIT", "cVAE-FCIT", "MedicalNet-FCIT",
+                  "Fastsurfer-CMIknn","Freesurfer-CMIknn", "cVAE-CMIknn", "MedicalNet-CMIknn",
+                  "Fastsurfer-PCM","Freesurfer-PCM", "cVAE-PCM", "MedicalNet-PCM",
+                  "Fastsurfer-WALD", "Freesurfer-WALD","cVAE-WALD", "MedicalNet-WALD")
 #resort columns
 design <- design[, custom_order]
 design_conf_relation_ci <- design
@@ -404,7 +412,7 @@ design$'Setting' <- rep(c('No', 'Yes'), each=30)
 design$confounder <- rep(rep(c(1,2,3),each=10),2)
 ## APPENDIX
 # without PCM
-design <- design %>% select(-contains("PCM"))
+#design <- design %>% select(-contains("PCM"))
 p_conf_relation <- looplot::nested_loop_plot(resdf = design,
                                              x = "sample_sizes",
                                              grid_rows = 'Setting',
@@ -442,12 +450,12 @@ p_conf_relation <- looplot::nested_loop_plot(resdf = design,
                                                                                      size = 15)
                                                )
                                              ))
-#ggplot2::ggsave(paste0(path_to_save_nested_loop_plots, 'all_dncits_nested_loop_conf_rel_power_T1E_app.png'), p_conf_relation, width = 16, height = 16, dpi = 300)
+#ggplot2::ggsave(paste0(path_to_save_nested_loop_plots, '/all_dncits_nested_loop_conf_rel_power_T1E_app.png'), p_conf_relation, width = 16, height = 16, dpi = 300)
 print(p_conf_relation)
 
 ## MAIN TEXT (3 columns)
 design_main_text <- design %>%
-  mutate(across(contains("Fastsurfer-") | contains("cVAE-"),
+  mutate(across(contains("Fastsurfer-") ,#| contains("cVAE-"),
                 ~ ifelse(Setting == "No", NA, .)))
 #remove tests without power from power plots
 set_to_NA_because_no_power <- c()
@@ -464,11 +472,19 @@ for(col in colnames(design_main_text)[3:(ncol(design_main_text)-1)]){
       design_main_text[which(design_main_text$confounder == confounder & design_main_text$Setting == "Yes"), col] <- NA
       set_to_NA_because_no_power <- c(set_to_NA_because_no_power, paste(col, confounder))
     }
+    for (sample_size in c(145, 256, 350, 460, 825, 1100, 1475, 1964, 5000, 10000)){
+      if(any(design_main_text$confounder == confounder & design_main_text$sample_sizes == sample_size & design_main_text[[col]] > 0.15 & design_main_text$Setting == "No", na.rm=TRUE)){
+        print(col)
+        print(confounder)
+        design_main_text[which(design_main_text$confounder == confounder & design_main_text$sample_sizes == sample_size & design_main_text$Setting == "Yes"), col] <- NA
+        set_to_NA_because_no_power <- c(set_to_NA_because_no_power, paste(col, confounder))
+      }
+    }
   }
 }
 
 # without PCM
-design_main_text <- design_main_text %>% select(-contains("PCM"))
+# design_main_text <- design_main_text %>% select(-contains("PCM"))
 #withour Fastsurfer
 design_main_text <- design_main_text %>% select(-contains("Fastsurfer"))
 methods_depicted <- colnames(design_main_text)[-c(1:2, ncol(design_main_text))]
@@ -483,11 +499,11 @@ p_conf_relation <- looplot::nested_loop_plot(resdf = design_main_text,
                                              legend_labels = methods_depicted,  # Custom labels if needed
                                              x_name = "Sample size", y_name = "Rejection rate",
                                              spu_x_shift = 1,
-                                             colors = palet_discrete[rep(c(1,2,3,4,7), each=2)],
-                                             line_linetypes = c(1,3),
+                                             colors = palet_discrete[rep(c(1,2,7,4,3,6), each=3)],
+                                             line_linetypes = c(1,2,3),
                                              point_size = 3,
                                              line_size = 1.5,
-                                             point_shapes = c(19,15),
+                                             point_shapes = c(19,17,15),
                                              steps_values_annotate = TRUE, steps_annotation_size = 6,
                                              hline_intercept = c(0,0.05),
                                              y_expand_add = c(0.1,0.15),
@@ -510,7 +526,7 @@ p_conf_relation <- looplot::nested_loop_plot(resdf = design_main_text,
                                                                                      size = 15)
                                                )
                                              ))
-#ggplot2::ggsave(paste0(path_to_save_nested_loop_plots, 'all_dncits_nested_loop_conf_rel_power_T1E.png'), p_conf_relation, width = 16, height = 10, dpi = 300)
+#ggplot2::ggsave(paste0(path_to_save_nested_loop_plots, '/all_dncits_nested_loop_conf_rel_power_T1E.png'), p_conf_relation, width = 16, height = 10, dpi = 300)
 print(p_conf_relation)
 
 ## Power and T1E separate
@@ -527,11 +543,11 @@ p_conf_relation_ci <- looplot::nested_loop_plot(resdf = design_ci,
                                                 legend_labels = methods_depicted,  # Custom labels if needed
                                                 x_name = "Sample size", y_name = "Rejection rate",
                                                 spu_x_shift = 1,
-                                                colors = palet_discrete[rep(c(1,2,3,4,7), each=2)],
-                                                line_linetypes = c(1,3),
+                                                colors = palet_discrete[rep(c(1,2,7,4,3,6), each=3)],
+                                                line_linetypes = c(1,2,3),
                                                 point_size = 4,
                                                 line_size = 1.5,
-                                                point_shapes = c(19,15),
+                                                point_shapes = c(19,17,15),
                                                 steps_values_annotate = TRUE, steps_annotation_size = 6, steps_color='grey31',steps_annotation_color='grey31',
                                                 hline_intercept = c(0,0.05),
                                                 hline_linetype =c(1),
@@ -557,8 +573,8 @@ p_conf_relation_ci <- looplot::nested_loop_plot(resdf = design_ci,
                                                   )
                                                 ))
 ##No CI
-design_ci <- design[!(design$Setting=='No'),]
-p_conf_relation_no_ci <- looplot::nested_loop_plot(resdf = design_ci,
+design_no_ci <- design[!(design$Setting=='No'),]
+p_conf_relation_no_ci <- looplot::nested_loop_plot(resdf = design_no_ci,
                                                    x = "sample_sizes",
                                                    grid_rows = 'Setting',
                                                    steps = "confounder",
@@ -568,11 +584,11 @@ p_conf_relation_no_ci <- looplot::nested_loop_plot(resdf = design_ci,
                                                    legend_labels = methods_depicted,  # Custom labels if needed
                                                    x_name = "Sample size", y_name = "Rejection rate",
                                                    spu_x_shift = 1,
-                                                   colors = palet_discrete[rep(c(1,2,3,4,7), each=2)],
-                                                   line_linetypes = c(1,3),
+                                                   colors = palet_discrete[rep(c(1,2,7,4,3,6), each=3)],
+                                                   line_linetypes = c(1,2,3),
                                                    point_size = 4,
                                                    line_size = 1.5,
-                                                   point_shapes = c(19,15),
+                                                   point_shapes = c(19,17,15),
                                                    steps_values_annotate = TRUE, steps_annotation_size = 6, steps_color='grey31',steps_annotation_color='grey31',
                                                    hline_intercept = c(0),
                                                    hline_linetype =1,
@@ -603,10 +619,10 @@ p_conf_relation_no_ci <- looplot::nested_loop_plot(resdf = design_ci,
 
 # legend
 design_legend <- design %>%
-  mutate(across(contains("Fastsurfer-") | contains("cVAE-"),
+  mutate(across(contains("Fastsurfer-"),# | contains("cVAE-"),
                 ~ ifelse(Setting == "No", NA, .)))
 # without PCM
-design_legend <- design_legend %>% select(-contains("PCM"))
+#design_legend <- design_legend %>% select(-contains("PCM"))
 #withour Fastsurfer
 design_legend <- design_legend %>% select(-contains("Fastsurfer"))
 methods_depicted <- colnames(design_legend)[-c(1:2, ncol(design_legend))]
@@ -620,11 +636,11 @@ p_conf_relation_legend <- looplot::nested_loop_plot(resdf = design_legend,
                                                     legend_labels = methods_depicted,  # Custom labels if needed
                                                     x_name = "Sample size", y_name = "Rejection rate",
                                                     spu_x_shift = 1,
-                                                    colors = palet_discrete[rep(c(1,2,3,4,7), each=2)],
-                                                    line_linetypes = c(1,3),
+                                                    colors = palet_discrete[rep(c(1,2,7,4,3,6), each=3)],
+                                                    line_linetypes = c(1,2,3),
                                                     point_size = 4,
                                                     line_size = 1.5,
-                                                    point_shapes = c(19,15),
+                                                    point_shapes = c(19,17,15),
                                                     steps_values_annotate = TRUE, steps_annotation_size = 6, steps_color='grey31',steps_annotation_color='grey31',
                                                     hline_intercept = c(0,0.05),
                                                     y_expand_add = c(0.1,0.15/2),
@@ -674,7 +690,9 @@ combined_plot <- plot_grid(
   rel_heights = c(1, 1.2)  # Adjust relative heights if needed
 )
 y_axis_label <- ggdraw() +
-  draw_label("Rejection Rate", x = 0.5, y = 0.6, angle = 90, vjust = 0.5, size = 24)  # Add y-axis label
+  draw_label("Rejection Rate", x = 0.5, y = 0.6, angle = 90, vjust = 0.5, size = 24) +
+  theme(panel.background = element_rect(fill = "white", colour = NA), 
+        plot.background = element_rect(fill = "white", colour = NA))
 combined_plot <- plot_grid(
   y_axis_label,  # Y-axis label on the left
   combined_plot,  # The stacked plots
@@ -683,7 +701,9 @@ combined_plot <- plot_grid(
 )
 # Apply guides() to modify the legend appearance (e.g., number of rows, key size)
 p_conf_relation_no_ci_legend <- p_conf_relation_legend +  # Customize the legend
-  guides(colour = guide_legend(nrow = 2, keywidth = 3, keyheight=1.5, override.aes = list(size = 4)))
+  guides(colour = guide_legend(nrow = 3, keywidth = 1.5, keyheight=1.2, override.aes = list(size = 4))) +
+  theme(legend.text = element_text(size = 17),
+        legend.title = element_text(size = 18))
 
 # Use cowplot's get_legend() to extract the modified legend
 legend <- get_legend(p_conf_relation_no_ci_legend)
@@ -693,34 +713,36 @@ p_conf_relation <- plot_grid(
   ncol = 1,  # Legend below, so keep 1 column
   rel_heights = c(1, 0.1)  # Adjust height ratios if needed
 )
-#ggplot2::ggsave(paste0(path_to_save_nested_loop_plots, 'all_dncits_nested_loop_conf_rel_power_T1E_app.png'), p_conf_relation, width = 16, height = 16, dpi = 300)
+#ggplot2::ggsave(paste0(path_to_save_nested_loop_plots, '/all_dncits_nested_loop_conf_rel_power_T1E_app.png'), p_conf_relation, width = 16, height = 16, dpi = 300)
 print(p_conf_relation)
 
 
 ## MAIN TEXT (2 columns)
 # CI
-design_main_text_ci <- design_main_text[!(design_main_text$confounder ==2 | design_main_text$Setting=='Yes'),]
+design_main_text_ci <- design_main_text[!(design_main_text$confounder ==2 | design_main_text$Setting=='Yes'),] %>% 
+    select(-contains("cVAE-") & -contains("MedicalNet-"))
+methods_depicted_ci <- colnames(design_main_text_ci)[-c(1:2, ncol(design_main_text_ci))]
 p_conf_relation_ci <- looplot::nested_loop_plot(resdf = design_main_text_ci,
                                              x = "sample_sizes",
                                              grid_rows = 'Setting',
                                              steps = "confounder",
-                                             methods = methods_depicted,
+                                             methods = methods_depicted_ci,
                                              steps_y_base = -0.15/2, steps_y_height = 0.05/2,
-                                             legend_breaks = methods_depicted,  # Specify the desired order
-                                             legend_labels = methods_depicted,  # Custom labels if needed
+                                             legend_breaks = methods_depicted_ci,  # Specify the desired order
+                                             legend_labels = methods_depicted_ci,  # Custom labels if needed
                                              x_name = "Sample size", y_name = "Rejection rate",
                                              spu_x_shift = 1,
-                                             colors = palet_discrete[rep(c(1,2,3,4,7), each=2)],
-                                             line_linetypes = c(1,3),
+                                             colors = palet_discrete[rep(c(1,2,7,4,3,6))],#, each=3)],
+                                             line_linetypes = c(1),#,2,3),
                                              point_size = 4,
                                              line_size = 1.5,
-                                             point_shapes = c(19,15),
+                                             point_shapes = c(19),#,17,15),
                                              steps_values_annotate = TRUE, steps_annotation_size = 8, steps_color='grey31',steps_annotation_color='grey31',
                                              hline_intercept = c(0,0.05),
                                              hline_linetype =c(1),
                                              hline_size = c(0.5,1.5),
                                              hline_colour = "black",
-                                             y_expand_add = c(0.1/2,0.15/2),
+                                             y_expand_add = c(0.15,0.15),
                                              line_alpha =0.6,
                                              point_alpha = 0.8,
                                              legend_name = "DNCIT",
@@ -750,17 +772,17 @@ p_conf_relation_no_ci <- looplot::nested_loop_plot(resdf = design_main_text_no_c
                                              legend_labels = methods_depicted,  # Custom labels if needed
                                              x_name = "Sample size", y_name = "Rejection rate",
                                              spu_x_shift = 1,
-                                             colors = palet_discrete[rep(c(1,2,3,4,7), each=2)],
-                                             line_linetypes = c(1,3),
+                                             colors = palet_discrete[rep(c(1,2,7,4,3,6), each=3)],
+                                             line_linetypes = c(1,2,3),
                                              point_size = 4,
                                              line_size = 1.5,
-                                             point_shapes = c(19,15),
+                                             point_shapes = c(19,17,15),
                                              steps_values_annotate = TRUE, steps_annotation_size = 8, steps_color='grey31',steps_annotation_color='grey31',
                                              hline_intercept = c(0),
                                              hline_linetype =1,
                                              hline_size = c(0.5),
                                              hline_colour = "black",
-                                             y_expand_add = c(0.1,0.15),
+                                             y_expand_add = c(0.1,0.15/2),
                                              y_breaks = seq(0,1,0.2),
                                              line_alpha =0.6,
                                              point_alpha = 0.8,
@@ -784,10 +806,10 @@ p_conf_relation_no_ci <- looplot::nested_loop_plot(resdf = design_main_text_no_c
 
 # legend
 design_legend <- design %>%
-  mutate(across(contains("Fastsurfer-") | contains("cVAE-"),
+  mutate(across(contains("Fastsurfer-"), # | contains("cVAE-"),
                 ~ ifelse(Setting == "No", NA, .)))
 # without PCM
-design_legend <- design_legend %>% select(-contains("PCM"))
+# design_legend <- design_legend %>% select(-contains("PCM"))
 #withour Fastsurfer
 design_legend <- design_legend %>% select(-contains("Fastsurfer"))
 methods_depicted <- colnames(design_legend)[-c(1:2, ncol(design_legend))]
@@ -801,11 +823,11 @@ p_conf_relation_legend <- looplot::nested_loop_plot(resdf = design_legend,
                                                    legend_labels = methods_depicted,  # Custom labels if needed
                                                    x_name = "Sample size", y_name = "Rejection rate",
                                                    spu_x_shift = 1,
-                                                   colors = palet_discrete[rep(c(1,2,3,4,7), each=2)],
-                                                   line_linetypes = c(1,3),
+                                                   colors = palet_discrete[rep(c(1,2,7,4,3,6), each=3)],
+                                                   line_linetypes = c(1,2,3),
                                                    point_size = 4,
                                                    line_size = 1.5,
-                                                   point_shapes = c(19,15),
+                                                   point_shapes = c(19,17,15),
                                                    steps_values_annotate = TRUE, steps_annotation_size = 7, steps_color='grey31',steps_annotation_color='grey31',
                                                    hline_intercept = c(0,0.05),
                                                    y_expand_add = c(0.1,0.15/2),
@@ -854,7 +876,9 @@ combined_plot <- plot_grid(
   rel_heights = c(1, 1.2)  # Adjust relative heights if needed
 )
 y_axis_label <- ggdraw() +
-    draw_label("Rejection Rate", x = 0.5, y = 0.6, angle = 90, vjust = 0.5, size = 28)  # Add y-axis label
+  draw_label("Rejection Rate", x = 0.5, y = 0.6, angle = 90, vjust = 0.5, size = 24) +
+  theme(panel.background = element_rect(fill = "white", colour = NA), 
+        plot.background = element_rect(fill = "white", colour = NA))
 combined_plot <- plot_grid(
   y_axis_label,  # Y-axis label on the left
   combined_plot,  # The stacked plots
@@ -863,7 +887,9 @@ combined_plot <- plot_grid(
 )
 # Apply guides() to modify the legend appearance (e.g., number of rows, key size)
 p_conf_relation_no_ci_legend <- p_conf_relation_legend +  # Customize the legend
-  guides(colour = guide_legend(nrow = 2, keywidth = 3, keyheight=1.5, override.aes = list(size = 4)))
+  guides(colour = guide_legend(nrow = 3, keywidth = 1.5, keyheight=1.2, override.aes = list(size = 4))) +
+  theme(legend.text = element_text(size = 19.3),
+        legend.title = element_text(size = 20))
 
 # Use cowplot's get_legend() to extract the modified legend
 legend <- get_legend(p_conf_relation_no_ci_legend)
@@ -873,7 +899,7 @@ p_conf_relation <- plot_grid(
   ncol = 1,  # Legend below, so keep 1 column
   rel_heights = c(1, 0.1)  # Adjust height ratios if needed
 )
-#ggplot2::ggsave(paste0(path_to_save_nested_loop_plots, 'all_dncits_nested_loop_conf_rel_power_T1E.png'), p_conf_relation, width = 18, height = 16, dpi = 300)
+# ggplot2::ggsave(paste0(path_to_save_nested_loop_plots, '/all_dncits_nested_loop_conf_rel_power_T1E.png'), p_conf_relation, width = 18, height = 16, dpi = 300)
 print(p_conf_relation)
 
 ############ conf dimension
@@ -882,7 +908,7 @@ design$'Setting' <- rep(c('No', 'Yes'), each=60)
 # confounder dimension (1,2,4,6,10,15) [APPENDIX] vs confounder dimension (1,2,10) [MAIN TEXT]
 # APPENDIX
 # without PCM
-design <- design %>% select(-contains("PCM"))
+#design <- design %>% select(-contains("PCM"))
 p_conf_dim = looplot::nested_loop_plot(resdf = design,
                                        x = "sample_sizes",
                                        grid_rows = 'Setting',
@@ -890,11 +916,11 @@ p_conf_dim = looplot::nested_loop_plot(resdf = design,
                                        steps_y_base = -0.1, steps_y_height = 0.05,
                                        x_name = "Sample size", y_name = "Rejection rate",
                                        spu_x_shift = 1,
-                                       colors = palet_discrete[c(rep(1,3), rep(2,3), rep(3,3), rep(4,3), rep(7,3))],
-                                       line_linetypes = c(6,1,3),
+                                       colors = palet_discrete[c(rep(1,3), rep(2,3), rep(7,3), rep(4,3), rep(3,3), rep(6,3))],
+                                       line_linetypes = c(1,2,3),
                                        point_size = 3,
                                        line_size = 1,
-                                       point_shapes = c(17,19,15),
+                                       point_shapes = c(19,17,15),
                                        steps_values_annotate = TRUE, steps_annotation_size = 6,
                                        y_expand_add = c(0.1,0.15),
                                        hline_intercept = c(0,0.05),
@@ -915,19 +941,19 @@ p_conf_dim = looplot::nested_loop_plot(resdf = design,
                                          )
                                        ))
 
-#ggplot2::ggsave(paste0(path_to_save_nested_loop_plots, 'all_dncits_nested_loop_conf_dim.png'), p_conf_dim, width = 16, height = 10, dpi = 300)
+#ggplot2::ggsave(paste0(path_to_save_nested_loop_plots, '/all_dncits_nested_loop_conf_dim.png'), p_conf_dim, width = 16, height = 10, dpi = 300)
 print(p_conf_dim)
 
 # MAIN TEXT:
 # design <- design[design$'confounder' %in% c(1,2,10),]
 #set for T1E Fastsurfer an cVAE to NA
 design_main_text <- design %>%
-  mutate(across(contains("Fastsurfer-") | contains("cVAE-"),
+  mutate(across(contains("Fastsurfer-") ,#| contains("cVAE-"),
                 ~ ifelse(Setting == "No", NA, .)))
 #remove tests without power from power plots
 set_to_NA_because_no_power <- c()
 for(col in colnames(design_main_text)[3:(ncol(design_main_text)-1)]){
-  for(confounder in c(1,2,10)){
+  for(confounder in c(1,2,4,6,10,15)){
     if(grepl("CMIknn", col)){
       max_sample_size <- 1100
     }else{
@@ -939,29 +965,40 @@ for(col in colnames(design_main_text)[3:(ncol(design_main_text)-1)]){
       design_main_text[which(design_main_text$confounder == confounder & design_main_text$Setting == "Yes"), col] <- NA
       set_to_NA_because_no_power <- c(set_to_NA_because_no_power, paste(col, confounder))
     }
+    for (sample_size in c(145, 256, 350, 460, 825, 1100, 1475, 1964, 5000, 10000)){
+      if(any(design_main_text$confounder == confounder & design_main_text$sample_sizes == sample_size & design_main_text[[col]] > 0.15 & design_main_text$Setting == "No", na.rm=TRUE)){
+        print(col)
+        print(confounder)
+        design_main_text[which(design_main_text$confounder == confounder & design_main_text$sample_sizes == sample_size & design_main_text$Setting == "Yes"), col] <- NA
+        set_to_NA_because_no_power <- c(set_to_NA_because_no_power, paste(col, confounder))
+      }
+    }
   }
 }
 
 # without PCM
-design_main_text <- design_main_text %>% select(-contains("PCM"))
+# design_main_text <- design_main_text %>% select(-contains("PCM"))
 #withour Fastsurfer
-design_main_text <- design_main_text %>% select(-contains("Fastsurfer"))
-methods_depicted <- colnames(design_main_text)[-c(1:2, ncol(design_main_text))]
+design_main_text <- design_main_text %>% select(-contains("Fastsurfer-"))
+design_main_text <- design_main_text %>%
+  mutate(across(contains("Fastsurfer-") | contains("cVAE-") | contains("MedicalNet-"),
+                ~ ifelse(Setting == "No", NA, .)))
+methods_depicted_ci <- colnames(design_main_text)[-c(1:2, ncol(design_main_text))]
 p_conf_dim = looplot::nested_loop_plot(resdf = design_main_text,
                                        x = "sample_sizes",
                                        grid_rows = 'Setting',
                                        steps  = "confounder",
-                                       methods = methods_depicted,
+                                       methods = methods_depicted_ci,
                                        steps_y_base = -0.1, steps_y_height = 0.05,,
-                                       legend_breaks = methods_depicted,  # Specify the desired order
-                                       legend_labels = methods_depicted,  # Custom labels if needed
+                                       legend_breaks = methods_depicted_ci,  # Specify the desired order
+                                       legend_labels = methods_depicted_ci,  # Custom labels if needed
                                        x_name = "Sample size", y_name = "Rejection rate",
                                        spu_x_shift = 1,
-                                       colors = palet_discrete[rep(c(1,2,3,4,7), each=2)],
-                                       line_linetypes = rep(c(1,3),4),
+                                       colors = palet_discrete[rep(c(1,2,7,4,3,6), each=3)],
+                                       line_linetypes = rep(c(1,2,3),4),
                                        point_size = 3,
                                        line_size = 1,
-                                       point_shapes = c(19,15),
+                                       point_shapes = c(19,17,15),
                                        steps_values_annotate = TRUE, steps_annotation_size = 6,
                                        y_expand_add = c(0.1,0.15),
                                        hline_intercept = c(0,0.05),
@@ -981,7 +1018,7 @@ p_conf_dim = looplot::nested_loop_plot(resdf = design_main_text,
                                                                                size = 15)
                                          )
                                        ))
-#ggplot2::ggsave(paste0(path_to_save_nested_loop_plots, 'all_dncits_nested_loop_conf_dim_main_text.png'), p_conf_dim, width = 16, height = 10, dpi = 300)
+ggplot2::ggsave(paste0(path_to_save_nested_loop_plots, '/all_dncits_nested_loop_conf_dim_main_text.png'), p_conf_dim, width = 16, height = 10, dpi = 300)
 print(p_conf_dim)
 
 ### Power and T1E separate
@@ -999,11 +1036,11 @@ p_conf_dim_ci <- looplot::nested_loop_plot(resdf = design_ci,
                                            legend_labels = methods_depicted,  # Custom labels if needed
                                            x_name = "Sample size", y_name = "Rejection rate",
                                            spu_x_shift = 1,
-                                           colors = palet_discrete[rep(c(1,2,3,4,7), each=2)],
-                                           line_linetypes = c(1,3),
+                                           colors = palet_discrete[rep(c(1,2,7,4,3,6), each=3)],
+                                           line_linetypes = c(1,2,3),
                                            point_size = 4,
                                            line_size = 1.5,
-                                           point_shapes = c(19,15),
+                                           point_shapes = c(19,17,15),
                                            steps_values_annotate = TRUE, steps_annotation_size = 6, steps_color='grey31',steps_annotation_color='grey31',
                                            hline_intercept = c(0,0.05),
                                            hline_linetype =c(1),
@@ -1036,11 +1073,11 @@ p_conf_dim_no_ci <- looplot::nested_loop_plot(resdf = design_no_ci,
                                               legend_labels = methods_depicted,  # Custom labels if needed
                                               x_name = "Sample size", y_name = "Rejection rate",
                                               spu_x_shift = 1,
-                                              colors = palet_discrete[rep(c(1,2,3,4,7), each=2)],
-                                              line_linetypes = c(1,3),
+                                              colors = palet_discrete[rep(c(1,2,7,4,3,6), each=3)],
+                                              line_linetypes = c(1,2,3),
                                               point_size = 4,
                                               line_size = 1.5,
-                                              point_shapes = c(19,15),
+                                              point_shapes = c(19,17,15),
                                               steps_values_annotate = TRUE, steps_annotation_size = 6, steps_color='grey31',steps_annotation_color='grey31',
                                               hline_intercept = c(0),
                                               hline_linetype =1,
@@ -1066,10 +1103,10 @@ p_conf_dim_no_ci <- looplot::nested_loop_plot(resdf = design_no_ci,
 
 # legend
 design_legend <- design %>%
-  mutate(across(contains("Fastsurfer-") | contains("cVAE-"),
+  mutate(across(contains("Fastsurfer-"),# | contains("cVAE-"),
                 ~ ifelse(Setting == "No", NA, .)))
 # without PCM
-design_legend <- design_legend %>% select(-contains("PCM"))
+#design_legend <- design_legend %>% select(-contains("PCM"))
 #withour Fastsurfer
 design_legend <- design_legend %>% select(-contains("Fastsurfer"))
 methods_depicted <- colnames(design_legend)[-c(1:2, ncol(design_legend))]
@@ -1083,11 +1120,11 @@ p_conf_dim_legend <- looplot::nested_loop_plot(resdf = design_legend,
                                                legend_labels = methods_depicted,  # Custom labels if needed
                                                x_name = "Sample size", y_name = "Rejection rate",
                                                spu_x_shift = 1,
-                                               colors = palet_discrete[rep(c(1,2,3,4,7), each=2)],
-                                               line_linetypes = c(1,3),
+                                               colors = palet_discrete[rep(c(1,2,7,4,3,6), each=3)],
+                                               line_linetypes = c(1,2,3),
                                                point_size = 4,
                                                line_size = 1.5,
-                                               point_shapes = c(19,15),
+                                               point_shapes = c(19,17,15),
                                                steps_values_annotate = TRUE, steps_annotation_size = 6, steps_color='grey31',steps_annotation_color='grey31',
                                                hline_intercept = c(0,0.05),
                                                y_expand_add = c(0.1,0.15/2),
@@ -1134,7 +1171,9 @@ combined_plot <- plot_grid(
   rel_heights = c(1, 1.2)  # Adjust relative heights if needed
 )
 y_axis_label <- ggdraw() +
-  draw_label("Rejection Rate", x = 0.5, y = 0.6, angle = 90, vjust = 0.5, size = 24)  # Add y-axis label
+  draw_label("Rejection Rate", x = 0.5, y = 0.6, angle = 90, vjust = 0.5, size = 24) +
+  theme(panel.background = element_rect(fill = "white", colour = NA), 
+        plot.background = element_rect(fill = "white", colour = NA))
 combined_plot <- plot_grid(
   y_axis_label,  # Y-axis label on the left
   combined_plot,  # The stacked plots
@@ -1143,8 +1182,9 @@ combined_plot <- plot_grid(
 )
 # Apply guides() to modify the legend appearance (e.g., number of rows, key size)
 p_conf_dim_no_ci_legend <- p_conf_dim_legend +  # Customize the legend
-  guides(colour = guide_legend(nrow = 2, keywidth = 3, keyheight=1.5, override.aes = list(size = 4)))
-
+  guides(colour = guide_legend(nrow = 3, keywidth = 2, keyheight=1.2, override.aes = list(size = 4))) +
+  theme(legend.text = element_text(size = 19),
+        legend.title = element_text(size = 20))
 # Use cowplot's get_legend() to extract the modified legend
 legend <- get_legend(p_conf_dim_no_ci_legend)
 p_conf_dim <- plot_grid(
@@ -1153,7 +1193,7 @@ p_conf_dim <- plot_grid(
   ncol = 1,  # Legend below, so keep 1 column
   rel_heights = c(1, 0.15)  # Adjust height ratios if needed
 )
-#ggplot2::ggsave(paste0(path_to_save_nested_loop_plots, 'all_dncits_nested_loop_conf_dim.png'), p_conf_dim, width = 16, height = 10, dpi = 300)
+#ggplot2::ggsave(paste0(path_to_save_nested_loop_plots, '/all_dncits_nested_loop_conf_dim.png'), p_conf_dim, width = 18, height = 15, dpi = 300)
 print(p_conf_dim)
 
 
@@ -1172,11 +1212,11 @@ p_conf_dim_ci <- looplot::nested_loop_plot(resdf = design_main_text_ci,
                                                 legend_labels = methods_depicted,  # Custom labels if needed
                                                 x_name = "Sample size", y_name = "Rejection rate",
                                                 spu_x_shift = 1,
-                                                colors = palet_discrete[rep(c(1,2,3,4,7), each=2)],
-                                                line_linetypes = c(1,3),
+                                                colors = palet_discrete[rep(c(1,2,7,4,3,6), each=3)],
+                                                line_linetypes = c(1,2,3),
                                                 point_size = 4,
                                                 line_size = 1.5,
-                                                point_shapes = c(19,15),
+                                                point_shapes = c(19,17,15),
                                                 steps_values_annotate = TRUE, steps_annotation_size = 8, steps_color='grey31',steps_annotation_color='grey31',
                                                 hline_intercept = c(0,0.05),
                                                 hline_linetype =c(1),
@@ -1208,11 +1248,11 @@ p_conf_dim_no_ci <- looplot::nested_loop_plot(resdf = design_main_text_no_ci,
                                                    legend_labels = methods_depicted,  # Custom labels if needed
                                                    x_name = "Sample size", y_name = "Rejection rate",
                                                    spu_x_shift = 1,
-                                                   colors = palet_discrete[rep(c(1,2,3,4,7), each=2)],
-                                                   line_linetypes = c(1,3),
+                                                   colors = palet_discrete[rep(c(1,2,7,4,3,6), each=3)],
+                                                   line_linetypes = c(1,2,3),
                                                    point_size = 4,
                                                    line_size = 1.5,
-                                                   point_shapes = c(19,15),
+                                                   point_shapes = c(19,17,15),
                                                    steps_values_annotate = TRUE, steps_annotation_size = 8, steps_color='grey31',steps_annotation_color='grey31',
                                                    hline_intercept = c(0),
                                                    hline_linetype =1,
@@ -1237,7 +1277,7 @@ p_conf_dim_no_ci <- looplot::nested_loop_plot(resdf = design_main_text_no_ci,
 
 # legend
 design_legend <- design %>%
-  mutate(across(contains("Fastsurfer-") | contains("cVAE-"),
+  mutate(across(contains("Fastsurfer-"),# | contains("cVAE-"),
                 ~ ifelse(Setting == "No", NA, .)))
 # without PCM
 design_legend <- design_legend %>% select(-contains("PCM"))
@@ -1254,11 +1294,11 @@ p_conf_dim_legend <- looplot::nested_loop_plot(resdf = design_legend,
                                                     legend_labels = methods_depicted,  # Custom labels if needed
                                                     x_name = "Sample size", y_name = "Rejection rate",
                                                     spu_x_shift = 1,
-                                                    colors = palet_discrete[rep(c(1,2,3,4,7), each=2)],
-                                                    line_linetypes = c(1,3),
+                                                    colors = palet_discrete[rep(c(1,2,7,4,3,6), each=3)],
+                                                    line_linetypes = c(1,2,3),
                                                     point_size = 4,
                                                     line_size = 1.5,
-                                                    point_shapes = c(19,15),
+                                                    point_shapes = c(19,17,15),
                                                     steps_values_annotate = TRUE, steps_annotation_size = 8, steps_color='grey31',steps_annotation_color='grey31',
                                                     hline_intercept = c(0,0.05),
                                                     y_expand_add = c(0.1,0.15/2),
@@ -1304,7 +1344,9 @@ combined_plot <- plot_grid(
   rel_heights = c(1, 1.2)  # Adjust relative heights if needed
 )
 y_axis_label <- ggdraw() +
-  draw_label("Rejection Rate", x = 0.5, y = 0.6, angle = 90, vjust = 0.5, size = 28)  # Add y-axis label
+  draw_label("Rejection Rate", x = 0.5, y = 0.6, angle = 90, vjust = 0.5, size = 24) +
+  theme(panel.background = element_rect(fill = "white", colour = NA), 
+        plot.background = element_rect(fill = "white", colour = NA))
 combined_plot <- plot_grid(
   y_axis_label,  # Y-axis label on the left
   combined_plot,  # The stacked plots
@@ -1313,7 +1355,9 @@ combined_plot <- plot_grid(
 )
 # Apply guides() to modify the legend appearance (e.g., number of rows, key size)
 p_conf_dim_no_ci_legend <- p_conf_dim_legend +  # Customize the legend
-  guides(colour = guide_legend(nrow = 2, keywidth = 3, keyheight=1.5, override.aes = list(size = 4)))
+  guides(colour = guide_legend(nrow = 3, keywidth = 2, keyheight=1.2, override.aes = list(size = 4))) +
+  theme(legend.text = element_text(size = 19),
+        legend.title = element_text(size = 20))
 
 # Use cowplot's get_legend() to extract the modified legend
 legend <- get_legend(p_conf_dim_no_ci_legend)
@@ -1323,7 +1367,7 @@ p_conf_dim <- plot_grid(
   ncol = 1,  # Legend below, so keep 1 column
   rel_heights = c(1, 0.1)  # Adjust height ratios if needed
 )
-#ggplot2::ggsave(paste0(path_to_save_nested_loop_plots, 'all_dncits_nested_loop_conf_dim_main_text.png'), p_conf_dim, width = 18, height = 16, dpi = 300)
+#ggplot2::ggsave(paste0(path_to_save_nested_loop_plots, '/all_dncits_nested_loop_conf_dim_main_text.png'), p_conf_dim, width = 18, height = 16, dpi = 300)
 print(p_conf_dim)
 
 
@@ -1333,11 +1377,11 @@ print(p_conf_dim)
 
 ### 3) Runtime
 # only relevant files for runtime plot should be in folder!
-folder_path <- "Runtime"
+folder_path <- "/sc/home/marco.simnacher/dncitPaper/Results/CI/runtime_cit/seeds_1_200"
 all_files <- list.files(folder_path, full.names = TRUE)
 
 ## for sample sizes
-folder_path_reject <- "Results\\CI\\rejection_rates"
+folder_path_reject <- "/sc/home/marco.simnacher/dncitPaper/Results/CI/rejection_rates/seeds_1_200"
 all_files_cit <- list.files(folder_path_reject, full.names = TRUE)
 all_files_cit <- all_files_cit[setdiff(1:length(all_files_cit), grep('2_0_1_0|2_3_1_0|3_0_1_0|3_3_1_0|4_0_1_0|4_3_1_0|5_0_1_0|5_3_1_0', all_files_cit))]
 
@@ -1367,9 +1411,15 @@ design <- design %>%
          "condVAE-kpc_graph" = rep(NA, nrow(design)),
          "condVAE-FCIT" = rep(NA, nrow(design)),
          "condVAE-CMIknn" = rep(NA, nrow(design)),
-         "condVAE-comets_pcm" = rep(NA, nrow(design)))
+         "condVAE-comets_pcm" = rep(NA, nrow(design)),
+         "medicalnet-RCOT" = rep(NA, nrow(design)),
+         "medicalnet-WALD" = rep(NA, nrow(design)),
+         "medicalnet-kpc_graph" = rep(NA, nrow(design)),
+         "medicalnet-FCIT" = rep(NA, nrow(design)),
+         "medicalnet-CMIknn" = rep(NA, nrow(design)),
+         "medicalnet-comets_pcm" = rep(NA, nrow(design)))
 
-embedding_maps <- c('fastsurfer_fastsurfer', 'freesurfer', 'condVAE')
+embedding_maps <- c('fastsurfer_fastsurfer', 'freesurfer', 'condVAE', 'medicalnet')
 dncits <- c('RCOT', 'WALD', 'kpc_graph', 'FCIT', 'CMIknn', 'comets_pcm')
 confounder <- c('ukb_z1_', 'ukb_z2', 'ukb_z4', 'ukb_z6', 'ukb_z10', 'ukb_z15')
 for(dncit in dncits){
@@ -1379,6 +1429,7 @@ for(dncit in dncits){
         files_dncit <- grep(dncit, all_files, value = TRUE)
         files_dncit_conf <- grep(embedding, files_dncit, value = TRUE)
         files <- grep(conf, files_dncit_conf, value=TRUE)
+        files <- grep("squared", files, value=TRUE)
         df_runtimes <- read.csv(files, header = TRUE, sep = ",")
 
         df_runtimes <- colMeans(df_runtimes)
@@ -1394,12 +1445,13 @@ for(dncit in dncits){
         col <- grepl(embedding, colnames(design)) & grepl(dncit, colnames(design))
         design[design$confounder==conf & design$sample_sizes %in% df_cit[,1], col] <- df_cit[,2]
       }else{
-        if (embedding == 'freesurfer'){
+        if (TRUE){
           files_dncit <- grep(dncit, all_files, value = TRUE)
           files_dncit_conf <- grep(embedding, files_dncit, value = TRUE)
           files <- grep(conf, files_dncit_conf, value=TRUE)
+          files <- grep("squared", files, value=TRUE)
           df_runtimes <- read.csv(files, header = TRUE, sep = ",")
-
+          
           df_runtimes <- colMeans(df_runtimes)
 
           files_dncit <- grep(dncit, all_files_cit, value = TRUE)
@@ -1425,20 +1477,21 @@ design_runtime$confounder <- rep(c(1,2,4,6,10,15), each=10)
 colnames(design_runtime) <- c("sample_sizes", "confounder dimension",
                       "Fastsurfer-RCOT", "Fastsurfer-WALD", "Fastsurfer-CPT_KPC", "Fastsurfer-FCIT", "Fastsurfer-CMIknn", "Fastsurfer-PCM",
                       "Freesurfer-RCOT", "Freesurfer-WALD", "Freesurfer-CPT_KPC", "Freesurfer-FCIT", "Freesurfer-CMIknn", "Freesurfer-PCM",
-                      "cVAE-RCOT", "cVAE-WALD", "cVAE-CPT_KPC", "cVAE-FCIT", "cVAE-CMIknn", "cVAE-PCM")
+                      "cVAE-RCOT", "cVAE-WALD", "cVAE-CPT_KPC", "cVAE-FCIT", "cVAE-CMIknn", "cVAE-PCM",
+                      "MedicalNet-RCOT", "MedicalNet-WALD", "MedicalNet-CPT_KPC", "MedicalNet-FCIT", "MedicalNet-CMIknn", "MedicalNet-PCM")
 custom_order <- c("sample_sizes", "confounder dimension",
-                  "Fastsurfer-RCOT", "Freesurfer-RCOT","cVAE-RCOT",
-                  "Fastsurfer-CPT_KPC", "Freesurfer-CPT_KPC", "cVAE-CPT_KPC",
-                  "Fastsurfer-FCIT", "Freesurfer-FCIT", "cVAE-FCIT",
-                  "Fastsurfer-CMIknn","Freesurfer-CMIknn", "cVAE-CMIknn",
-                  "Fastsurfer-PCM", "Freesurfer-PCM","cVAE-PCM",
-                  "Fastsurfer-WALD", "Freesurfer-WALD","cVAE-WALD")
+                  "Fastsurfer-RCOT", "Freesurfer-RCOT","cVAE-RCOT", "MedicalNet-RCOT",
+                  "Fastsurfer-CPT_KPC", "Freesurfer-CPT_KPC", "cVAE-CPT_KPC", "MedicalNet-CPT_KPC",
+                  "Fastsurfer-FCIT", "Freesurfer-FCIT", "cVAE-FCIT", "MedicalNet-FCIT",
+                  "Fastsurfer-CMIknn","Freesurfer-CMIknn", "cVAE-CMIknn", "MedicalNet-CMIknn",
+                  "Fastsurfer-PCM", "Freesurfer-PCM","cVAE-PCM", "MedicalNet-PCM",
+                  "Fastsurfer-WALD", "Freesurfer-WALD","cVAE-WALD", "MedicalNet-WALD")
 #resort columns
 design_runtime <- design_runtime[, custom_order]
 design_runtime <- design_runtime[design_runtime$'confounder' %in% c(1,10),]
 design_runtime <- design_runtime %>% select(-contains("Fastsurfer"))
 # without PCM
-design_runtime <- design_runtime %>% select(-contains("PCM"))
+#design_runtime <- design_runtime %>% select(-contains("PCM"))
 methods_depicted <- colnames(design_runtime)[-c(1:2)]
 y_lims = c(min(design_runtime[,-c(1,2)], na.rm = TRUE)-0.4, max(design_runtime[,-c(1,2)], na.rm = TRUE)+0.2)
 p_conf_dim_runtime <- looplot::nested_loop_plot(resdf = design_runtime,
@@ -1450,11 +1503,11 @@ p_conf_dim_runtime <- looplot::nested_loop_plot(resdf = design_runtime,
                                        steps_y_base = y_lims[1], steps_y_height = 0.15,
                                        x_name = "Sample size", y_name = expression("log"[10] * "(Runtime in s)"),
                                        spu_x_shift = 1,
-                                       colors = palet_discrete[rep(c(1,2,3,4,7), each=2)],
-                                       line_linetypes = rep(c(1,3), 5),
+                                       colors = palet_discrete[rep(c(1,2,7,4,3,6), each=3)],
+                                       line_linetypes = rep(c(1,2,3), 5),
                                        point_size = 4,
                                        line_size = 1.5,
-                                       point_shapes = rep(c(19,15),5),
+                                       point_shapes = rep(c(19,17,15),5),
                                        steps_values_annotate = TRUE, steps_annotation_size = 8, steps_color='grey31',steps_annotation_color='grey31',
                                        hline_intercept = y_lims[1]+0.4,
                                        y_expand_add = c(0.4,0.15),
@@ -1470,7 +1523,7 @@ p_conf_dim_runtime <- looplot::nested_loop_plot(resdf = design_runtime,
                                                                                vjust = 0.5)
                                          )
                                        ))
-p_conf_dim_legend <- looplot::nested_loop_plot(resdf = design_legend,
+p_conf_dim_legend <- looplot::nested_loop_plot(resdf = design_runtime,
                                                x = "sample_sizes",
                                                grid_rows = 'Setting',
                                                steps = "confounder dimension",
@@ -1480,11 +1533,11 @@ p_conf_dim_legend <- looplot::nested_loop_plot(resdf = design_legend,
                                                legend_labels = methods_depicted,  # Custom labels if needed
                                                x_name = "Sample size", y_name = "Rejection rate",
                                                spu_x_shift = 1,
-                                               colors = palet_discrete[rep(c(1,2,3,4,7), each=2)],
-                                               line_linetypes = c(1,3),
+                                               colors = palet_discrete[rep(c(1,2,7,4,3,6), each=3)],
+                                               line_linetypes = c(1,2,3),
                                                point_size = 4,
                                                line_size = 1.5,
-                                               point_shapes = c(19,15),
+                                               point_shapes = c(19,17,15),
                                                steps_values_annotate = TRUE, steps_annotation_size = 8, steps_color='grey31',steps_annotation_color='grey31',
                                                hline_intercept = c(0,0.05),
                                                y_expand_add = c(0.1,0.15/2),
@@ -1505,10 +1558,12 @@ p_conf_dim_legend <- looplot::nested_loop_plot(resdf = design_legend,
                                                                                        vjust = 0.5)
                                                  )
                                                ))
+
 # Apply guides() to modify the legend appearance (e.g., number of rows, key size)
 p_conf_dim_no_ci_legend <- p_conf_dim_legend +  # Customize the legend
-  guides(colour = guide_legend(nrow = 2, keywidth = 3, keyheight=1.5, override.aes = list(size = 4)))
-
+  guides(colour = guide_legend(nrow = 3, keywidth = 2, keyheight=1.2, override.aes = list(size = 4))) +
+  theme(legend.text = element_text(size = 19),
+        legend.title = element_text(size = 20))
 # Use cowplot's get_legend() to extract the modified legend
 legend <- get_legend(p_conf_dim_no_ci_legend)
 p_conf_dim_runtime <- p_conf_dim_runtime + theme(legend.position = 'none')
@@ -1518,7 +1573,7 @@ p_conf_dim_runtime <- plot_grid(
   ncol = 1,  # Legend below, so keep 1 column
   rel_heights = c(1, 0.1)  # Adjust height ratios if needed
 )
-#ggplot2::ggsave(paste0(path_to_save_nested_loop_plots, 'all_dncits_nested_loop_conf_dim_runtime.png'), p_conf_dim_runtime, width = 20, height = 16, dpi = 300)
+ggplot2::ggsave(paste0(path_to_save_nested_loop_plots, '/all_dncits_nested_loop_conf_dim_runtime.png'), p_conf_dim_runtime, width = 19, height = 16, dpi = 300)
 print(p_conf_dim_runtime)
 
 
@@ -1526,10 +1581,10 @@ print(p_conf_dim_runtime)
 #####QQ plots
 palet_discrete <- paletteer::paletteer_d("ggthemes::Classic_10_Medium")
 ## conf dim 6, conf relationship complex
-folder_path_qq <- "Results\\CI\\p-values"
+folder_path_qq <- "/sc/home/marco.simnacher/dncitPaper/Results/No_CI/p-values/seeds_1_200"
 #folder_path_qq <- "Results\\No_CI\\p-values"
 all_files_qq <- list.files(folder_path_qq, full.names = TRUE)
-all_files_qq <- all_files_qq[setdiff(1:length(all_files_qq), grep('2_0_1_0|2_3_1_0|3_0_1_0|3_3_1_0|4_0_1_0|4_3_1_0|5_0_1_0|5_3_1_0', all_files_qq))]
+all_files_qq <- all_files_qq[setdiff(1:length(all_files_qq), grep('1_0_0.5_0', all_files_qq))]
 
 ### 1) Data preparation for nested loop over
 # loop 1: confounder dimension (1,2,4,6,10,15) [APPENDIX] vs confounder dimension (1,2,10) [MAIN TEXT]
@@ -1538,13 +1593,13 @@ all_files_qq <- all_files_qq[setdiff(1:length(all_files_qq), grep('2_0_1_0|2_3_1
 cit_patterns <- "WALD|RCOT|kpc_graph|FCIT|CMIknn|comets_pcm"
 cit_files <- grep(cit_patterns, all_files_qq, value=TRUE)
 files_qq_squared <- grep("squared", cit_files, value=TRUE)
-files_qq_dim_6 <- grep("ukb_z6", files_qq_squared, value=TRUE)
+files_qq_dim_6 <- grep("ukb_z1_", files_qq_squared, value=TRUE)
 files_qq <- grep("freesurfer", files_qq_dim_6, value=TRUE)
 #files_qq_squared <- grep("squared", cit_files, value=TRUE)
 #files_qq_dim_6 <- grep("ukb_z1_", files_qq_squared, value=TRUE)
 #files_qq <- grep("freesurfer", files_qq_dim_6, value=TRUE)
 
-dncits <- c('RCOT', 'kpc_graph', 'FCIT', 'CMIknn', 'WALD')#, 'comets_pcm')
+dncits <- c('RCOT', 'kpc_graph', 'FCIT', 'CMIknn', 'WALD', 'comets_pcm')
 p_values <- list()
 for(dncit in dncits){
     files_dncit <- grep(dncit, files_qq, value = TRUE)
@@ -1565,7 +1620,7 @@ n_cols <- max_cols
 plot_list <- list()
 
 # Generate a palette with enough colors
-colors <- setNames(palet_discrete[c(1,2,3,4,7)], dncits)
+colors <- setNames(palet_discrete[c(1,2,7,4,3,6)], dncits)
 
 # Loop over each data frame in p_values
 for (dncit_name in names(p_values)) {
@@ -1736,7 +1791,9 @@ for (dncit_name in names(p_values)) {
           axis.title.y = element_blank(),
           #axis.title.x = element_blank(),
           plot.title = element_blank(),
-          text = element_text(size = 14)
+          text = element_text(size = 14),
+          panel.background = element_rect(fill = "white", colour = NA),
+          plot.background = element_rect(fill = "white", colour = NA)
         )
         if(col_idx!=(max_cols+1) & dncit_name!='RCOT'){
           p <- p + theme(
@@ -1782,7 +1839,9 @@ for (dncit_name in names(p_values)) {
           axis.title.y = element_blank(),
           axis.title.x = element_blank(),
           plot.title = element_blank(),
-          text = element_text(size = 14)
+          text = element_text(size = 14),
+          panel.background = element_rect(fill = "white", colour = NA),
+          plot.background = element_rect(fill = "white", colour = NA)
         )
         if(col_idx!=max_cols){
           p <- p + theme(
@@ -1813,10 +1872,10 @@ for (dncit_name in names(p_values)) {
   plot_list <- c(plot_list, plots_row)
 }
 
-col_names <- c('Freesurfer-RCOT', 'Freesurfer-CPT-KPC', 'Freesurfer-FCIT', 'Freesurfer-CMIknn', 'Freesurfer-WALD')
+col_names <- c('Freesurfer-RCOT', 'Freesurfer-CPT-KPC', 'Freesurfer-FCIT', 'Freesurfer-CMIknn', 'Freesurfer-WALD', 'Freesurfer-PCM')
 # Create text grobs for the titles
 title_grobs <- lapply(col_names, function(title) {
-  textGrob(title, gp = gpar(fontsize = 18, fontface="bold"), just = "center")
+  textGrob(title, gp = gpar(fontsize = 18), just = "center")
 })
 
 # Combine the title grobs and plot list
@@ -1838,8 +1897,12 @@ grid_plots <- gridExtra::grid.arrange(
 grid::grid.newpage()
 grid::grid.draw(grid_plots)
 
-# ggsave(paste0(path_to_save_nested_loop_plots,"qq_plot_dim6_squared_freesurfer_ci.png"), grid_plots, width = 12, height = 12)
+# Save as PNG
+#ggsave(paste0(path_to_save_nested_loop_plots,"/qq_plot_dim6_squared_freesurfer_ci.png"), grid_plots, width = 12, height = 12, dpi = 300)
+# Save as PDF
+ggsave(paste0(path_to_save_nested_loop_plots,"/qq_plot_dim1_squared_freesurfer_ci.pdf"), grid_plots, width = 14, height = 14)
 # ggsave(paste0(path_to_save_nested_loop_plots,"qq_plot_dim1_squared_freesurfer_no_ci.png"), grid_plots, width = 12, height = 12)
+ggsave(paste0(path_to_save_nested_loop_plots,"/qq_plot_dim1_squared_freesurfer_no_ci.pdf"), grid_plots, width = 14, height = 14)
 
 ##### Tables for detailed results
 library(xtable)

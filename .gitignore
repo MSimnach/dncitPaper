@@ -40,3 +40,6 @@ inst/diagnostic_embedding/results/
 # temporary execution files
 inst/simulation_study/sim_ukb_brainmri_*.R
 
+# plots
+inst/plots/*.png
+inst/plots/*.pdf
