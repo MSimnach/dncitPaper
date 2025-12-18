@@ -5,10 +5,11 @@ library(stringr)
 library(car)
 
 # paths to data repository
-path_to_ukb <- ''
-path_to_ukb_data <- paste0(path_to_ukb, 'ukb49727.csv')
-path_to_fastsurfer_ids <- paste0(path_to_ukb, 'ids/Ids_IDPs.csv')
-path_to_confounder_ids <- paste0(path_to_ukb, 'ids/ids_confounder_avinun.csv')
+path_to_ukb <- '/sc/home/marco.simnacher/ukbiobank/data/'
+path_to_ukb_ids <- '/sc/home/marco.simnacher/dncitPaper/inst/extdata/'
+path_to_ukb_data <- '/sc/projects/sci-lippert/ukbiobank/coldstore/original/phenotypes/ukb49727.csv'
+path_to_fastsurfer_ids <- paste0(path_to_ukb_ids, 'ids/ids_IDPs.csv')
+path_to_confounder_ids <- paste0(path_to_ukb_ids, 'ids/ids_confounder_avinun.csv')
 # paths to save constructed data
 path_to_save_fastsurfer_X <- paste0(path_to_ukb, "ukb_fastsurfer.csv")
 path_to_save_freesurfer_X <- paste0(path_to_ukb, "ukb_freesurfer.csv")

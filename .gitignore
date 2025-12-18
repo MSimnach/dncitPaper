@@ -12,6 +12,8 @@ inst/Results
 Results/
 inst/Results_jmlr_1
 inst/old_results
+Results_cmiknn
+Results_cmiknn_2knn
 inst/raw_code/
 inst/cvae_inference/
 inst/brain_and_behavior/figures/*
@@ -43,3 +45,4 @@ inst/simulation_study/sim_ukb_brainmri_*.R
 # plots
 inst/plots/*.png
 inst/plots/*.pdf
+inst/plots/test

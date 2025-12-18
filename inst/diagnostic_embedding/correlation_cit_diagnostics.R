@@ -259,6 +259,75 @@ correlation_pooled_df <- rbindlist(correlation_pooled_results)
 cat(sprintf("Computed %d across-all-embeddings correlations\n\n", nrow(correlation_pooled_df)))
 
 # ============================================================================
+# Compute Seedwise Correlations Across Embeddings
+# ============================================================================
+cat("=== Computing Seedwise Correlations Across Embeddings ===\n")
+
+correlation_seedwise_results <- list()
+
+for (cit_name in unique(combined_pvals$cit)) {
+  for (cond in conditions) {
+    for (n_samp in n_samples) {
+      for (s in seeds) {
+        # Get CIT p-values for this seed (all embeddings)
+        pval_subset <- combined_pvals[cit == cit_name & condition == cond & 
+                                      n_sample == n_samp & seed == s]
+        
+        # Get diagnostics for this seed (all embeddings)
+        diag_subset <- diagnostics_wide[condition == cond & n_sample == n_samp & seed == s]
+        
+        # Merge by embedding
+        merged_data <- merge(pval_subset, diag_subset, 
+                            by.x = c("seed", "n_sample", "condition", "embedding"),
+                            by.y = c("seed", "n_sample", "condition", "embedding_name"),
+                            all = FALSE)
+        
+        if (nrow(merged_data) < 3) next  # Need at least 3 embeddings
+        
+        # Compute correlations across embeddings for this seed
+        cor_globaltest <- tryCatch({
+          cor(merged_data$p_value, merged_data$globaltest_pvalue, use = "complete.obs")
+        }, error = function(e) {
+          NA
+        })
+        
+        cor_results <- data.frame(
+          cit = cit_name,
+          condition = cond,
+          n_sample = n_samp,
+          seed = s,
+          cor_r2_orig = cor(merged_data$p_value, merged_data$r2_original, use = "complete.obs"),
+          cor_r2_resid = cor(merged_data$p_value, merged_data$r2_residual, use = "complete.obs"),
+          cor_ftest = cor(merged_data$p_value, merged_data$f_test_pvalue, use = "complete.obs"),
+          cor_globaltest = cor_globaltest,
+          cor_dcor = cor(merged_data$p_value, merged_data$dcor_pvalue, use = "complete.obs"),
+          n_obs = nrow(merged_data)
+        )
+        
+        correlation_seedwise_results[[length(correlation_seedwise_results) + 1]] <- cor_results
+      }
+    }
+  }
+}
+
+correlation_seedwise <- rbindlist(correlation_seedwise_results)
+cat(sprintf("Computed %d seedwise correlations\n", nrow(correlation_seedwise)))
+
+# Average across seeds
+correlation_avg <- correlation_seedwise %>%
+  group_by(cit, condition, n_sample) %>%
+  summarize(
+    avg_cor_r2_orig = mean(cor_r2_orig, na.rm = TRUE),
+    avg_cor_r2_resid = mean(cor_r2_resid, na.rm = TRUE),
+    avg_cor_ftest = mean(cor_ftest, na.rm = TRUE),
+    avg_cor_globaltest = mean(cor_globaltest, na.rm = TRUE),
+    avg_cor_dcor = mean(cor_dcor, na.rm = TRUE),
+    n_seeds = sum(!is.na(cor_r2_orig)),
+    .groups = "drop"
+  )
+cat(sprintf("Computed %d averaged correlations\n\n", nrow(correlation_avg)))
+
+# ============================================================================
 # Save Results
 # ============================================================================
 cat("=== Saving Results ===\n")
@@ -470,6 +539,16 @@ for (metric_name in names(diagnostic_metrics)) {
       rename(correlation = !!sym(metric_info$cor_col)) %>%
       filter(!is.na(correlation))
     
+    # Extract averaged correlation for PCM
+    avg_cor_col_name <- paste0("avg_", metric_info$cor_col)
+    avg_cor_pcm <- correlation_avg %>%
+      filter(grepl("comets_pcm", cit, ignore.case = TRUE)) %>%
+      mutate(
+        n_sample = factor(n_sample, levels = n_samples),
+        condition = factor(condition, levels = conditions, labels = c("T1E", "Power"))
+      ) %>%
+      rename(avg_correlation = !!sym(avg_cor_col_name))
+    
     # ===== BOTTOM ROW: RCoT Correlation Lineplots =====
     # Get correlation data for this metric - RCoT only
     cor_data_rcot <- correlation_df_plot %>%
@@ -478,19 +557,43 @@ for (metric_name in names(diagnostic_metrics)) {
       rename(correlation = !!sym(metric_info$cor_col)) %>%
       filter(!is.na(correlation))
     
+    # Extract averaged correlation for RCoT
+    avg_cor_rcot <- correlation_avg %>%
+      filter(grepl("RCOT", cit, ignore.case = TRUE)) %>%
+      mutate(
+        n_sample = factor(n_sample, levels = n_samples),
+        condition = factor(condition, levels = conditions, labels = c("T1E", "Power"))
+      ) %>%
+      rename(avg_correlation = !!sym(avg_cor_col_name))
+    
     if (nrow(cor_data_pcm) == 0 && nrow(cor_data_rcot) == 0) {
       cat(sprintf("  No correlation data for %s - creating boxplot only\n", metric_name))
       combined_plot <- p_boxplot
     } else {
+      # Combine PCM and RCoT correlation data with CIT label for unified legend
+      cor_data_combined <- bind_rows(
+        cor_data_pcm %>% mutate(CIT = "PCM"),
+        cor_data_rcot %>% mutate(CIT = "RCoT")
+      ) %>%
+        mutate(CIT = factor(CIT, levels = c("PCM", "RCoT")))
+      
       # PCM correlation lineplot (middle row)
-      p_lineplot_pcm <- ggplot(cor_data_pcm, aes(x = n_sample, y = correlation, 
-                                                   color = embedding, group = embedding)) +
-        geom_line(linetype = "solid", linewidth = 0.8) +
-        geom_point(shape = 16, size = 2.5) +  # 16 = circle for PCM
+      p_lineplot_pcm <- ggplot(cor_data_pcm %>% mutate(CIT = "PCM"), 
+                                aes(x = n_sample, y = correlation, 
+                                    color = embedding, group = embedding,
+                                    linetype = CIT, shape = CIT)) +
+        geom_line(linewidth = 0.8) +
+        geom_point(size = 2.5) +
+        geom_line(data = avg_cor_pcm, aes(x = n_sample, y = avg_correlation, group = 1),
+                  inherit.aes = FALSE, color = "black", linewidth = 1.2) +
+        geom_point(data = avg_cor_pcm, aes(x = n_sample, y = avg_correlation),
+                   inherit.aes = FALSE, color = "black", size = 3, shape = 18) +
         facet_wrap(~ condition, ncol = 2) +
         labs(
           y = "Correlation (PCM)",
-          color = "Embedding"
+          color = "Embedding",
+          linetype = "CIT",
+          shape = "CIT"
         ) +
         base_theme +
         theme(
@@ -500,18 +603,28 @@ for (metric_name in names(diagnostic_metrics)) {
           legend.position = "right"
         ) +
         scale_color_manual(values = color_palette) +
+        scale_linetype_manual(values = c("PCM" = "solid", "RCoT" = "dashed")) +
+        scale_shape_manual(values = c("PCM" = 16, "RCoT" = 17)) +
         geom_hline(yintercept = 0, linetype = "dotted", color = "gray50", alpha = 0.7)
       
       # RCoT correlation lineplot (bottom row)
-      p_lineplot_rcot <- ggplot(cor_data_rcot, aes(x = n_sample, y = correlation, 
-                                                     color = embedding, group = embedding)) +
-        geom_line(linetype = "dashed", linewidth = 0.8) +
-        geom_point(shape = 17, size = 2.5) +  # 17 = triangle for RCoT
+      p_lineplot_rcot <- ggplot(cor_data_rcot %>% mutate(CIT = "RCoT"), 
+                                 aes(x = n_sample, y = correlation, 
+                                     color = embedding, group = embedding,
+                                     linetype = CIT, shape = CIT)) +
+        geom_line(linewidth = 0.8) +
+        geom_point(size = 2.5) +
+        geom_line(data = avg_cor_rcot, aes(x = n_sample, y = avg_correlation, group = 1),
+                  inherit.aes = FALSE, color = "black", linewidth = 1.2) +
+        geom_point(data = avg_cor_rcot, aes(x = n_sample, y = avg_correlation),
+                   inherit.aes = FALSE, color = "black", size = 3, shape = 18) +
         facet_wrap(~ condition, ncol = 2) +
         labs(
           x = "Sample Size",
           y = "Correlation (RCoT)",
-          color = "Embedding"
+          color = "Embedding",
+          linetype = "CIT",
+          shape = "CIT"
         ) +
         base_theme +
         theme(
@@ -519,12 +632,21 @@ for (metric_name in names(diagnostic_metrics)) {
           legend.position = "right"
         ) +
         scale_color_manual(values = color_palette) +
+        scale_linetype_manual(values = c("PCM" = "solid", "RCoT" = "dashed")) +
+        scale_shape_manual(values = c("PCM" = 16, "RCoT" = 17)) +
         geom_hline(yintercept = 0, linetype = "dotted", color = "gray50", alpha = 0.7)
       
       # ===== Combine plots using patchwork (3 rows) =====
+      # Use guides = "collect" to merge legends, then override legend aesthetics
       combined_plot <- p_boxplot / p_lineplot_pcm / p_lineplot_rcot +
         plot_layout(heights = c(1, 1, 1), guides = "collect") &
-        theme(legend.position = "right")
+        theme(legend.position = "right") &
+        guides(
+          fill = guide_legend(order = 1, title = "Embedding"),
+          color = guide_legend(order = 1, title = "Embedding"),
+          linetype = guide_legend(order = 2, title = "CIT"),
+          shape = guide_legend(order = 2, title = "CIT")
+        )
     }
     
     # Save combined plot
@@ -544,6 +666,385 @@ for (metric_name in names(diagnostic_metrics)) {
 
 cat("\n=== Diagnostic Visualization Complete ===\n")
 cat(sprintf("All plots saved to: %s\n", figures_dir))
+
+# ============================================================================
+# Create Rank Scatter Plots (New Separate Figures)
+# ============================================================================
+cat("\n=== Creating Rank Scatter Plots ===\n")
+
+# Merge diagnostic data with CIT p-values for rank computation
+# Need to merge diagnostics_wide with combined_pvals by seed, n_sample, condition, embedding
+
+# Prepare CIT p-values with display names for embeddings
+cit_pvals_for_ranks <- combined_pvals %>%
+  filter(embedding %in% all_embeddings_plot) %>%
+  mutate(
+    n_sample = factor(n_sample, levels = n_samples),
+    condition = factor(condition, levels = conditions, labels = c("T1E", "Power")),
+    embedding = factor(embedding, levels = all_embeddings_plot, labels = all_embeddings_display),
+    cit_label = case_when(
+      grepl("RCOT", cit, ignore.case = TRUE) ~ "RCoT",
+      grepl("comets_pcm", cit, ignore.case = TRUE) ~ "PCM",
+      TRUE ~ as.character(cit)
+    )
+  )
+
+# Merge with diagnostic data
+rank_data_base <- plot_data_diag %>%
+  inner_join(
+    cit_pvals_for_ranks %>% select(seed, n_sample, condition, embedding, cit_label, p_value),
+    by = c("seed", "n_sample", "condition", "embedding")
+  )
+
+# Create rank scatter plots for each diagnostic metric
+for (metric_name in names(diagnostic_metrics)) {
+  cat(sprintf("\nCreating rank scatter plot for: %s\n", metric_name))
+  
+  metric_info <- diagnostic_metrics[[metric_name]]
+  
+  tryCatch({
+    # Prepare data for this metric
+    metric_col <- metric_info$col
+    
+    rank_data <- rank_data_base %>%
+      select(seed, n_sample, condition, embedding, cit_label, 
+             metric_value = !!sym(metric_col), p_value) %>%
+      filter(!is.na(metric_value), !is.na(p_value))
+    
+    if (nrow(rank_data) == 0) {
+      cat(sprintf("  Skipping %s - no data available for ranks\n", metric_name))
+      next
+    }
+    
+    # Compute ranks within each (seed, n_sample, condition, cit_label) group
+    # Rank across embeddings (1 to 6)
+    rank_data <- rank_data %>%
+      group_by(seed, n_sample, condition, cit_label) %>%
+      mutate(
+        metric_rank = rank(metric_value, ties.method = "average"),
+        pvalue_rank = rank(p_value, ties.method = "average")
+      ) %>%
+      ungroup()
+    
+    # Calculate Spearman correlation for each (condition, cit_label) combination
+    spearman_results <- rank_data %>%
+      group_by(condition, cit_label) %>%
+      summarize(
+        spearman_rho = cor(metric_rank, pvalue_rank, method = "spearman", use = "complete.obs"),
+        spearman_test = list(cor.test(metric_rank, pvalue_rank, method = "spearman")),
+        .groups = "drop"
+      ) %>%
+      mutate(
+        spearman_pval = sapply(spearman_test, function(x) x$p.value),
+        annotation = sprintf("rho = %.3f\np = %.2e", spearman_rho, spearman_pval)
+      )
+    
+    # ===== TOP ROW: Boxplots (same as before) =====
+    boxplot_data_ranks <- plot_data_diag %>%
+      select(seed, n_sample, condition, embedding, !!sym(metric_col)) %>%
+      rename(metric_value = !!sym(metric_col)) %>%
+      filter(!is.na(metric_value))
+    
+    if (metric_info$is_pvalue) {
+      boxplot_data_ranks <- boxplot_data_ranks %>%
+        mutate(metric_value = ifelse(metric_value < min_pval_plot | metric_value == 0, 
+                                      min_pval_plot, metric_value))
+    }
+    
+    p_boxplot_ranks <- ggplot(boxplot_data_ranks, aes(x = n_sample, y = metric_value, fill = embedding)) +
+      geom_boxplot(position = position_dodge(width = 0.8), outlier.size = 0.8) +
+      facet_wrap(~ condition, ncol = 2) +
+      labs(
+        y = metric_info$y_label,
+        fill = "Embedding"
+      ) +
+      base_theme +
+      theme(
+        axis.title.x = element_blank(),
+        axis.text.x = element_blank(),
+        axis.ticks.x = element_blank(),
+        legend.position = "right"
+      ) +
+      scale_fill_manual(values = color_palette)
+    
+    if (metric_info$is_pvalue) {
+      p_boxplot_ranks <- p_boxplot_ranks +
+        scale_y_log10(
+          breaks = c(1e-16, 1e-12, 1e-9, 1e-6, 1e-3, 0.01, 0.1, 1),
+          labels = scales::trans_format("log10", scales::math_format(10^.x)),
+          limits = c(min_pval_plot, 1)
+        ) +
+        geom_hline(yintercept = 0.05, color = "black", alpha = 0.6)
+    }
+    
+    # ===== MIDDLE ROW: PCM Rank Scatter =====
+    rank_data_pcm <- rank_data %>% filter(cit_label == "PCM")
+    spearman_pcm <- spearman_results %>% filter(cit_label == "PCM")
+    
+    p_scatter_pcm <- ggplot(rank_data_pcm, aes(x = metric_rank, y = pvalue_rank, color = embedding)) +
+      geom_jitter(alpha = 0.5, width = 0.1, height = 0.1, size = 1.5) +
+      geom_smooth(method = "lm", se = FALSE, aes(group = 1), color = "black", linetype = "dashed", linewidth = 0.8) +
+      geom_text(data = spearman_pcm, aes(x = Inf, y = Inf, label = annotation),
+                inherit.aes = FALSE, hjust = 1.1, vjust = 1.5, size = 4, fontface = "italic") +
+      facet_wrap(~ condition, ncol = 2) +
+      labs(
+        y = "Rank of PCM P-value",
+        color = "Embedding"
+      ) +
+      base_theme +
+      theme(
+        axis.title.x = element_blank(),
+        axis.text.x = element_blank(),
+        axis.ticks.x = element_blank(),
+        legend.position = "right"
+      ) +
+      scale_color_manual(values = color_palette) +
+      scale_x_continuous(breaks = 1:6, limits = c(0.5, 6.5)) +
+      scale_y_continuous(breaks = 1:6, limits = c(0.5, 6.5))
+    
+    # ===== BOTTOM ROW: RCoT Rank Scatter =====
+    rank_data_rcot <- rank_data %>% filter(cit_label == "RCoT")
+    spearman_rcot <- spearman_results %>% filter(cit_label == "RCoT")
+    
+    p_scatter_rcot <- ggplot(rank_data_rcot, aes(x = metric_rank, y = pvalue_rank, color = embedding)) +
+      geom_jitter(alpha = 0.5, width = 0.1, height = 0.1, size = 1.5) +
+      geom_smooth(method = "lm", se = FALSE, aes(group = 1), color = "black", linetype = "dashed", linewidth = 0.8) +
+      geom_text(data = spearman_rcot, aes(x = Inf, y = Inf, label = annotation),
+                inherit.aes = FALSE, hjust = 1.1, vjust = 1.5, size = 4, fontface = "italic") +
+      facet_wrap(~ condition, ncol = 2) +
+      labs(
+        x = "Rank of Diagnostic Metric",
+        y = "Rank of RCoT P-value",
+        color = "Embedding"
+      ) +
+      base_theme +
+      theme(
+        axis.text.x = element_text(angle = 0, hjust = 0.5),
+        legend.position = "right"
+      ) +
+      scale_color_manual(values = color_palette) +
+      scale_x_continuous(breaks = 1:6, limits = c(0.5, 6.5)) +
+      scale_y_continuous(breaks = 1:6, limits = c(0.5, 6.5))
+    
+    # ===== Combine rank scatter plots using patchwork (3 rows) =====
+    combined_rank_plot <- p_boxplot_ranks / p_scatter_pcm / p_scatter_rcot +
+      plot_layout(heights = c(1, 1, 1), guides = "collect") &
+      theme(legend.position = "right")
+    
+    # Save rank scatter plot
+    png_path_ranks <- file.path(figures_dir, sprintf("diagnostic_%s_ranks_%d_%d.png", 
+                                                      metric_name, min(seeds), max(seeds)))
+    ggsave(png_path_ranks, plot = combined_rank_plot, width = 14, height = 14, units = "in", dpi = 300)
+    cat(sprintf("  Saved: %s\n", basename(png_path_ranks)))
+    
+    pdf_path_ranks <- file.path(figures_dir, sprintf("diagnostic_%s_ranks_%d_%d.pdf", 
+                                                      metric_name, min(seeds), max(seeds)))
+    ggsave(pdf_path_ranks, plot = combined_rank_plot, width = 14, height = 14, units = "in")
+    
+  }, error = function(e) {
+    cat(sprintf("  Warning: Rank scatter plot failed for %s: %s\n", metric_name, e$message))
+  })
+}
+
+cat("\n=== Rank Scatter Plots Complete ===\n")
+
+# ============================================================================
+# Create Rank Correlation Lineplot Figures (Spearman correlation per sample size)
+# ============================================================================
+cat("\n=== Creating Rank Correlation Lineplot Figures ===\n")
+
+# Create rank correlation lineplots for each diagnostic metric
+for (metric_name in names(diagnostic_metrics)) {
+  cat(sprintf("\nCreating rank correlation lineplot for: %s\n", metric_name))
+  
+  metric_info <- diagnostic_metrics[[metric_name]]
+  
+  tryCatch({
+    # Prepare data for this metric
+    metric_col <- metric_info$col
+    
+    rank_data <- rank_data_base %>%
+      select(seed, n_sample, condition, embedding, cit_label, 
+             metric_value = !!sym(metric_col), p_value) %>%
+      filter(!is.na(metric_value), !is.na(p_value))
+    
+    if (nrow(rank_data) == 0) {
+      cat(sprintf("  Skipping %s - no data available for rank correlations\n", metric_name))
+      next
+    }
+    
+    # Compute ranks within each (seed, n_sample, condition, cit_label) group
+    rank_data <- rank_data %>%
+      group_by(seed, n_sample, condition, cit_label) %>%
+      mutate(
+        metric_rank = rank(metric_value, ties.method = "average"),
+        pvalue_rank = rank(p_value, ties.method = "average")
+      ) %>%
+      ungroup()
+    
+    # Compute Spearman correlation per (condition, n_sample, cit_label, embedding)
+    # Pool all seeds together for each combination
+    spearman_per_sample <- rank_data %>%
+      group_by(condition, n_sample, cit_label, embedding) %>%
+      summarize(
+        spearman_rho = cor(metric_rank, pvalue_rank, method = "spearman", use = "complete.obs"),
+        n_obs = n(),
+        .groups = "drop"
+      )
+    
+    # Compute correlation seedwise across embeddings, then summarize across seeds
+    # (This reflects "across-embedding" rank association per sample size.)
+    spearman_seedwise <- rank_data %>%
+      group_by(seed, condition, n_sample, cit_label) %>%
+      summarize(
+        spearman_rho = suppressWarnings(cor(metric_rank, pvalue_rank, method = "spearman", use = "complete.obs")),
+        .groups = "drop"
+      )
+
+    spearman_avg <- spearman_seedwise %>%
+      group_by(condition, n_sample, cit_label) %>%
+      summarize(
+        avg_spearman_rho = mean(spearman_rho, na.rm = TRUE),
+        n_seeds = sum(!is.na(spearman_rho)),
+        .groups = "drop"
+      )
+    
+    # ===== TOP ROW: Boxplots (same as before) =====
+    boxplot_data_rankcor <- plot_data_diag %>%
+      select(seed, n_sample, condition, embedding, !!sym(metric_col)) %>%
+      rename(metric_value = !!sym(metric_col)) %>%
+      filter(!is.na(metric_value))
+    
+    if (metric_info$is_pvalue) {
+      boxplot_data_rankcor <- boxplot_data_rankcor %>%
+        mutate(metric_value = ifelse(metric_value < min_pval_plot | metric_value == 0, 
+                                      min_pval_plot, metric_value))
+    }
+    
+    p_boxplot_rankcor <- ggplot(boxplot_data_rankcor, aes(x = n_sample, y = metric_value, fill = embedding)) +
+      geom_boxplot(position = position_dodge(width = 0.8), outlier.size = 0.8) +
+      facet_wrap(~ condition, ncol = 2) +
+      labs(
+        y = metric_info$y_label,
+        fill = "Embedding"
+      ) +
+      base_theme +
+      theme(
+        axis.title.x = element_blank(),
+        axis.text.x = element_blank(),
+        axis.ticks.x = element_blank(),
+        legend.position = "right"
+      ) +
+      scale_fill_manual(values = color_palette)
+    
+    if (metric_info$is_pvalue) {
+      p_boxplot_rankcor <- p_boxplot_rankcor +
+        scale_y_log10(
+          breaks = c(1e-16, 1e-12, 1e-9, 1e-6, 1e-3, 0.01, 0.1, 1),
+          labels = scales::trans_format("log10", scales::math_format(10^.x)),
+          limits = c(min_pval_plot, 1)
+        ) +
+        geom_hline(yintercept = 0.05, color = "black", alpha = 0.6)
+    }
+    
+    # ===== MIDDLE ROW: PCM Spearman Correlation Lineplot =====
+    spearman_pcm <- spearman_per_sample %>% 
+      filter(cit_label == "PCM") %>%
+      mutate(CIT = "PCM")
+    
+    spearman_avg_pcm <- spearman_avg %>% filter(cit_label == "PCM")
+    
+    p_rankcor_pcm <- ggplot(spearman_pcm, aes(x = n_sample, y = spearman_rho, 
+                                               color = embedding, group = embedding,
+                                               linetype = CIT, shape = CIT)) +
+      geom_line(linewidth = 0.8) +
+      geom_point(size = 2.5) +
+      geom_line(data = spearman_avg_pcm, aes(x = n_sample, y = avg_spearman_rho, group = 1),
+                inherit.aes = FALSE, color = "black", linewidth = 1.2) +
+      geom_point(data = spearman_avg_pcm, aes(x = n_sample, y = avg_spearman_rho),
+                 inherit.aes = FALSE, color = "black", size = 3, shape = 18) +
+      facet_wrap(~ condition, ncol = 2) +
+      labs(
+        y = "Spearman Correlation (PCM)",
+        color = "Embedding",
+        linetype = "CIT",
+        shape = "CIT"
+      ) +
+      base_theme +
+      theme(
+        axis.title.x = element_blank(),
+        axis.text.x = element_blank(),
+        axis.ticks.x = element_blank(),
+        legend.position = "right"
+      ) +
+      scale_color_manual(values = color_palette) +
+      scale_linetype_manual(values = c("PCM" = "solid", "RCoT" = "dashed")) +
+      scale_shape_manual(values = c("PCM" = 16, "RCoT" = 17)) +
+      geom_hline(yintercept = 0, linetype = "dotted", color = "gray50", alpha = 0.7) +
+      scale_y_continuous(limits = c(-1, 1), breaks = seq(-1, 1, 0.25))
+    
+    # ===== BOTTOM ROW: RCoT Spearman Correlation Lineplot =====
+    spearman_rcot <- spearman_per_sample %>% 
+      filter(cit_label == "RCoT") %>%
+      mutate(CIT = "RCoT")
+    
+    spearman_avg_rcot <- spearman_avg %>% filter(cit_label == "RCoT")
+    
+    p_rankcor_rcot <- ggplot(spearman_rcot, aes(x = n_sample, y = spearman_rho, 
+                                                 color = embedding, group = embedding,
+                                                 linetype = CIT, shape = CIT)) +
+      geom_line(linewidth = 0.8) +
+      geom_point(size = 2.5) +
+      geom_line(data = spearman_avg_rcot, aes(x = n_sample, y = avg_spearman_rho, group = 1),
+                inherit.aes = FALSE, color = "black", linewidth = 1.2) +
+      geom_point(data = spearman_avg_rcot, aes(x = n_sample, y = avg_spearman_rho),
+                 inherit.aes = FALSE, color = "black", size = 3, shape = 18) +
+      facet_wrap(~ condition, ncol = 2) +
+      labs(
+        x = "Sample Size",
+        y = "Spearman Correlation (RCoT)",
+        color = "Embedding",
+        linetype = "CIT",
+        shape = "CIT"
+      ) +
+      base_theme +
+      theme(
+        axis.text.x = element_text(angle = 45, hjust = 1),
+        legend.position = "right"
+      ) +
+      scale_color_manual(values = color_palette) +
+      scale_linetype_manual(values = c("PCM" = "solid", "RCoT" = "dashed")) +
+      scale_shape_manual(values = c("PCM" = 16, "RCoT" = 17)) +
+      geom_hline(yintercept = 0, linetype = "dotted", color = "gray50", alpha = 0.7) +
+      scale_y_continuous(limits = c(-1, 1), breaks = seq(-1, 1, 0.25))
+    
+    # ===== Combine rank correlation lineplot using patchwork (3 rows) =====
+    combined_rankcor_plot <- p_boxplot_rankcor / p_rankcor_pcm / p_rankcor_rcot +
+      plot_layout(heights = c(1, 1, 1), guides = "collect") &
+      theme(legend.position = "right") &
+      guides(
+        fill = guide_legend(order = 1, title = "Embedding"),
+        color = guide_legend(order = 1, title = "Embedding"),
+        linetype = guide_legend(order = 2, title = "CIT"),
+        shape = guide_legend(order = 2, title = "CIT")
+      )
+    
+    # Save rank correlation lineplot
+    png_path_rankcor <- file.path(figures_dir, sprintf("diagnostic_%s_rankcor_%d_%d.png", 
+                                                        metric_name, min(seeds), max(seeds)))
+    ggsave(png_path_rankcor, plot = combined_rankcor_plot, width = 14, height = 14, units = "in", dpi = 300)
+    cat(sprintf("  Saved: %s\n", basename(png_path_rankcor)))
+    
+    pdf_path_rankcor <- file.path(figures_dir, sprintf("diagnostic_%s_rankcor_%d_%d.pdf", 
+                                                        metric_name, min(seeds), max(seeds)))
+    ggsave(pdf_path_rankcor, plot = combined_rankcor_plot, width = 14, height = 14, units = "in")
+    
+  }, error = function(e) {
+    cat(sprintf("  Warning: Rank correlation lineplot failed for %s: %s\n", metric_name, e$message))
+  })
+}
+
+cat("\n=== Rank Correlation Lineplots Complete ===\n")
 
 cat("\n=== Complete ===\n")
 

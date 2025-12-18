@@ -99,7 +99,7 @@ res_time <- foreach::foreach (i= n_seeds, .packages = pkgs_for_each) %dopar% {
                                                         cit_params <- list(cit='RCOT', params_cit=list(seed=as.numeric(args[11]), num_f=200))#, num_fz=200, num_fy=3, num_fx=7))
                                                       }
                                                      }else if(args[10] == 'CMIknn'){
-                                                       cit_params <- list(cit='cmiknn', params_cit=list())
+                                                       cit_params <- list(cit='cmiknn', params_cit=list(knn=10))
                                                      }else if(args[10] == 'kpc_graph' || args[10] == 'dcor_cpt'){
                                                       if(args[10] == 'kpc_graph'){
                                                         if (args[11]=='1'){
@@ -232,7 +232,7 @@ res_time <- foreach::foreach (i= n_seeds, .packages = pkgs_for_each) %dopar% {
                                                           cit_params <- list(cit='RCOT', params_cit=list(seed=as.numeric(args[11]), num_f=200))#, num_fz=50, num_fy=3, num_fx=20))
                                                         }
                                                        }else if(args[10] == 'CMIknn'){
-                                                         cit_params <- list(cit='cmiknn', params_cit=list())
+                                                         cit_params <- list(cit='cmiknn', params_cit=list(knn=10))
                                                        }else if(args[10] == 'kpc_graph' || args[10] == 'dcor_cpt'){
                                                           if(args[10] == 'kpc_graph'){
                                                             if (args[11]=='1'){

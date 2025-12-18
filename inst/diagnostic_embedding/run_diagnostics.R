@@ -3,6 +3,8 @@
 # Load required packages and functions
 library(dplyr)
 library(devtools)
+library(foreach)
+library(doParallel)
 load_all()  # Load the dncitPaper package
 
 # Configuration
@@ -12,16 +14,21 @@ xz_modes <- c('Sigma=I_p')
 seeds <- 1:100
 Y_age <- FALSE
 standardize_ridge_lasso <- TRUE
+n_cores <- 50  # Number of cores for parallel processing
 
 # Define configurations: (ci_condition, eps_sigmaY, embedding_obs)
 # eps_sigmaY = 0.5: both CI and No_CI with scratch and medicalnet_ft
 # eps_sigmaY = 0.1, 1.0: No_CI only with scratch
 configs <- list(
-  list(ci_condition = '/CI/', eps_sigmaY = 0.5, embedding_obs = c('scratch', 'medicalnet_ft')),
-  list(ci_condition = '/No_CI/', eps_sigmaY = 0.5, embedding_obs = c('scratch', 'medicalnet_ft')),
+  #list(ci_condition = '/CI/', eps_sigmaY = 0.5, embedding_obs = c('scratch', 'medicalnet_ft')),
+  # list(ci_condition = '/No_CI/', eps_sigmaY = 0.5, embedding_obs = c('scratch', 'medicalnet_ft')),
   list(ci_condition = '/No_CI/', eps_sigmaY = 0.1, embedding_obs = 'scratch'),
   list(ci_condition = '/No_CI/', eps_sigmaY = 1.0, embedding_obs = 'scratch')
 )
+
+# Set up parallel processing
+cl <- makeCluster(n_cores)
+registerDoParallel(cl)
 
 # Run diagnostics for each configuration
 for(config in configs){
@@ -32,8 +39,9 @@ for(config in configs){
   cat(sprintf("\n=== Running configuration: CI=%s, eps_sigmaY=%s, embeddings=%s ===\n", 
               ci_condition, eps_sigmaY, paste(embedding_obs, collapse=", ")))
   
-  for(seed in seeds){
-    cat(sprintf("Processing seed %d/%d\n", seed, max(seeds)))
+  foreach(seed = seeds, .packages = c('dplyr', 'devtools')) %dopar% {
+    # Load the package in each worker
+    devtools::load_all()
     
     # Cache baseline results per seed (constant across sample sizes)
     baseline_cache <- NULL
@@ -75,6 +83,9 @@ for(config in configs){
     }
   }
 }
+
+# Clean up parallel cluster
+stopCluster(cl)
 
 cat("\n=== All diagnostics completed ===\n")
 

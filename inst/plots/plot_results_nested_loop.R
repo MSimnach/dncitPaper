@@ -246,10 +246,10 @@ print(p_conf_dim)
 #palet_discrete <- paletteer::paletteer_d("colorBlindness::Blue2Orange10Steps")
 palet_discrete <- paletteer::paletteer_d("ggthemes::Classic_10_Medium")
 #palet_discrete <- palet_discrete[seq(1,15, length.out=12)]
-path_to_save_nested_loop_plots <- "/sc/home/marco.simnacher/dncitPaper/inst/plots"
+path_to_save_nested_loop_plots <- "/sc/home/marco.simnacher/dncitPaper/inst/plots/test"
 
 #### split into CI and No CI
-folder_path <- "/sc/home/marco.simnacher/dncitPaper/Results/No_CI/rejection_rates/seeds_1_200"
+folder_path <- "/sc/home/marco.simnacher/dncitPaper/Results/CI/rejection_rates/seeds_1_200"
 #folder_path <- "Results\\No_CI\\rejection_rates"
 all_files <- list.files(folder_path, full.names = TRUE)
 all_files <- all_files[setdiff(1:length(all_files), grep('1_0_0.5_0', all_files))]
@@ -477,7 +477,7 @@ for(col in colnames(design_main_text)[3:(ncol(design_main_text)-1)]){
         print(col)
         print(confounder)
         design_main_text[which(design_main_text$confounder == confounder & design_main_text$sample_sizes == sample_size & design_main_text$Setting == "Yes"), col] <- NA
-        set_to_NA_because_no_power <- c(set_to_NA_because_no_power, paste(col, confounder))
+        set_to_NA_because_no_power <- c(set_to_NA_because_no_power, paste(col, confounder, sample_size))
       }
     }
   }
@@ -970,7 +970,7 @@ for(col in colnames(design_main_text)[3:(ncol(design_main_text)-1)]){
         print(col)
         print(confounder)
         design_main_text[which(design_main_text$confounder == confounder & design_main_text$sample_sizes == sample_size & design_main_text$Setting == "Yes"), col] <- NA
-        set_to_NA_because_no_power <- c(set_to_NA_because_no_power, paste(col, confounder))
+        set_to_NA_because_no_power <- c(set_to_NA_because_no_power, paste(col, confounder, sample_size))
       }
     }
   }
@@ -1018,7 +1018,7 @@ p_conf_dim = looplot::nested_loop_plot(resdf = design_main_text,
                                                                                size = 15)
                                          )
                                        ))
-ggplot2::ggsave(paste0(path_to_save_nested_loop_plots, '/all_dncits_nested_loop_conf_dim_main_text.png'), p_conf_dim, width = 16, height = 10, dpi = 300)
+#ggplot2::ggsave(paste0(path_to_save_nested_loop_plots, '/all_dncits_nested_loop_conf_dim_main_text.png'), p_conf_dim, width = 16, height = 10, dpi = 300)
 print(p_conf_dim)
 
 ### Power and T1E separate
@@ -1280,7 +1280,7 @@ design_legend <- design %>%
   mutate(across(contains("Fastsurfer-"),# | contains("cVAE-"),
                 ~ ifelse(Setting == "No", NA, .)))
 # without PCM
-design_legend <- design_legend %>% select(-contains("PCM"))
+#design_legend <- design_legend %>% select(-contains("PCM"))
 #withour Fastsurfer
 design_legend <- design_legend %>% select(-contains("Fastsurfer"))
 methods_depicted <- colnames(design_legend)[-c(1:2, ncol(design_legend))]
@@ -1356,7 +1356,7 @@ combined_plot <- plot_grid(
 # Apply guides() to modify the legend appearance (e.g., number of rows, key size)
 p_conf_dim_no_ci_legend <- p_conf_dim_legend +  # Customize the legend
   guides(colour = guide_legend(nrow = 3, keywidth = 2, keyheight=1.2, override.aes = list(size = 4))) +
-  theme(legend.text = element_text(size = 19),
+  theme(legend.text = element_text(size = 18.2),
         legend.title = element_text(size = 20))
 
 # Use cowplot's get_legend() to extract the modified legend
@@ -1367,7 +1367,7 @@ p_conf_dim <- plot_grid(
   ncol = 1,  # Legend below, so keep 1 column
   rel_heights = c(1, 0.1)  # Adjust height ratios if needed
 )
-#ggplot2::ggsave(paste0(path_to_save_nested_loop_plots, '/all_dncits_nested_loop_conf_dim_main_text.png'), p_conf_dim, width = 18, height = 16, dpi = 300)
+ggplot2::ggsave(paste0(path_to_save_nested_loop_plots, '/all_dncits_nested_loop_conf_dim_main_text.png'), p_conf_dim, width = 18, height = 16, dpi = 300)
 print(p_conf_dim)
 
 
