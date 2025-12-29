@@ -914,3 +914,170 @@ if (eps_sigmaY == 0.5) {
 } else {
   cat("\n=== Skipping QQ Plots (only created for eps_sigmaY = 0.5) ===\n")
 }
+
+# ============================================================================
+# Create Runtime Boxplots for Scratch vs MedicalNet-ft
+# ============================================================================
+
+if (eps_sigmaY == 0.5) {
+  cat("\n\n=== Creating Runtime Boxplots ===\n")
+  
+  # Define runtime embeddings to compare
+  runtime_embeddings <- c("scratch", "medicalnet_ft")
+  
+  # CIT method for runtime data
+  cit_runtime <- "comets_pcm"
+  
+  # Initialize list to store runtime data
+  runtime_data_list <- list()
+  
+  # Load runtime data from both CI and No_CI directories
+  for (cond in conditions) {
+    # Construct path to runtime directory
+    runtime_dir <- file.path(results_base_path, cond, "runtime_embedding", seed_dir_name)
+    
+    # Check if directory exists
+    if (!dir.exists(runtime_dir)) {
+      warning(sprintf("Runtime directory not found: %s", runtime_dir))
+      next
+    }
+    
+    cat(sprintf("\nLoading runtime data from: %s\n", runtime_dir))
+    
+    # Load runtime data for each embedding
+    for (emb in runtime_embeddings) {
+      # Construct filename
+      runtime_file <- sprintf("1_0_%g_0_fastsurfer_%s_ukb_z1_squared_%s.csv", 
+                               eps_sigmaY, emb, cit_runtime)
+      runtime_path <- file.path(runtime_dir, runtime_file)
+      
+      if (file.exists(runtime_path)) {
+        cat(sprintf("  Loading: %s (condition: %s)\n", runtime_file, cond))
+        
+        # Read the CSV
+        runtime_df <- fread(runtime_path, nThread = 1)
+        
+        # Drop the first column (row indices)
+        runtime_df <- runtime_df[, -1]
+        
+        # Get column names for sample sizes (V1, V2, V3, V4, V5)
+        sample_size_cols <- names(runtime_df)[1:min(length(n_samples), ncol(runtime_df))]
+        
+        # Add seed information based on row number
+        runtime_df$seed_idx <- 1:nrow(runtime_df)
+        runtime_df$seed <- seeds[runtime_df$seed_idx]
+        
+        # Reshape to long format
+        runtime_long <- melt(runtime_df, 
+                            id.vars = c("seed", "seed_idx"),
+                            measure.vars = sample_size_cols,
+                            variable.name = "sample_size_col",
+                            value.name = "runtime")
+        
+        # Map V1-V5 to actual sample sizes
+        runtime_long$n_sample <- n_samples[as.integer(gsub("V", "", runtime_long$sample_size_col))]
+        
+        # Add embedding and condition metadata
+        runtime_long$embedding <- emb
+        runtime_long$condition <- cond
+        
+        # Store in list
+        runtime_data_list[[length(runtime_data_list) + 1]] <- runtime_long[, .(seed, n_sample, embedding, condition, runtime)]
+        
+      } else {
+        warning(sprintf("Runtime file not found: %s", runtime_path))
+      }
+    }
+  }
+    
+    # Combine all runtime data
+    if (length(runtime_data_list) > 0) {
+      combined_runtime <- rbindlist(runtime_data_list)
+      
+      cat(sprintf("\n=== Runtime Data Summary ===\n"))
+      cat(sprintf("Total runtime records loaded: %d\n", nrow(combined_runtime)))
+      cat(sprintf("Embeddings: %s\n", paste(unique(combined_runtime$embedding), collapse = ", ")))
+      
+      # Prepare plot data
+      plot_data_runtime <- combined_runtime %>%
+        mutate(
+          n_sample = factor(n_sample, levels = n_samples),
+          embedding = factor(embedding, levels = runtime_embeddings, 
+                           labels = c("Scratch", "MedicalNet-ft"))
+        )
+      
+      # Create color palette for runtime embeddings
+      # Use colors 5 and 6 from the existing palette to match the other plots
+      palet_discrete <- paletteer::paletteer_d("ggthemes::Classic_10_Medium")
+      runtime_embedding_colors <- setNames(
+        palet_discrete[c(6, 5)],  # Colors for Scratch and MedicalNet-ft
+        c("Scratch", "MedicalNet-ft")
+      )
+      
+      # Create boxplot
+      p_runtime <- plot_data_runtime %>%
+        ggplot(aes(x = n_sample, y = runtime, fill = embedding)) +
+        geom_boxplot(position = position_dodge(width = 0.8), outlier.size = 0.8) +
+        labs(
+          x = "Sample Size",
+          y = "Runtime (seconds)",
+          fill = "Embedding"
+        ) +
+        theme_bw(base_size = 18) +
+        theme(
+          plot.title = element_text(hjust = 0.5, size = 20),
+          panel.grid.minor = element_blank(),
+          axis.text.x = element_text(angle = 45, hjust = 1, size = 16),
+          axis.text.y = element_text(size = 16),
+          axis.title.x = element_text(size = 18),
+          axis.title.y = element_text(size = 18),
+          legend.position = "right",
+          legend.title = element_text(size = 16),
+          legend.text = element_text(size = 16)
+        ) +
+        scale_fill_manual(values = runtime_embedding_colors) +
+        scale_x_discrete(breaks = c("256", "460", "825", "1100", "5000")) +
+        scale_y_log10(
+          breaks = c(100, 500, 1000, 5000, 10000, 50000),
+          labels = scales::comma
+        )
+      
+      # Save runtime plots
+      cat("\nSaving runtime boxplots:\n")
+      
+      # Save as PNG
+      png_path_runtime <- file.path(output_dir, 
+                                     sprintf("runtime_embedding_scratch_vs_medicalnet_ft_%d_%d.png", 
+                                             min(seeds), max(seeds)))
+      ggsave(
+        png_path_runtime, 
+        plot = p_runtime, 
+        width = 12, 
+        height = 7, 
+        units = "in", 
+        dpi = 300
+      )
+      cat("  Saved PNG:", png_path_runtime, "\n")
+      
+      # Save as PDF
+      pdf_path_runtime <- file.path(output_dir, 
+                                     sprintf("runtime_embedding_scratch_vs_medicalnet_ft_%d_%d.pdf", 
+                                             min(seeds), max(seeds)))
+      ggsave(
+        pdf_path_runtime, 
+        plot = p_runtime, 
+        width = 12, 
+        height = 7, 
+        units = "in"
+      )
+      cat("  Saved PDF:", pdf_path_runtime, "\n")
+      
+      cat("\n=== Runtime Boxplots Complete ===\n")
+      
+    } else {
+      warning("No runtime data loaded. Check if files exist in the runtime directory.")
+    }
+  }
+} else {
+  cat("\n=== Skipping Runtime Boxplots (only created for eps_sigmaY = 0.5) ===\n")
+}

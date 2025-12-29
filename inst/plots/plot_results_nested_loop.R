@@ -249,7 +249,7 @@ palet_discrete <- paletteer::paletteer_d("ggthemes::Classic_10_Medium")
 path_to_save_nested_loop_plots <- "/sc/home/marco.simnacher/dncitPaper/inst/plots/test"
 
 #### split into CI and No CI
-folder_path <- "/sc/home/marco.simnacher/dncitPaper/Results/CI/rejection_rates/seeds_1_200"
+folder_path <- "/sc/home/marco.simnacher/dncitPaper/Results/No_CI/rejection_rates/seeds_1_200"
 #folder_path <- "Results\\No_CI\\rejection_rates"
 all_files <- list.files(folder_path, full.names = TRUE)
 all_files <- all_files[setdiff(1:length(all_files), grep('1_0_0.5_0', all_files))]
@@ -1493,6 +1493,9 @@ design_runtime <- design_runtime %>% select(-contains("Fastsurfer"))
 # without PCM
 #design_runtime <- design_runtime %>% select(-contains("PCM"))
 methods_depicted <- colnames(design_runtime)[-c(1:2)]
+# Before calling nested_loop_plot, transform the runtime columns back to original scale
+# Assuming columns 3 onwards contain the log10 runtimes
+#design_runtime[, 3:ncol(design_runtime)] <- exp(design_runtime[, 3:ncol(design_runtime)])
 y_lims = c(min(design_runtime[,-c(1,2)], na.rm = TRUE)-0.4, max(design_runtime[,-c(1,2)], na.rm = TRUE)+0.2)
 p_conf_dim_runtime <- looplot::nested_loop_plot(resdf = design_runtime,
                                        x = "sample_sizes",
@@ -1566,7 +1569,9 @@ p_conf_dim_no_ci_legend <- p_conf_dim_legend +  # Customize the legend
         legend.title = element_text(size = 20))
 # Use cowplot's get_legend() to extract the modified legend
 legend <- get_legend(p_conf_dim_no_ci_legend)
-p_conf_dim_runtime <- p_conf_dim_runtime + theme(legend.position = 'none')
+p_conf_dim_runtime <- p_conf_dim_runtime + theme(legend.position = 'none') 
+p_conf_dim_runtime <- p_conf_dim_runtime +
+  ggplot2::labs(y = "ln(Runtime in s)") 
 p_conf_dim_runtime <- plot_grid(
   p_conf_dim_runtime,  # Stacked plots
   legend,  # Legend below the plots

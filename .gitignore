@@ -14,6 +14,7 @@ inst/Results_jmlr_1
 inst/old_results
 Results_cmiknn
 Results_cmiknn_2knn
+Results_cmiknn_1knn
 inst/raw_code/
 inst/cvae_inference/
 inst/brain_and_behavior/figures/*
