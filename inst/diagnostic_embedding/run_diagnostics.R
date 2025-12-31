@@ -5,23 +5,24 @@ library(dplyr)
 library(devtools)
 library(foreach)
 library(doParallel)
+library(DNCIT)
 load_all()  # Load the dncitPaper package
 
 # Configuration
-idx_samples <- 1:4
-n_sample = list(460, 1100, 5000, 10000)
+idx_samples <- 1:5
+n_sample = list(256, 460, 825, 1100, 5000)
 xz_modes <- c('Sigma=I_p')
 seeds <- 1:100
 Y_age <- FALSE
 standardize_ridge_lasso <- TRUE
-n_cores <- 50  # Number of cores for parallel processing
+n_cores <- 1  # Number of cores for parallel processing
 
 # Define configurations: (ci_condition, eps_sigmaY, embedding_obs)
 # eps_sigmaY = 0.5: both CI and No_CI with scratch and medicalnet_ft
 # eps_sigmaY = 0.1, 1.0: No_CI only with scratch
 configs <- list(
-  #list(ci_condition = '/CI/', eps_sigmaY = 0.5, embedding_obs = c('scratch', 'medicalnet_ft')),
-  # list(ci_condition = '/No_CI/', eps_sigmaY = 0.5, embedding_obs = c('scratch', 'medicalnet_ft')),
+  list(ci_condition = '/CI/', eps_sigmaY = 0.5, embedding_obs = c('scratch', 'medicalnet_ft')),
+  list(ci_condition = '/No_CI/', eps_sigmaY = 0.5, embedding_obs = c('scratch', 'medicalnet_ft')),
   list(ci_condition = '/No_CI/', eps_sigmaY = 0.1, embedding_obs = 'scratch'),
   list(ci_condition = '/No_CI/', eps_sigmaY = 1.0, embedding_obs = 'scratch')
 )

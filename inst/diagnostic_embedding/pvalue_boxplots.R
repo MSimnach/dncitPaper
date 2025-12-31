@@ -1081,3 +1081,334 @@ if (eps_sigmaY == 0.5) {
 } else {
   cat("\n=== Skipping Runtime Boxplots (only created for eps_sigmaY = 0.5) ===\n")
 }
+
+# ============================================================================
+# Create QQ Plots for cVAE_long 200-seed Results (CI and No_CI)
+# ============================================================================
+
+cat("\n\n=== Creating QQ Plots for cVAE_long 200-seed Results ===\n")
+
+# Load required libraries (should already be loaded, but ensure)
+library(gridExtra)
+library(grid)
+library(cowplot)
+
+# Define sample sizes for 200-seed analysis
+n_samples_200 <- c(145, 256, 350, 460, 825, 1100, 1475, 1964, 5000, 10000)
+
+# Define subset of sample sizes for plotting (6 rows)
+n_samples_plot_200 <- c(145, 256, 460, 1100, 5000, 10000)
+
+# Map sample sizes to column indices (V1=145, V2=256, etc.)
+sample_to_col_idx <- match(n_samples_plot_200, n_samples_200)
+
+# Define column configurations: embedding-CIT-z combinations (6 columns)
+column_configs <- list(
+  list(cit = "RCOT_1", z_dim = "ukb_z1", label = "RCoT-z1"),
+  list(cit = "RCOT_1", z_dim = "ukb_z6", label = "RCoT-z6"),
+  list(cit = "RCOT_1", z_dim = "ukb_z15", label = "RCoT-z15"),
+  list(cit = "comets_pcm", z_dim = "ukb_z1", label = "PCM-z1"),
+  list(cit = "comets_pcm", z_dim = "ukb_z6", label = "PCM-z6"),
+  list(cit = "comets_pcm", z_dim = "ukb_z15", label = "PCM-z15")
+)
+
+# Define conditions (CI and No_CI)
+conditions_200 <- c("CI", "No_CI")
+
+# Colors for the QQ plots
+palet_qq <- paletteer::paletteer_d("ggthemes::Classic_10_Medium")
+qq_color_condVAE <- palet_qq[3]  # condVAE color
+#qq_color_cVAE_long <- palet_qq[7]  # cVAE_long color
+qq_color_cVAE_long <- colorspace::lighten(palet_qq[7], amount = 0.2)
+
+for (cond_200 in conditions_200) {
+  cat(sprintf("\nCreating QQ plot grid for condition: %s\n", cond_200))
+  
+  # Determine the p-values path
+  pval_path_200 <- file.path(results_base_path, cond_200, "p-values", "seeds_1_200")
+  
+  # Check if directory exists
+  if (!dir.exists(pval_path_200)) {
+    warning(sprintf("P-values directory not found: %s", pval_path_200))
+    next
+  }
+  
+  # Number of rows (sample sizes) and columns (CIT-z combinations)
+  n_rows_qq <- length(n_samples_plot_200)
+  n_cols_qq <- length(column_configs)
+  
+  # List to store all plots
+  plot_list_200 <- list()
+  
+  # Loop over each sample size (rows)
+  for (row_idx in seq_along(n_samples_plot_200)) {
+    n_s <- n_samples_plot_200[row_idx]
+    col_idx_data <- sample_to_col_idx[row_idx]  # Column index in data (1-10)
+    
+    # Loop over each column configuration
+    for (col_idx in seq_along(column_configs)) {
+      config <- column_configs[[col_idx]]
+      cit_name <- config$cit
+      z_dim <- config$z_dim
+      col_label <- config$label
+      
+      # Construct filenames for both embeddings
+      pval_filename_cVAE_long <- sprintf("1_0_1_0_fastsurfer_cVAE_long_%s_squared_%s.csv", 
+                                          z_dim, cit_name)
+      pval_filepath_cVAE_long <- file.path(pval_path_200, pval_filename_cVAE_long)
+      
+      pval_filename_condVAE <- sprintf("1_0_1_0_fastsurfer_condVAE_%s_squared_%s.csv", 
+                                        z_dim, cit_name)
+      pval_filepath_condVAE <- file.path(pval_path_200, pval_filename_condVAE)
+      
+      # Load cVAE_long p-values
+      p_vals_cVAE_long <- NULL
+      if (file.exists(pval_filepath_cVAE_long)) {
+        pval_df <- fread(pval_filepath_cVAE_long, nThread = 1)
+        pval_df <- pval_df[, -1]  # Drop first column
+        col_name <- paste0("V", col_idx_data)
+        p_vals_cVAE_long <- pval_df[[col_name]]
+        p_vals_cVAE_long <- p_vals_cVAE_long[!is.na(p_vals_cVAE_long)]
+      }
+      
+      # Load condVAE p-values
+      p_vals_condVAE <- NULL
+      if (file.exists(pval_filepath_condVAE)) {
+        pval_df <- fread(pval_filepath_condVAE, nThread = 1)
+        pval_df <- pval_df[, -1]  # Drop first column
+        col_name <- paste0("V", col_idx_data)
+        p_vals_condVAE <- pval_df[[col_name]]
+        p_vals_condVAE <- p_vals_condVAE[!is.na(p_vals_condVAE)]
+      }
+      
+      # Check if we have data for at least one embedding
+      has_data <- (length(p_vals_cVAE_long) > 0 || length(p_vals_condVAE) > 0)
+      
+      if (has_data) {
+        # Create combined data frame for plotting
+        plot_data_list <- list()
+        
+        if (length(p_vals_cVAE_long) > 0) {
+          ks_stat_cVAE_long <- round(ks.test(p_vals_cVAE_long, "punif")$statistic, 3)
+          plot_data_list[[1]] <- data.frame(
+            Observed = sort(p_vals_cVAE_long),
+            Theoretical = qunif(ppoints(length(p_vals_cVAE_long))),
+            Embedding = "cVAE_long"
+          )
+        }
+        
+        if (length(p_vals_condVAE) > 0) {
+          ks_stat_condVAE <- round(ks.test(p_vals_condVAE, "punif")$statistic, 3)
+          plot_data_list[[length(plot_data_list) + 1]] <- data.frame(
+            Observed = sort(p_vals_condVAE),
+            Theoretical = qunif(ppoints(length(p_vals_condVAE))),
+            Embedding = "condVAE"
+          )
+        }
+        
+        plot_df <- do.call(rbind, plot_data_list)
+        
+        # Construct KS statistic label
+        if (length(p_vals_cVAE_long) > 0 && length(p_vals_condVAE) > 0) {
+          ks_label <- sprintf("%.3f/%.3f", ks_stat_cVAE_long, ks_stat_condVAE)
+        } else if (length(p_vals_cVAE_long) > 0) {
+          ks_label <- sprintf("%.3f", ks_stat_cVAE_long)
+        } else {
+          ks_label <- sprintf("%.3f", ks_stat_condVAE)
+        }
+        
+        # Create the QQ plot with both embeddings
+        p <- ggplot() +
+          geom_abline(slope = 1, intercept = 0, color = "black") +
+          geom_point(data = plot_df, aes(x = Theoretical, y = Observed, color = Embedding), 
+                     size = 1.5, alpha = 0.7) +
+          scale_color_manual(values = c("cVAE_long" = qq_color_cVAE_long, 
+                                        "condVAE" = qq_color_condVAE)) +
+          xlab(ks_label) +
+          ylab(n_s) +
+          theme_minimal() +
+          coord_cartesian(xlim = c(0, 1), ylim = c(0, 1))
+        
+        # Base theme
+        p <- p + theme(
+          plot.title = element_blank(),
+          text = element_text(size = 15),
+          axis.title.y = element_blank(),
+          legend.position = "none"  # Hide individual plot legends
+        )
+        
+        # Visibility logic
+        # First column: show y-axis with sample size label
+        if (col_idx == 1) {
+          p <- p + theme(
+            axis.title.y = element_text(angle = 90, margin = margin(t = 0, r = 5, b = 0, l = 0))
+          )
+        } else {
+          # Other columns: remove y-axis
+          p <- p + theme(
+            axis.text.y = element_blank(),
+            axis.ticks.y = element_blank()
+          )
+        }
+        
+        # Last row: show x-axis with KS statistic
+        if (row_idx != n_rows_qq) {
+          # Not last row: remove x-axis text and ticks
+          p <- p + theme(
+            axis.text.x = element_blank(),
+            axis.ticks.x = element_blank()
+          )
+        }
+        
+        plot_list_200[[length(plot_list_200) + 1]] <- p
+      } else {
+        # No data for either embedding - create empty plot
+        cat(sprintf("  Warning: No data found for %s %s at n=%d\n", cit_name, z_dim, n_s))
+        p <- ggplot() +
+          theme_void() +
+          annotate("text", x = 0.5, y = 0.5, label = "No data", size = 5, hjust = 0.5)
+        plot_list_200[[length(plot_list_200) + 1]] <- p
+      }
+    }
+  }
+  
+  # Create column headers (CIT-z labels)
+  col_headers <- lapply(column_configs, function(config) {
+    textGrob(config$label, gp = gpar(fontsize = 15), just = "center")
+  })
+  
+  # Create a legend grob
+  # Create a dummy plot to extract legend
+  dummy_data <- data.frame(
+    x = c(1, 2),
+    y = c(1, 2),
+    Embedding = c("cVAE_long", "condVAE")
+  )
+  dummy_plot <- ggplot(dummy_data, aes(x = x, y = y, color = Embedding)) +
+    geom_point(size = 3) +
+    scale_color_manual(values = c("cVAE_long" = qq_color_cVAE_long, 
+                                   "condVAE" = qq_color_condVAE),
+                       labels = c("cVAE_long" = "cVAE long", "condVAE" = "condVAE")) +
+    theme_minimal() +
+    theme(legend.position = "bottom",
+          legend.title = element_blank(),
+          legend.text = element_text(size = 14))
+  
+  # Extract legend
+  legend_grob <- cowplot::get_legend(dummy_plot)
+  
+  # Combine headers and plots
+  grob_list <- c(col_headers, plot_list_200)
+  
+  # Create layout matrix:
+  # First row: column headers
+  # Subsequent rows: plots (sample sizes x column configs)
+  layout_matrix <- rbind(
+    matrix(1:n_cols_qq, nrow = 1, ncol = n_cols_qq),
+    matrix((n_cols_qq + 1):(n_cols_qq + n_cols_qq * n_rows_qq), 
+           nrow = n_rows_qq, ncol = n_cols_qq, byrow = TRUE)
+  )
+  
+  # Arrange plots into a grid
+  grid_qq_200_temp <- gridExtra::grid.arrange(
+    grobs = grob_list,
+    layout_matrix = layout_matrix,
+    bottom = textGrob("Theoretical Quantiles", gp = gpar(fontsize = 20)),
+    left = textGrob("Sample Quantiles", gp = gpar(fontsize = 20), rot = 90),
+    heights = unit.c(unit(1, "lines"), unit(1.1, "null"), rep(unit(1, "null"), n_rows_qq - 1))
+  )
+  
+  # Combine grid with legend at bottom
+  grid_qq_200 <- gridExtra::grid.arrange(
+    grid_qq_200_temp,
+    legend_grob,
+    ncol = 1,
+    heights = unit.c(unit(1, "npc") - unit(1.5, "lines"), unit(1.5, "lines"))
+  )
+  
+  # Determine condition label for filename
+  cond_label <- ifelse(cond_200 == "CI", "CI", "No_CI")
+  
+  # Save QQ plot
+  cat(sprintf("Saving QQ plot for %s:\n", cond_label))
+  
+  # Save as PNG
+  png_path_qq_200 <- file.path(output_dir, 
+                                sprintf("qq_plot_cVAE_long_%s_seeds_1_200.png", cond_label))
+  ggsave(
+    png_path_qq_200, 
+    plot = grid_qq_200, 
+    width = n_cols_qq * 2.5, 
+    height = n_rows_qq * 2.5, 
+    units = "in", 
+    dpi = 300
+  )
+  cat("  Saved PNG:", png_path_qq_200, "\n")
+  
+  # Save as PDF
+  pdf_path_qq_200 <- file.path(output_dir, 
+                                sprintf("qq_plot_cVAE_long_%s_seeds_1_200.pdf", cond_label))
+  ggsave(
+    pdf_path_qq_200, 
+    plot = grid_qq_200, 
+    width = n_cols_qq * 2.5, 
+    height = n_rows_qq * 2.5, 
+    units = "in"
+  )
+  cat("  Saved PDF:", pdf_path_qq_200, "\n")
+}
+
+cat("\n=== QQ Plots for cVAE_long 200-seed Results Complete ===\n")
+cat(sprintf("Output directory: %s\n", output_dir))
+
+### Runtime condVAE vs cVAE_long
+results_base_path <- "/sc/home/marco.simnacher/dncitPaper/Results"
+# Determine the runtime path
+runtime_path_200 <- file.path(results_base_path, "CI", "runtime_cit", "seeds_1_200")
+# Construct filenames for both embeddings
+runtime_filename_cVAE_long_rcot <- sprintf("1_0_1_0_fastsurfer_cVAE_long_%s_squared_%s.csv", 
+                                          "ukb_z1", "RCOT_1")
+runtime_filepath_cVAE_long_rcot <- file.path(runtime_path_200, runtime_filename_cVAE_long_rcot)
+      
+runtime_filename_condVAE_rcot <- sprintf("1_0_1_0_fastsurfer_condVAE_%s_squared_%s.csv", 
+                                        "ukb_z1", "RCOT_1")
+runtime_filepath_condVAE_rcot <- file.path(runtime_path_200, runtime_filename_condVAE_rcot)
+
+# Load cVAE_long runtime
+runtime_df_cVAE_long_rcot <- fread(runtime_filepath_cVAE_long_rcot, nThread = 1)
+runtime_df_cVAE_long_rcot <- runtime_df_cVAE_long_rcot[, -1]
+runtime_df_condVAE_rcot <- fread(runtime_filepath_condVAE_rcot, nThread = 1)
+runtime_df_condVAE_rcot <- runtime_df_condVAE_rcot[, -1]
+rcot_cVAE_long_mean <- colMeans(runtime_df_cVAE_long_rcot)
+rcot_condVAE_mean <- colMeans(runtime_df_condVAE_rcot)
+rcot_runtime_mean <- rcot_cVAE_long_mean - rcot_condVAE_mean
+rcot_runtime_mean
+
+
+runtime_filename_cVAE_long_pcm <- sprintf("1_0_1_0_fastsurfer_cVAE_long_%s_squared_%s.csv", 
+                                          "ukb_z1", "comets_pcm")
+runtime_filepath_cVAE_long_pcm <- file.path(runtime_path_200, runtime_filename_cVAE_long_pcm)
+      
+runtime_filename_condVAE_pcm <- sprintf("1_0_1_0_fastsurfer_condVAE_%s_squared_%s.csv", 
+                                        "ukb_z1", "comets_pcm")
+runtime_filepath_condVAE_pcm <- file.path(runtime_path_200, runtime_filename_condVAE_pcm)
+
+# Load cVAE_long runtime
+runtime_df_cVAE_long_pcm <- fread(runtime_filepath_cVAE_long_pcm, nThread = 1)
+runtime_df_cVAE_long_pcm <- runtime_df_cVAE_long_pcm[, -1]
+runtime_df_condVAE_pcm <- fread(runtime_filepath_condVAE_pcm, nThread = 1)
+runtime_df_condVAE_pcm <- runtime_df_condVAE_pcm[, -1]
+pcm_cVAE_long_mean <- colMeans(runtime_df_cVAE_long_pcm)
+pcm_condVAE_mean <- colMeans(runtime_df_condVAE_pcm)
+pcm_runtime_mean <- pcm_cVAE_long_mean - pcm_condVAE_mean
+pcm_runtime_mean
+sample_sizes <- c(145, 256, 350, 460, 825, 1100, 1475, 1964, 5000, 10000)
+cor(rcot_runtime_mean, sample_sizes)
+cor(pcm_runtime_mean, sample_sizes)
+#scatter plot runtime_mean vs sample sizes
+pdf_path_runtime <- file.path(output_dir, "runtime_comparison_rcot_pcm.pdf")
+pdf(pdf_path_runtime, width = 10, height = 7)
+plot(sample_sizes, pcm_runtime_mean, type = "l", col = "red", xlab = "Sample Size", ylab = "Runtime (seconds)")
+lines(sample_sizes, rcot_runtime_mean, type = "l", col = "blue")
+legend("topright", legend = c("RCoT", "PCM"), col = c("red", "blue"), lty = 1)
+dev.off()

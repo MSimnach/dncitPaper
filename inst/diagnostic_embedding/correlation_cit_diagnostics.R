@@ -11,7 +11,7 @@ library(paletteer)
 
 # Configuration
 seeds <- c(1:100)
-n_samples <- c(460, 1100, 5000, 10000)
+n_samples <- c(460, 1100, 5000)#, 10000)
 conditions <- c("CI", "No_CI")
 eps_sigmaY <- 0.5
 
@@ -344,6 +344,11 @@ output_file_pooled <- file.path(output_dir, "correlation_cit_diagnostics_pooled.
 fwrite(correlation_pooled_df, output_file_pooled)
 cat(sprintf("Saved pooled correlations: %s\n", output_file_pooled))
 
+# Save avg-across-seeds correlations
+output_file_avg <- file.path(output_dir, "correlation_cit_diagnostics_avg.csv")
+fwrite(correlation_avg, output_file_avg)
+cat(sprintf("Saved avg-across-seeds correlations: %s\n", output_file_avg))
+
 cat("\n=== Summary ===\n")
 cat("Per-embedding correlations:\n")
 print(head(correlation_df))
@@ -506,6 +511,7 @@ for (metric_name in names(diagnostic_metrics)) {
     
     p_boxplot <- ggplot(boxplot_data, aes(x = n_sample, y = metric_value, fill = embedding)) +
       geom_boxplot(position = position_dodge(width = 0.8), outlier.size = 0.8) +
+      scale_y_log10()
       facet_wrap(~ condition, ncol = 2) +
       labs(
         y = metric_info$y_label,

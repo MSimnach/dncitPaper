@@ -669,6 +669,38 @@ auto_diagnostic <- function(
       X_residual_split <- X[idx_gam_residual, , drop=FALSE]
       Y_residual_split <- as.vector(Y[idx_gam_residual])
       
+      # Compute PCM and RCoT on full data (before y_type loop)
+      # These tests are applied to full diagnostic data, not residual split
+      Z_matrix <- as.matrix(Z[, c(-1), drop=FALSE])  # Remove id column
+      
+      # Compute PCM p-value
+      pcm_pvalue <- NA
+      tryCatch({
+        cit_params_pcm <- list(cit='comets', params_cit=list(rep=1))
+        pcm_result <- DNCIT::DNCIT(X, as.matrix(Y), Z_matrix, 
+                                   embedding_map_with_parameters = 'feature_representations',
+                                   cit_with_parameters = cit_params_pcm)
+        pcm_pvalue <- pcm_result$p
+        cat("  PCM p-value (full data):", format(pcm_pvalue, scientific = TRUE, digits = 4), "\n")
+      }, error = function(e) {
+        cat("  [WARNING] Failed to compute PCM: ", conditionMessage(e), "\n")
+        pcm_pvalue <<- NA
+      })
+      
+      # Compute RCoT p-value
+      rcot_pvalue <- NA
+      tryCatch({
+        cit_params_rcot <- list(cit='RCOT', params_cit=list(seed=seed, num_f=200))
+        rcot_result <- DNCIT::DNCIT(X, as.matrix(Y), Z_matrix, 
+                                    embedding_map_with_parameters = 'feature_representations',
+                                    cit_with_parameters = cit_params_rcot)
+        rcot_pvalue <- rcot_result$p
+        cat("  RCoT p-value (full data):", format(rcot_pvalue, scientific = TRUE, digits = 4), "\n")
+      }, error = function(e) {
+        cat("  [WARNING] Failed to compute RCoT: ", conditionMessage(e), "\n")
+        rcot_pvalue <<- NA
+      })
+      
       # Run glmnet twice: once with original Y, once with residuals
       for (y_type in c("original", "residual")) {
         cat("\n  --- Running with Y type:", y_type, "---\n")
@@ -750,6 +782,8 @@ auto_diagnostic <- function(
           f_test_pvalue = f_test_pvalue,
           globaltest_pvalue = globaltest_pvalue,
           dcor_pvalue = dcor_pvalue,
+          pcm_pvalue = pcm_pvalue,
+          rcot_pvalue = rcot_pvalue,
           stringsAsFactors = FALSE
         )
       }
@@ -882,6 +916,8 @@ auto_diagnostic <- function(
               f_test_pvalue = NA,
               globaltest_pvalue = NA,
               dcor_pvalue = NA,
+              pcm_pvalue = NA,
+              rcot_pvalue = NA,
               stringsAsFactors = FALSE
             )
           } else {
@@ -912,6 +948,8 @@ auto_diagnostic <- function(
             f_test_pvalue = NA,
             globaltest_pvalue = NA,
             dcor_pvalue = NA,
+            pcm_pvalue = NA,
+            rcot_pvalue = NA,
             stringsAsFactors = FALSE
           )
         }
@@ -921,6 +959,38 @@ auto_diagnostic <- function(
       # Filter X to the 80% split (GAM residual split)
       X_residual_split <- X[idx_gam_residual, , drop=FALSE]
       Y_residual_split <- as.vector(Y[idx_gam_residual])
+      
+      # Compute PCM and RCoT on full data (before y_type loop)
+      # These tests are applied to full diagnostic data, not residual split
+      Z_matrix <- as.matrix(Z[, c(-1), drop=FALSE])  # Remove id column
+      
+      # Compute PCM p-value
+      pcm_pvalue <- NA
+      tryCatch({
+        cit_params_pcm <- list(cit='comets', params_cit=list(rep=1))
+        pcm_result <- DNCIT::DNCIT(X, as.matrix(Y), Z_matrix, 
+                                   embedding_map_with_parameters = 'feature_representations',
+                                   cit_with_parameters = cit_params_pcm)
+        pcm_pvalue <- pcm_result$p
+        cat("  PCM p-value (full data):", format(pcm_pvalue, scientific = TRUE, digits = 4), "\n")
+      }, error = function(e) {
+        cat("  [WARNING] Failed to compute PCM: ", conditionMessage(e), "\n")
+        pcm_pvalue <<- NA
+      })
+      
+      # Compute RCoT p-value
+      rcot_pvalue <- NA
+      tryCatch({
+        cit_params_rcot <- list(cit='RCOT', params_cit=list(seed=seed, num_f=200))
+        rcot_result <- DNCIT::DNCIT(X, as.matrix(Y), Z_matrix, 
+                                    embedding_map_with_parameters = 'feature_representations',
+                                    cit_with_parameters = cit_params_rcot)
+        rcot_pvalue <- rcot_result$p
+        cat("  RCoT p-value (full data):", format(rcot_pvalue, scientific = TRUE, digits = 4), "\n")
+      }, error = function(e) {
+        cat("  [WARNING] Failed to compute RCoT: ", conditionMessage(e), "\n")
+        rcot_pvalue <<- NA
+      })
       
       # Run glmnet twice: once with original Y, once with residuals
       for (y_type in c("original", "residual")) {
@@ -1002,6 +1072,8 @@ auto_diagnostic <- function(
             f_test_pvalue = f_test_pvalue,
             globaltest_pvalue = globaltest_pvalue,
             dcor_pvalue = dcor_pvalue,
+            pcm_pvalue = pcm_pvalue,
+            rcot_pvalue = rcot_pvalue,
             stringsAsFactors = FALSE
           )
           next
@@ -1026,6 +1098,8 @@ auto_diagnostic <- function(
           f_test_pvalue = f_test_pvalue,
           globaltest_pvalue = globaltest_pvalue,
           dcor_pvalue = dcor_pvalue,
+          pcm_pvalue = pcm_pvalue,
+          rcot_pvalue = rcot_pvalue,
           stringsAsFactors = FALSE
         )
       }
