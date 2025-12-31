@@ -676,8 +676,8 @@ auto_diagnostic <- function(
       # Compute PCM p-value
       pcm_pvalue <- NA
       tryCatch({
-        cit_params_pcm <- list(cit='comets', params_cit=list(rep=1))
-        pcm_result <- DNCIT::DNCIT(X, as.matrix(Y), Z_matrix, 
+        cit_params_pcm <- list(cit='comets')
+        pcm_result <- DNCIT::DNCIT(as.matrix(X), as.matrix(Y), Z_matrix, 
                                    embedding_map_with_parameters = 'feature_representations',
                                    cit_with_parameters = cit_params_pcm)
         pcm_pvalue <- pcm_result$p
@@ -690,8 +690,8 @@ auto_diagnostic <- function(
       # Compute RCoT p-value
       rcot_pvalue <- NA
       tryCatch({
-        cit_params_rcot <- list(cit='RCOT', params_cit=list(seed=seed, num_f=200))
-        rcot_result <- DNCIT::DNCIT(X, as.matrix(Y), Z_matrix, 
+        cit_params_rcot <- list(cit='RCOT', params_cit=list(seed=1, num_f=200))
+        rcot_result <- DNCIT::DNCIT(as.matrix(X), as.matrix(Y), Z_matrix, 
                                     embedding_map_with_parameters = 'feature_representations',
                                     cit_with_parameters = cit_params_rcot)
         rcot_pvalue <- rcot_result$p
@@ -967,28 +967,30 @@ auto_diagnostic <- function(
       # Compute PCM p-value
       pcm_pvalue <- NA
       tryCatch({
-        cit_params_pcm <- list(cit='comets', params_cit=list(rep=1))
-        pcm_result <- DNCIT::DNCIT(X, as.matrix(Y), Z_matrix, 
+        cit_params_pcm <- list(cit='comets')
+        pcm_result <- DNCIT::DNCIT(as.matrix(X), as.matrix(Y), Z_matrix, 
                                    embedding_map_with_parameters = 'feature_representations',
                                    cit_with_parameters = cit_params_pcm)
         pcm_pvalue <- pcm_result$p
         cat("  PCM p-value (full data):", format(pcm_pvalue, scientific = TRUE, digits = 4), "\n")
       }, error = function(e) {
         cat("  [WARNING] Failed to compute PCM: ", conditionMessage(e), "\n")
+        print(sys.calls())
         pcm_pvalue <<- NA
       })
       
       # Compute RCoT p-value
       rcot_pvalue <- NA
       tryCatch({
-        cit_params_rcot <- list(cit='RCOT', params_cit=list(seed=seed, num_f=200))
-        rcot_result <- DNCIT::DNCIT(X, as.matrix(Y), Z_matrix, 
+        cit_params_rcot <- list(cit='RCOT', params_cit=list(seed=1, num_f=200))
+        rcot_result <- DNCIT::DNCIT(as.matrix(X), as.matrix(Y), Z_matrix, 
                                     embedding_map_with_parameters = 'feature_representations',
                                     cit_with_parameters = cit_params_rcot)
         rcot_pvalue <- rcot_result$p
         cat("  RCoT p-value (full data):", format(rcot_pvalue, scientific = TRUE, digits = 4), "\n")
       }, error = function(e) {
         cat("  [WARNING] Failed to compute RCoT: ", conditionMessage(e), "\n")
+        print(sys.calls())
         rcot_pvalue <<- NA
       })
       
