@@ -229,7 +229,6 @@ auto_diagnostic <- function(
     ]
   }
 
-  # ADD VERIFICATION AFTER FILTERING (after line 233):
   cat("\n=== Verifying ID Matching After Filtering/Reordering ===\n")
   for (emb_name in names(baseline_emb_list)) {
     emb_ids <- baseline_emb_list[[emb_name]]$id
@@ -673,6 +672,9 @@ auto_diagnostic <- function(
       # These tests are applied to full diagnostic data, not residual split
       Z_matrix <- as.matrix(Z[, c(-1), drop=FALSE])  # Remove id column
       
+      row.names(X) <- NULL
+      row.names(Y) <- NULL
+      row.names(Z_matrix) <- NULL
       # Compute PCM p-value
       pcm_pvalue <- NA
       tryCatch({
@@ -964,6 +966,10 @@ auto_diagnostic <- function(
       # These tests are applied to full diagnostic data, not residual split
       Z_matrix <- as.matrix(Z[, c(-1), drop=FALSE])  # Remove id column
       
+
+      row.names(X) <- NULL
+      row.names(Y) <- NULL
+      row.names(Z_matrix) <- NULL
       # Compute PCM p-value
       pcm_pvalue <- NA
       tryCatch({

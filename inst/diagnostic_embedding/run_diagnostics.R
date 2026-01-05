@@ -3,8 +3,7 @@
 # Load required packages and functions
 library(dplyr)
 library(devtools)
-library(foreach)
-library(doParallel)
+library(momentchi2)
 library(DNCIT)
 load_all()  # Load the dncitPaper package
 
@@ -12,24 +11,19 @@ load_all()  # Load the dncitPaper package
 idx_samples <- 1:5
 n_sample = list(256, 460, 825, 1100, 5000)
 xz_modes <- c('Sigma=I_p')
-seeds <- 1:100
+seeds <- 2:6
 Y_age <- FALSE
 standardize_ridge_lasso <- TRUE
-n_cores <- 1  # Number of cores for parallel processing
 
 # Define configurations: (ci_condition, eps_sigmaY, embedding_obs)
 # eps_sigmaY = 0.5: both CI and No_CI with scratch and medicalnet_ft
 # eps_sigmaY = 0.1, 1.0: No_CI only with scratch
 configs <- list(
   list(ci_condition = '/CI/', eps_sigmaY = 0.5, embedding_obs = c('scratch', 'medicalnet_ft')),
-  list(ci_condition = '/No_CI/', eps_sigmaY = 0.5, embedding_obs = c('scratch', 'medicalnet_ft')),
-  list(ci_condition = '/No_CI/', eps_sigmaY = 0.1, embedding_obs = 'scratch'),
-  list(ci_condition = '/No_CI/', eps_sigmaY = 1.0, embedding_obs = 'scratch')
+  #list(ci_condition = '/No_CI/', eps_sigmaY = 0.5, embedding_obs = c('scratch', 'medicalnet_ft')),
+  #list(ci_condition = '/No_CI/', eps_sigmaY = 0.1, embedding_obs = 'scratch'),
+  #list(ci_condition = '/No_CI/', eps_sigmaY = 1.0, embedding_obs = 'scratch')
 )
-
-# Set up parallel processing
-cl <- makeCluster(n_cores)
-registerDoParallel(cl)
 
 # Run diagnostics for each configuration
 for(config in configs){
@@ -40,15 +34,13 @@ for(config in configs){
   cat(sprintf("\n=== Running configuration: CI=%s, eps_sigmaY=%s, embeddings=%s ===\n", 
               ci_condition, eps_sigmaY, paste(embedding_obs, collapse=", ")))
   
-  foreach(seed = seeds, .packages = c('dplyr', 'devtools')) %dopar% {
-    # Load the package in each worker
-    devtools::load_all()
-    
+  for(seed in seeds) {
     # Cache baseline results per seed (constant across sample sizes)
     baseline_cache <- NULL
     
     for(xz_mode in xz_modes){
       for(idx_sample in idx_samples){
+        cat(sprintf("Running seed %d,  idx_sample %d\n", seed,  idx_sample))
         if(idx_sample == 1){
           # Compute baseline results for first sample size and cache them
           results <- auto_diagnostic(
@@ -84,9 +76,6 @@ for(config in configs){
     }
   }
 }
-
-# Clean up parallel cluster
-stopCluster(cl)
 
 cat("\n=== All diagnostics completed ===\n")
 
