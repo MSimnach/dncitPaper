@@ -255,6 +255,16 @@ auto_diagnostic <- function(
   cat("All datasets filtered and reordered to match common IDs\n\n")
   
   # ============================================================================
+  # 2b. Create Random Half-Sample Split for CIT Tests
+  # ============================================================================
+  cat("=== Creating Random Half-Sample Split for CIT Tests ===\n")
+  set.seed(seed)
+  n_total <- length(common_ids)
+  idx_cit_split <- sample.int(n_total, size = round(0.5 * n_total))
+  cat("Split sample size:", length(idx_cit_split), "out of", n_total, 
+      "(", round(100 * length(idx_cit_split) / n_total, 1), "%)\n\n")
+  
+  # ============================================================================
   # 3. Extract Trained Embeddings (if extract_trained=TRUE)
   # ============================================================================
   trained_emb_list <- list()
@@ -703,6 +713,44 @@ auto_diagnostic <- function(
         rcot_pvalue <<- NA
       })
       
+      # Compute PCM p-value on split sample
+      pcm_pvalue_split <- NA
+      tryCatch({
+        cit_params_pcm <- list(cit='comets')
+        pcm_result_split <- DNCIT::DNCIT(
+          as.matrix(X[idx_cit_split, , drop=FALSE]), 
+          as.matrix(Y[idx_cit_split]), 
+          Z_matrix[idx_cit_split, , drop=FALSE], 
+          embedding_map_with_parameters = 'feature_representations',
+          cit_with_parameters = cit_params_pcm
+        )
+        pcm_pvalue_split <- pcm_result_split$p
+        cat("  PCM p-value (split sample, n=", length(idx_cit_split), "):", 
+            format(pcm_pvalue_split, scientific = TRUE, digits = 4), "\n")
+      }, error = function(e) {
+        cat("  [WARNING] Failed to compute PCM on split sample: ", conditionMessage(e), "\n")
+        pcm_pvalue_split <<- NA
+      })
+      
+      # Compute RCoT p-value on split sample
+      rcot_pvalue_split <- NA
+      tryCatch({
+        cit_params_rcot <- list(cit='RCOT', params_cit=list(seed=1, num_f=200))
+        rcot_result_split <- DNCIT::DNCIT(
+          as.matrix(X[idx_cit_split, , drop=FALSE]), 
+          as.matrix(Y[idx_cit_split]), 
+          Z_matrix[idx_cit_split, , drop=FALSE], 
+          embedding_map_with_parameters = 'feature_representations',
+          cit_with_parameters = cit_params_rcot
+        )
+        rcot_pvalue_split <- rcot_result_split$p
+        cat("  RCoT p-value (split sample, n=", length(idx_cit_split), "):", 
+            format(rcot_pvalue_split, scientific = TRUE, digits = 4), "\n")
+      }, error = function(e) {
+        cat("  [WARNING] Failed to compute RCoT on split sample: ", conditionMessage(e), "\n")
+        rcot_pvalue_split <<- NA
+      })
+      
       # Run glmnet twice: once with original Y, once with residuals
       for (y_type in c("original", "residual")) {
         cat("\n  --- Running with Y type:", y_type, "---\n")
@@ -786,6 +834,8 @@ auto_diagnostic <- function(
           dcor_pvalue = dcor_pvalue,
           pcm_pvalue = pcm_pvalue,
           rcot_pvalue = rcot_pvalue,
+          pcm_pvalue_split = pcm_pvalue_split,
+          rcot_pvalue_split = rcot_pvalue_split,
           stringsAsFactors = FALSE
         )
       }
@@ -920,6 +970,8 @@ auto_diagnostic <- function(
               dcor_pvalue = NA,
               pcm_pvalue = NA,
               rcot_pvalue = NA,
+              pcm_pvalue_split = NA,
+              rcot_pvalue_split = NA,
               stringsAsFactors = FALSE
             )
           } else {
@@ -952,6 +1004,8 @@ auto_diagnostic <- function(
             dcor_pvalue = NA,
             pcm_pvalue = NA,
             rcot_pvalue = NA,
+            pcm_pvalue_split = NA,
+            rcot_pvalue_split = NA,
             stringsAsFactors = FALSE
           )
         }
@@ -998,6 +1052,46 @@ auto_diagnostic <- function(
         cat("  [WARNING] Failed to compute RCoT: ", conditionMessage(e), "\n")
         print(sys.calls())
         rcot_pvalue <<- NA
+      })
+      
+      # Compute PCM p-value on split sample
+      pcm_pvalue_split <- NA
+      tryCatch({
+        cit_params_pcm <- list(cit='comets')
+        pcm_result_split <- DNCIT::DNCIT(
+          as.matrix(X[idx_cit_split, , drop=FALSE]), 
+          as.matrix(Y[idx_cit_split]), 
+          Z_matrix[idx_cit_split, , drop=FALSE], 
+          embedding_map_with_parameters = 'feature_representations',
+          cit_with_parameters = cit_params_pcm
+        )
+        pcm_pvalue_split <- pcm_result_split$p
+        cat("  PCM p-value (split sample, n=", length(idx_cit_split), "):", 
+            format(pcm_pvalue_split, scientific = TRUE, digits = 4), "\n")
+      }, error = function(e) {
+        cat("  [WARNING] Failed to compute PCM on split sample: ", conditionMessage(e), "\n")
+        print(sys.calls())
+        pcm_pvalue_split <<- NA
+      })
+      
+      # Compute RCoT p-value on split sample
+      rcot_pvalue_split <- NA
+      tryCatch({
+        cit_params_rcot <- list(cit='RCOT', params_cit=list(seed=1, num_f=200))
+        rcot_result_split <- DNCIT::DNCIT(
+          as.matrix(X[idx_cit_split, , drop=FALSE]), 
+          as.matrix(Y[idx_cit_split]), 
+          Z_matrix[idx_cit_split, , drop=FALSE], 
+          embedding_map_with_parameters = 'feature_representations',
+          cit_with_parameters = cit_params_rcot
+        )
+        rcot_pvalue_split <- rcot_result_split$p
+        cat("  RCoT p-value (split sample, n=", length(idx_cit_split), "):", 
+            format(rcot_pvalue_split, scientific = TRUE, digits = 4), "\n")
+      }, error = function(e) {
+        cat("  [WARNING] Failed to compute RCoT on split sample: ", conditionMessage(e), "\n")
+        print(sys.calls())
+        rcot_pvalue_split <<- NA
       })
       
       # Run glmnet twice: once with original Y, once with residuals
@@ -1082,6 +1176,8 @@ auto_diagnostic <- function(
             dcor_pvalue = dcor_pvalue,
             pcm_pvalue = pcm_pvalue,
             rcot_pvalue = rcot_pvalue,
+            pcm_pvalue_split = pcm_pvalue_split,
+            rcot_pvalue_split = rcot_pvalue_split,
             stringsAsFactors = FALSE
           )
           next
@@ -1108,6 +1204,8 @@ auto_diagnostic <- function(
           dcor_pvalue = dcor_pvalue,
           pcm_pvalue = pcm_pvalue,
           rcot_pvalue = rcot_pvalue,
+          pcm_pvalue_split = pcm_pvalue_split,
+          rcot_pvalue_split = rcot_pvalue_split,
           stringsAsFactors = FALSE
         )
       }

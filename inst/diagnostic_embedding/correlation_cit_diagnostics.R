@@ -11,9 +11,9 @@ library(paletteer)
 
 # Configuration
 seeds <- c(1:100)
-n_samples <- c(460, 1100, 5000)#, 10000)
+n_samples <- c(256, 460, 825, 1100, 5000)#, 10000)
 conditions <- c("CI", "No_CI")
-eps_sigmaY <- 0.5
+eps_sigmaY <- 0.1
 
 # Helper functions
 extract_embedding_from_filename <- function(filename) {
@@ -59,7 +59,7 @@ for (cond in conditions) {
     pval_df <- fread(csv_file, nThread = 1)
     pval_df <- pval_df[, -1]  # Remove row index column
     
-    sample_size_cols <- names(pval_df)[1:min(length(n_samples), ncol(pval_df))]
+    sample_size_cols <- names(pval_df)[c(2,4,5)] #adapt to sample sizes
     pval_df$seed_idx <- 1:nrow(pval_df)
     pval_df$seed <- seeds[pval_df$seed_idx]
     
@@ -83,6 +83,7 @@ cat(sprintf("Total CIT p-value records: %d\n", nrow(combined_pvals)))
 cat(sprintf("Unique CITs: %s\n", paste(unique(combined_pvals$cit), collapse = ", ")))
 cat(sprintf("Unique embeddings: %s\n\n", paste(unique(combined_pvals$embedding), collapse = ", ")))
 
+n_samples <- c(460,1100,5000)
 # ============================================================================
 # Load Diagnostic Results
 # ============================================================================
@@ -110,7 +111,8 @@ for (condition in conditions) {
         
         # Check if all required columns exist
         required_cols <- c("embedding_name", "y_type", "r2_test", 
-                          "f_test_pvalue", "globaltest_pvalue", "dcor_pvalue")
+                          "f_test_pvalue", "globaltest_pvalue", "dcor_pvalue",
+                          "pcm_pvalue", "rcot_pvalue", "pcm_pvalue_split", "rcot_pvalue_split")
         if (!all(required_cols %in% names(diag_df))) {
           warning(sprintf("Skipping %s - missing required columns", diagnostic_path))
           next
@@ -132,7 +134,8 @@ cat(sprintf("Total diagnostic records: %d\n\n", nrow(combined_diagnostics)))
 diagnostics_summary <- combined_diagnostics %>%
   filter(y_type %in% c("original", "residual")) %>%
   select(embedding_name, n_sample, seed, condition, y_type, 
-         r2_test, f_test_pvalue, globaltest_pvalue, dcor_pvalue) %>%
+         r2_test, f_test_pvalue, globaltest_pvalue, dcor_pvalue,
+         pcm_pvalue, rcot_pvalue, pcm_pvalue_split, rcot_pvalue_split) %>%
   as.data.table()
 
 # Remove duplicates by taking the first row for each unique combination
@@ -141,7 +144,8 @@ diagnostics_summary <- diagnostics_summary[, .SD[1],
 
 # Reshape to have separate columns for original and residual R^2
 r2_original <- diagnostics_summary[y_type == "original", 
-                                   .(seed, n_sample, condition, embedding_name, r2_original = r2_test)]
+                                   .(seed, n_sample, condition, embedding_name, r2_original = r2_test,
+                                     pcm_pvalue, rcot_pvalue, pcm_pvalue_split, rcot_pvalue_split)]
 r2_residual <- diagnostics_summary[y_type == "residual", 
                                    .(seed, n_sample, condition, embedding_name, r2_residual = r2_test,
                                      f_test_pvalue, globaltest_pvalue, dcor_pvalue)]
@@ -194,6 +198,10 @@ for (cit_name in unique(combined_pvals$cit)) {
           cor_ftest = cor(merged_data$p_value, merged_data$f_test_pvalue, use = "complete.obs"),
           cor_globaltest = cor_globaltest,
           cor_dcor = cor(merged_data$p_value, merged_data$dcor_pvalue, use = "complete.obs"),
+          cor_pcm = cor(merged_data$p_value, merged_data$pcm_pvalue, use = "complete.obs"),
+          cor_rcot = cor(merged_data$p_value, merged_data$rcot_pvalue, use = "complete.obs"),
+          cor_pcm_split = cor(merged_data$p_value, merged_data$pcm_pvalue_split, use = "complete.obs"),
+          cor_rcot_split = cor(merged_data$p_value, merged_data$rcot_pvalue_split, use = "complete.obs"),
           n_obs = nrow(merged_data)
         )
         
@@ -247,6 +255,10 @@ for (cit_name in unique(combined_pvals$cit)) {
         cor_ftest = cor(merged_data$p_value, merged_data$f_test_pvalue, use = "complete.obs"),
         cor_globaltest = cor_globaltest,
         cor_dcor = cor(merged_data$p_value, merged_data$dcor_pvalue, use = "complete.obs"),
+        cor_pcm = cor(merged_data$p_value, merged_data$pcm_pvalue, use = "complete.obs"),
+        cor_rcot = cor(merged_data$p_value, merged_data$rcot_pvalue, use = "complete.obs"),
+        cor_pcm_split = cor(merged_data$p_value, merged_data$pcm_pvalue_split, use = "complete.obs"),
+        cor_rcot_split = cor(merged_data$p_value, merged_data$rcot_pvalue_split, use = "complete.obs"),
         n_obs = nrow(merged_data)
       )
       
@@ -301,6 +313,10 @@ for (cit_name in unique(combined_pvals$cit)) {
           cor_ftest = cor(merged_data$p_value, merged_data$f_test_pvalue, use = "complete.obs"),
           cor_globaltest = cor_globaltest,
           cor_dcor = cor(merged_data$p_value, merged_data$dcor_pvalue, use = "complete.obs"),
+          cor_pcm = cor(merged_data$p_value, merged_data$pcm_pvalue, use = "complete.obs"),
+          cor_rcot = cor(merged_data$p_value, merged_data$rcot_pvalue, use = "complete.obs"),
+          cor_pcm_split = cor(merged_data$p_value, merged_data$pcm_pvalue_split, use = "complete.obs"),
+          cor_rcot_split = cor(merged_data$p_value, merged_data$rcot_pvalue_split, use = "complete.obs"),
           n_obs = nrow(merged_data)
         )
         
@@ -322,6 +338,10 @@ correlation_avg <- correlation_seedwise %>%
     avg_cor_ftest = mean(cor_ftest, na.rm = TRUE),
     avg_cor_globaltest = mean(cor_globaltest, na.rm = TRUE),
     avg_cor_dcor = mean(cor_dcor, na.rm = TRUE),
+    avg_cor_pcm = mean(cor_pcm, na.rm = TRUE),
+    avg_cor_rcot = mean(cor_rcot, na.rm = TRUE),
+    avg_cor_pcm_split = mean(cor_pcm_split, na.rm = TRUE),
+    avg_cor_rcot_split = mean(cor_rcot_split, na.rm = TRUE),
     n_seeds = sum(!is.na(cor_r2_orig)),
     .groups = "drop"
   )
@@ -463,6 +483,30 @@ diagnostic_metrics <- list(
     col = "dcor_pvalue",
     cor_col = "cor_dcor",
     y_label = "Dcor P-value",
+    is_pvalue = TRUE
+  ),
+  pcm = list(
+    col = "pcm_pvalue",
+    cor_col = "cor_pcm",
+    y_label = "PCM P-value",
+    is_pvalue = TRUE
+  ),
+  rcot = list(
+    col = "rcot_pvalue",
+    cor_col = "cor_rcot",
+    y_label = "RCoT P-value",
+    is_pvalue = TRUE
+  ),
+  pcm_split = list(
+    col = "pcm_pvalue_split",
+    cor_col = "cor_pcm_split",
+    y_label = "PCM P-value (Split)",
+    is_pvalue = TRUE
+  ),
+  rcot_split = list(
+    col = "rcot_pvalue_split",
+    cor_col = "cor_rcot_split",
+    y_label = "RCoT P-value (Split)",
     is_pvalue = TRUE
   )
 )
@@ -1052,5 +1096,1108 @@ for (metric_name in names(diagnostic_metrics)) {
 
 cat("\n=== Rank Correlation Lineplots Complete ===\n")
 
+# ============================================================================
+# NEW FIGURE 1: ECDF diagnostics (colored by embedding; linetype by n for scratch/ft)
+# ============================================================================
+cat("\n=== Creating ECDF Diagnostic Plots ===\n")
+
+library(scales)
+
+# which embeddings vary with sample size (training-size dependence)
+varying_embeddings_disp <- c("Scratch", "MedicalNet-ft")
+fixed_embeddings_disp   <- setdiff(levels(plot_data_diag$embedding), varying_embeddings_disp)
+
+# For fixed embeddings: use only one n_sample to avoid repeated identical ECDFs
+n_ref_for_fixed <- max(n_samples)  # you can change this to e.g. min(n_samples)
+
+# Linetype mapping for varying embeddings: different per n_sample
+linetype_map <- setNames(
+  c("dashed", "dotted", "solid")[seq_along(n_samples)],
+  as.character(n_samples)
+)
+
+# Function to create and save ECDF plot for a given diagnostic metric
+make_ecdf_diag_plot <- function(metric_name, metric_info) {
+  metric_col <- metric_info$col
+
+  ecdf_data <- plot_data_diag %>%
+    select(seed, n_sample, condition, embedding, metric_value = !!sym(metric_col)) %>%
+    filter(!is.na(metric_value)) %>%
+    # For fixed embeddings keep only one reference n_sample
+    filter(
+      (as.character(embedding) %in% varying_embeddings_disp) |
+        (as.character(embedding) %in% fixed_embeddings_disp & as.character(n_sample) == as.character(n_ref_for_fixed))
+    ) %>%
+    mutate(
+      # Only scratch/mednet-ft have linetype by n_sample; others are fixed (solid)
+      linetype_by_n = ifelse(as.character(embedding) %in% varying_embeddings_disp,
+                             as.character(n_sample),
+                             "fixed")
+    )
+
+  if (nrow(ecdf_data) == 0) {
+    message(sprintf("ECDF plot skipped for %s (no data)", metric_name))
+    return(NULL)
+  }
+
+  # Floor p-values for log plotting if needed
+  if (isTRUE(metric_info$is_pvalue)) {
+    ecdf_data <- ecdf_data %>%
+      mutate(metric_value = ifelse(metric_value < min_pval_plot | metric_value == 0,
+                                   min_pval_plot, metric_value))
+  }
+
+  # linetype scale: fixed = solid, varying = mapped by n_sample
+  lt_vals <- c("fixed" = "solid", linetype_map)
+
+  p <- ggplot(ecdf_data, aes(x = metric_value, color = embedding, linetype = linetype_by_n)) +
+    stat_ecdf(geom = "step", linewidth = 0.9, alpha = 0.95) +
+    facet_wrap(~ condition, ncol = 2) +
+    labs(
+      x = metric_info$y_label,
+      y = "ECDF",
+      color = "Embedding",
+      linetype = "Train n (Scratch / MedNet-ft)"
+    ) +
+    base_theme +
+    theme(
+      legend.position = "right",
+      axis.text.x = element_text(size = 14),
+      axis.title.x = element_text(size = 16)
+    ) +
+    scale_color_manual(values = color_palette) +
+    scale_linetype_manual(values = lt_vals)
+
+  # If p-values: log scale + reference line at 0.05 (optional)
+  if (FALSE){#isTRUE(metric_info$is_pvalue)) {
+    p <- p +
+      scale_x_log10(
+        breaks = c(1e-16, 1e-12, 1e-9, 1e-6, 1e-3, 0.01, 0.05, 0.1, 1),
+        limits = c(min_pval_plot, 1)
+      ) +
+      geom_vline(xintercept = 0.05, color = "black", alpha = 0.4)
+  }
+
+  # Save
+  pdf_path <- file.path(figures_dir, sprintf("diagnostic_ecdf_%s_%d_%d_eps%.1f.pdf", metric_name, min(seeds), max(seeds), eps_sigmaY))
+  png_path <- file.path(figures_dir, sprintf("diagnostic_ecdf_%s_%d_%d_eps%.1f.png", metric_name, min(seeds), max(seeds), eps_sigmaY))
+  ggsave(pdf_path, p, width = 14, height = 6, units = "in")
+  ggsave(png_path, p, width = 14, height = 6, units = "in", dpi = 300)
+
+  message(sprintf("Saved ECDF diagnostic plot: %s", basename(pdf_path)))
+  p
+}
+
+# Create ECDF plots for all diagnostic metrics (or subset here)
+for (metric_name in names(diagnostic_metrics)) {
+  metric_info <- diagnostic_metrics[[metric_name]]
+  tryCatch(
+    make_ecdf_diag_plot(metric_name, metric_info),
+    error = function(e) message(sprintf("ECDF failed for %s: %s", metric_name, e$message))
+  )
+}
+
+cat("\n=== ECDF Diagnostic Plots Complete ===\n")
+
+# ============================================================================
+# NEW FIGURE 1 variants:
+#   A) power_log10: log10 x-scale ONLY for Power panel (p-values)
+#   B) zoom_0_0.1: keep full plot + add Power zoom panel [0, 0.1]
+# ============================================================================
+cat("\n=== Creating ECDF Diagnostic Plots (with variants) ===\n")
+
+library(scales)
+library(patchwork)
+
+# which embeddings vary with sample size (training-size dependence)
+varying_embeddings_disp <- c("Scratch", "MedicalNet-ft")
+fixed_embeddings_disp   <- setdiff(levels(plot_data_diag$embedding), varying_embeddings_disp)
+
+# For fixed embeddings: use only one n_sample to avoid repeated identical ECDFs
+n_ref_for_fixed <- max(n_samples)
+
+# Linetype mapping for varying embeddings: different per n_sample
+linetype_map <- setNames(
+  c("dashed", "dotted", "solid")[seq_along(n_samples)],
+  as.character(n_samples)
+)
+
+# helper: build base ECDF layer for a given data subset
+.build_ecdf_plot <- function(dat, metric_info, lt_vals, add_legend = TRUE) {
+  p <- ggplot(dat, aes(x = metric_value, color = embedding, linetype = linetype_by_n)) +
+    stat_ecdf(geom = "step", linewidth = 0.9, alpha = 0.95) +
+    labs(
+      x = metric_info$y_label,
+      y = "ECDF",
+      color = "Embedding",
+      linetype = "Train n (Scratch / MedNet-ft)"
+    ) +
+    base_theme +
+    theme(
+      legend.position = if (add_legend) "right" else "none",
+      axis.text.x = element_text(size = 14),
+      axis.title.x = element_text(size = 16)
+    ) +
+    scale_color_manual(values = color_palette) +
+    scale_linetype_manual(values = lt_vals)
+
+  # Optional alpha threshold reference (works for both linear/log scales)
+  if (isTRUE(metric_info$is_pvalue)) {
+    p <- p + geom_vline(xintercept = 0.05, color = "black", alpha = 0.4, linetype = "dashed")
+  }
+  p
+}
+
+# Function to create and save ECDF plots for a given diagnostic metric
+make_ecdf_diag_plot <- function(metric_name, metric_info,
+                                make_power_log10 = TRUE,
+                                make_zoom_0_0.1 = TRUE) {
+
+  metric_col <- metric_info$col
+
+  ecdf_data <- plot_data_diag %>%
+    select(seed, n_sample, condition, embedding, metric_value = !!sym(metric_col)) %>%
+    filter(!is.na(metric_value)) %>%
+    # For fixed embeddings keep only one reference n_sample
+    filter(
+      (as.character(embedding) %in% varying_embeddings_disp) |
+        (as.character(embedding) %in% fixed_embeddings_disp &
+           as.character(n_sample) == as.character(n_ref_for_fixed))
+    ) %>%
+    mutate(
+      linetype_by_n = ifelse(as.character(embedding) %in% varying_embeddings_disp,
+                             as.character(n_sample),
+                             "fixed")
+    )
+
+  if (nrow(ecdf_data) == 0) {
+    message(sprintf("ECDF plot skipped for %s (no data)", metric_name))
+    return(NULL)
+  }
+
+  # Floor p-values (important for log scale)
+  if (isTRUE(metric_info$is_pvalue)) {
+    ecdf_data <- ecdf_data %>%
+      mutate(metric_value = ifelse(metric_value < min_pval_plot | metric_value == 0,
+                                   min_pval_plot, metric_value))
+  }
+
+  # linetype scale: fixed = solid, varying = mapped by n_sample
+  lt_vals <- c("fixed" = "solid", linetype_map)
+
+  # -----------------------
+  # BASE ECDF (your current one): facet_wrap, linear x
+  # -----------------------
+  p_base <- ggplot(ecdf_data, aes(x = metric_value, color = embedding, linetype = linetype_by_n)) +
+    stat_ecdf(geom = "step", linewidth = 0.9, alpha = 0.95) +
+    facet_wrap(~ condition, ncol = 2) +
+    labs(
+      x = metric_info$y_label,
+      y = "ECDF",
+      color = "Embedding",
+      linetype = "Train n (Scratch / MedNet-ft)"
+    ) +
+    base_theme +
+    theme(
+      legend.position = "right",
+      axis.text.x = element_text(size = 14),
+      axis.title.x = element_text(size = 16)
+    ) +
+    scale_color_manual(values = color_palette) +
+    scale_linetype_manual(values = lt_vals)
+
+  if (isTRUE(metric_info$is_pvalue)) {
+    p_base <- p_base + geom_vline(xintercept = 0.05, color = "black", alpha = 0.4, linetype = "dashed")
+  }
+
+  # Save base
+  pdf_path <- file.path(figures_dir, sprintf("diagnostic_ecdf_%s_%d_%d_eps%.1f.pdf", metric_name, min(seeds), max(seeds), eps_sigmaY))
+  png_path <- file.path(figures_dir, sprintf("diagnostic_ecdf_%s_%d_%d_eps%.1f.png", metric_name, min(seeds), max(seeds), eps_sigmaY))
+  ggsave(pdf_path, p_base, width = 14, height = 6, units = "in")
+  ggsave(png_path, p_base, width = 14, height = 6, units = "in", dpi = 300)
+  message(sprintf("Saved ECDF (base): %s", basename(pdf_path)))
+
+  # -----------------------
+  # VARIANT (i): Power log10 x-scale only
+  # Implemented as two separate panels combined with patchwork:
+  #   left: T1E linear [0,1]
+  #   right: Power log10 (p-values only); linear otherwise
+  # -----------------------
+  if (make_power_log10) {
+    dat_t1e   <- ecdf_data %>% filter(condition == "T1E")
+    dat_power <- ecdf_data %>% filter(condition == "Power")
+
+    p_t1e <- .build_ecdf_plot(dat_t1e, metric_info, lt_vals, add_legend = FALSE) +
+      labs(title = NULL) +
+      theme(strip.background = element_blank(),
+            strip.text = element_blank()) +
+      ggtitle("T1E")
+
+    p_power <- .build_ecdf_plot(dat_power, metric_info, lt_vals, add_legend = TRUE) +
+      labs(title = NULL) +
+      theme(strip.background = element_blank(),
+            strip.text = element_blank()) +
+      ggtitle("Power")
+
+    # apply scaling ONLY to power panel if p-value metric
+    if (isTRUE(metric_info$is_pvalue)) {
+      p_power <- p_power +
+        scale_x_log10(
+          breaks = c(1e-16, 1e-12, 1e-9, 1e-6, 1e-3, 0.01, 0.05, 0.1, 1),
+          limits = c(min_pval_plot, 1)
+        )
+      # keep T1E linear (default)
+    }
+
+    p_powerlog <- (p_t1e | p_power) +
+      plot_layout(guides = "collect") &
+      theme(legend.position = "right")
+
+    pdf_path_pl <- file.path(figures_dir, sprintf("diagnostic_ecdf_%s_powerlog_%d_%d_eps%.1f.pdf", metric_name, min(seeds), max(seeds), eps_sigmaY))
+    png_path_pl <- file.path(figures_dir, sprintf("diagnostic_ecdf_%s_powerlog_%d_%d_eps%.1f.png", metric_name, min(seeds), max(seeds), eps_sigmaY))
+    ggsave(pdf_path_pl, p_powerlog, width = 14, height = 6, units = "in")
+    ggsave(png_path_pl, p_powerlog, width = 14, height = 6, units = "in", dpi = 300)
+    message(sprintf("Saved ECDF (power log10): %s", basename(pdf_path_pl)))
+  }
+
+  # -----------------------
+  # VARIANT (ii): Zoom into [0, 0.1] while keeping full plot
+  # Implemented as: full (both facets) + extra Power zoom panel on the right
+  # -----------------------
+  if (make_zoom_0_0.1) {
+    dat_power <- ecdf_data %>% filter(condition == "Power")
+
+    # Power-only zoom panel: same ECDFs, but xlim [0,0.1]
+    p_power_zoom <- .build_ecdf_plot(dat_power, metric_info, lt_vals, add_legend = FALSE) +
+      #coord_cartesian(xlim = c(0, 0.1)) +
+      scale_x_log10(limits= c(min_pval_plot, 0.1)) +
+      ggtitle("Power (zoom: x in [0, 0.1])") +
+      theme(plot.title = element_text(size = 16))
+
+    # Combine: keep original full two-facet plot + zoom
+    p_zoom_combo <- (p_base | p_power_zoom) +
+      plot_layout(widths = c(2.2, 1), guides = "collect") &
+      theme(legend.position = "right")
+
+    pdf_path_z <- file.path(figures_dir, sprintf("diagnostic_ecdf_%s_zoom01_%d_%d_eps%.1f.pdf", metric_name, min(seeds), max(seeds), eps_sigmaY))
+    png_path_z <- file.path(figures_dir, sprintf("diagnostic_ecdf_%s_zoom01_%d_%d_eps%.1f.png", metric_name, min(seeds), max(seeds), eps_sigmaY))
+    ggsave(pdf_path_z, p_zoom_combo, width = 18, height = 6, units = "in")
+    ggsave(png_path_z, p_zoom_combo, width = 18, height = 6, units = "in", dpi = 300)
+    message(sprintf("Saved ECDF (zoom [0,0.1] + full): %s", basename(pdf_path_z)))
+  }
+
+  invisible(TRUE)
+}
+
+# Create ECDF plots (base + variants) for all diagnostic metrics
+for (metric_name in names(diagnostic_metrics)) {
+  metric_info <- diagnostic_metrics[[metric_name]]
+  tryCatch(
+    make_ecdf_diag_plot(metric_name, metric_info,
+                        make_power_log10 = TRUE,
+                        make_zoom_0_0.1 = TRUE),
+    error = function(e) message(sprintf("ECDF failed for %s: %s", metric_name, e$message))
+  )
+}
+
+cat("\n=== ECDF Diagnostic Plots (with variants) Complete ===\n")
+
+library(patchwork)
+
+# ----------------------------
+# helper: get base metric name from split metric name
+# ----------------------------
+.get_base_metric <- function(metric_name) {
+  if (grepl("_split$", metric_name)) {
+    sub("_split$", "", metric_name)
+  } else {
+    metric_name
+  }
+}
+
+# ----------------------------
+# helpers: header plots
+# ----------------------------
+.make_col_header <- function(txt) {
+  ggplot() +
+    theme_void() +
+    annotate("text", x = 0, y = 0, label = txt, hjust = 0.5, size = 6, fontface = "bold") +
+    coord_cartesian(clip = "off")
+}
+
+# ----------------------------
+# helper: build one ECDF panel (no facet)
+# ----------------------------
+.build_ecdf_panel <- function(dat, metric_info, lt_vals, show_legend = FALSE) {
+  p <- ggplot(dat, aes(x = metric_value, color = embedding, linetype = linetype_by_n)) +
+    stat_ecdf(geom = "step", linewidth = 0.9, alpha = 0.95) +
+    base_theme +
+    theme(
+      legend.position = if (show_legend) "right" else "none",
+      axis.text.x  = element_text(size = 12),
+      axis.title.x = element_text(size = 14),
+      axis.title.y = element_text(size = 14)
+    ) +
+    scale_color_manual(values = color_palette) +
+    scale_linetype_manual(values = lt_vals) +
+    labs(color = "Embedding", linetype = "Embedding")
+
+  if (isTRUE(metric_info$is_pvalue)) {
+    p <- p + geom_vline(xintercept = 0.05, color = "black", alpha = 0.35, linetype = "dashed")
+  }
+  p
+}
+lt_vals <- c("fixed" = "solid", linetype_map)
+
+# ----------------------------
+# build a 3-panel row (T1E | Power | Power zoom)
+# base_metric_info: if provided, use split column for varying embeddings and base column for fixed embeddings
+# ----------------------------
+.make_zoom_row <- function(metric_name, metric_info, zoom_max = 0.1, show_legend_in = c("power"), y_label = "ECDF",
+                           base_metric_info = NULL) {
+
+  metric_col <- metric_info$col
+  
+  # Conditional column selection: if base_metric_info provided (split case),
+  # use split column for trained embeddings, base column for others
+  if (!is.null(base_metric_info)) {
+    base_col <- base_metric_info$col
+    ecdf_data <- plot_data_diag %>%
+      dplyr::mutate(
+        metric_value = ifelse(
+          as.character(embedding) %in% varying_embeddings_disp,
+          !!rlang::sym(metric_col),
+          !!rlang::sym(base_col)
+        )
+      ) %>%
+      dplyr::select(seed, n_sample, condition, embedding, metric_value) %>%
+      dplyr::filter(!is.na(metric_value)) %>%
+      dplyr::filter(
+        (as.character(embedding) %in% varying_embeddings_disp) |
+          (as.character(embedding) %in% fixed_embeddings_disp &
+             as.character(n_sample) == as.character(n_ref_for_fixed))
+      ) %>%
+      dplyr::mutate(
+        linetype_by_n = ifelse(as.character(embedding) %in% varying_embeddings_disp,
+                               as.character(n_sample),
+                               "fixed")
+      )
+  } else {
+    # Original single-column logic
+    ecdf_data <- plot_data_diag %>%
+      dplyr::select(seed, n_sample, condition, embedding, metric_value = !!rlang::sym(metric_col)) %>%
+      dplyr::filter(!is.na(metric_value)) %>%
+      dplyr::filter(
+        (as.character(embedding) %in% varying_embeddings_disp) |
+          (as.character(embedding) %in% fixed_embeddings_disp &
+             as.character(n_sample) == as.character(n_ref_for_fixed))
+      ) %>%
+      dplyr::mutate(
+        linetype_by_n = ifelse(as.character(embedding) %in% varying_embeddings_disp,
+                               as.character(n_sample),
+                               "fixed")
+      )
+  }
+
+  # floor p-values (important for clean ECDF + future log options)
+  if (isTRUE(metric_info$is_pvalue)) {
+    ecdf_data <- ecdf_data %>%
+      dplyr::mutate(metric_value = ifelse(metric_value < min_pval_plot | metric_value == 0,
+                                          min_pval_plot, metric_value))
+  }
+
+  dat_t1e   <- ecdf_data %>% dplyr::filter(condition == "T1E")
+  dat_power <- ecdf_data %>% dplyr::filter(condition == "Power")
+
+  # Decide where the legend lives for this row (so patchwork can collect once)
+  show_leg_t1e   <- "t1e"   %in% show_legend_in
+  show_leg_power <- "power" %in% show_legend_in
+  show_leg_zoom  <- "zoom"  %in% show_legend_in
+
+  p_t1e <- .build_ecdf_panel(dat_t1e, metric_info, lt_vals, show_legend = show_leg_t1e) +
+    labs(x = NULL, y = y_label) +
+    theme(
+      axis.title.y = element_text(size = 14)
+    )
+
+  p_power <- .build_ecdf_panel(dat_power, metric_info, lt_vals, show_legend = show_leg_power) +
+    labs(x = NULL, y = NULL)
+
+  p_zoom <- .build_ecdf_panel(dat_power, metric_info, lt_vals, show_legend = show_leg_zoom) +
+    labs(x = NULL, y = NULL)
+  
+  # Apply log10 scale to zoom panel for p-value metrics
+  if (isTRUE(metric_info$is_pvalue)) {
+    p_zoom <- p_zoom +
+      scale_x_log10(
+        breaks = c(1e-16, 1e-12, 1e-9, 1e-6, 1e-3, 0.1),
+        limits = c(min_pval_plot, zoom_max)
+      )
+  } else {
+    p_zoom <- p_zoom + coord_cartesian(xlim = c(0, zoom_max))
+  }
+
+  # Remove duplicated y-axis labels on middle/right panels
+  p_power <- p_power + theme(axis.title.y = element_blank(), axis.text.y = element_blank())
+  p_zoom  <- p_zoom  + theme(axis.title.y = element_blank(), axis.text.y = element_blank(), aspect.ratio = 1)
+
+  (p_t1e | p_power | p_zoom) + plot_layout(widths = c(1.15, 1.15, 0.9))
+}
+
+# ----------------------------
+# build combined (pcm on top, rcot below) with shared headers + shared x label
+# ----------------------------
+
+# ensure lt_vals exists (same as in your current ECDF code)
+# lt_vals <- c("fixed" = "solid", linetype_map)
+
+stopifnot("pcm" %in% names(diagnostic_metrics))
+stopifnot("rcot" %in% names(diagnostic_metrics))
+stopifnot("pcm_split" %in% names(diagnostic_metrics))
+stopifnot("rcot_split" %in% names(diagnostic_metrics))
+
+header_row <- (.make_col_header("T1E") | .make_col_header("Power") | .make_col_header("Power (zoom: x in [0, 0.1])")) +
+  plot_layout(widths = c(1.15, 1.15, 0.9), heights=c(1.15, 1.15, 0.9))
+
+# For split metrics: use split column for trained embeddings (Scratch, MedicalNet-ft),
+# use non-split column for other embeddings (Freesurfer, cVAE, MedicalNet, FAST)
+pcm_row  <- .make_zoom_row("pcm",  diagnostic_metrics[["pcm_split"]],  zoom_max = 0.1, show_legend_in = "power", y_label = "PCM ECDF",
+                           base_metric_info = diagnostic_metrics[["pcm"]])
+rcot_row <- .make_zoom_row("rcot", diagnostic_metrics[["rcot_split"]], zoom_max = 0.1, show_legend_in = character(0), y_label = "RCoT ECDF",
+                           base_metric_info = diagnostic_metrics[["rcot"]])
+
+combined_pcm_rcot_zoom <- (header_row / pcm_row / rcot_row) +
+  plot_layout(heights = c(0.12, 1, 1), guides = "collect") &
+  theme(legend.position = "right")
+
+# Add ONE shared x-axis label: easiest is to show x title only on bottom row panels
+# We'll turn on x-axis title for bottom row only:
+combined_pcm_rcot_zoom <- combined_pcm_rcot_zoom &
+  theme(axis.title.x = element_blank())
+
+# Rebuild bottom row with x label kept (only once) by editing rcot_row panels:
+# (simple approach: add label to the middle plot of rcot row via plot_annotation caption)
+combined_pcm_rcot_zoom <- combined_pcm_rcot_zoom +
+  plot_annotation(
+    caption = "p-value",
+    theme = theme(plot.caption = element_text(size = 14, hjust = 0.5))
+  )
+
+# Save
+pdf_path <- file.path(figures_dir, sprintf("diagnostic_ecdf_zoom_pcm_rcot_combined_%d_%d_eps%.1f.pdf", min(seeds), max(seeds), eps_sigmaY))
+png_path <- file.path(figures_dir, sprintf("diagnostic_ecdf_zoom_pcm_rcot_combined_%d_%d_eps%.1f.png", min(seeds), max(seeds), eps_sigmaY))
+
+ggsave(pdf_path, combined_pcm_rcot_zoom, width = 18, height = 10, units = "in")
+ggsave(png_path, combined_pcm_rcot_zoom, width = 18, height = 10, units = "in", dpi = 300)
+
+message(sprintf("Saved combined PCM+RCoT zoom plot: %s", basename(pdf_path)))
+
+
+# ============================================================================
+# Helper Function: Generate Selection Utility ECDF Plot
+# ============================================================================
+.generate_selection_utility_ecdf <- function(cit_name, diag_metric_name, 
+                                              exclude_candidates,
+                                              candidate_embeddings,
+                                              alpha = 0.05,
+                                              y_label = "ECDF",
+                                              verbose = FALSE) {
+  
+  if (verbose) {
+    cat(sprintf("\n--- Generating selection utility for %s CIT with %s diagnostic ---\n", 
+                cit_name, diag_metric_name))
+  }
+  
+  # Get diagnostic metric info
+  stopifnot(diag_metric_name %in% names(diagnostic_metrics))
+  sel_info <- diagnostic_metrics[[diag_metric_name]]
+  sel_col  <- sel_info$col
+  
+  # Determine if using split metric and get base metric
+  is_split_metric <- grepl("_split$", diag_metric_name)
+  if (is_split_metric) {
+    base_metric_name <- .get_base_metric(diag_metric_name)
+    base_info <- diagnostic_metrics[[base_metric_name]]
+    base_col <- base_info$col
+  } else {
+    base_col <- sel_col
+  }
+  
+  # Build diagnostic score: higher is better
+  diag_sel <- plot_data_diag %>%
+    mutate(
+      metric_value = ifelse(
+        as.character(embedding) %in% varying_embeddings_disp,
+        !!sym(sel_col),
+        !!sym(base_col)
+      )
+    ) %>%
+    select(seed, n_sample, condition, embedding, metric_value) %>%
+    filter(!is.na(metric_value)) %>%
+    mutate(
+      metric_value = ifelse(isTRUE(sel_info$is_pvalue) & (metric_value < min_pval_plot | metric_value == 0),
+                            min_pval_plot, metric_value),
+      diag_score = if (isTRUE(sel_info$is_pvalue)) -log10(metric_value) else metric_value
+    ) %>%
+    filter(embedding %in% candidate_embeddings)
+  
+  # DNCIT p-values for the chosen CIT
+  pvals_sel <- cit_pvals_for_ranks %>%
+    filter(cit_label == cit_name) %>%
+    filter(embedding %in% candidate_embeddings) %>%
+    select(seed, n_sample, condition, embedding, p_value)
+  
+  # Join CIT p-values with diagnostic scores
+  sel_join <- pvals_sel %>%
+    left_join(diag_sel %>% select(seed, n_sample, condition, embedding, diag_score),
+              by = c("seed", "n_sample", "condition", "embedding")) %>%
+    filter(!is.na(diag_score), !is.na(p_value))
+  
+  if (nrow(sel_join) == 0) {
+    warning(sprintf("No data for %s CIT with %s diagnostic", cit_name, diag_metric_name))
+    return(NULL)
+  }
+  
+  # Define fixed baseline
+  fixed_baseline <- if (cit_name == "RCoT") "MedicalNet" else
+    if (cit_name == "PCM") "cVAE" else candidate_embeddings[1]
+  
+  # Compute selected p-values per strategy
+  selection_perf <- sel_join %>%
+    group_by(seed, n_sample, condition) %>%
+    summarise(
+      p_oracle = min(p_value, na.rm = TRUE),
+      p_diag = {
+        idx <- which.max(diag_score)
+        p_value[idx]
+      },
+      embedding_diag = {
+        idx <- which.max(diag_score)
+        as.character(embedding[idx])
+      },
+      p_fixed = p_value[which(embedding == fixed_baseline)[1]],
+      p_rand = {
+        avail_embeddings <- unique(as.character(embedding))
+        if (length(avail_embeddings) > 0) {
+          pick <- sample(avail_embeddings, 1)
+          p_value[which(as.character(embedding) == pick)[1]]
+        } else {
+          NA
+        }
+      },
+      .groups = "drop"
+    )
+  
+  # Filter to Power condition only
+  selection_perf <- selection_perf %>%
+    filter(condition == "Power")
+  
+  # Convert to long format
+  selection_perf <- selection_perf %>%
+    as.data.table() %>%
+    data.table::melt(
+      id.vars = c("seed", "n_sample", "condition"),
+      measure.vars = c("p_oracle", "p_diag", "p_fixed", "p_rand"),
+      variable.name = "strategy",
+      value.name = "p_sel"
+    ) %>%
+    as.data.frame() %>%
+    mutate(
+      strategy = recode(strategy,
+                        p_oracle = "Oracle",
+                        p_diag   = "Diagnostic-selected",
+                        p_fixed  = paste0("Fixed (", fixed_baseline, ")"),
+                        p_rand   = "Random"),
+      minuslog10p = -log10(pmax(p_sel, min_pval_plot)),
+      reject = as.integer(p_sel <= alpha)
+    )
+  
+  # ECDF version: Power condition only with log scale
+  selection_perf_ecdf <- selection_perf %>%
+    mutate(
+      p_sel_plot = pmax(p_sel, min_pval_plot)
+    )
+  
+  # Get strategy colors
+  strategy_order <- c("Oracle", "Diagnostic-selected", paste0("Fixed (", fixed_baseline, ")"), "Random")
+  strategy_colors_vec <- paletteer::paletteer_d("ggthemes::Classic_10_Medium")[1:4]
+  strategy_colors <- setNames(strategy_colors_vec, strategy_order)
+  
+  # Create ECDF plot
+  p_ecdf <- ggplot(selection_perf_ecdf, aes(x = p_sel_plot, color = strategy)) +
+    stat_ecdf(geom = "step", linewidth = 0.9, alpha = 0.95) +
+    facet_wrap(~ n_sample, nrow = 1) +
+    scale_x_log10(
+      breaks = c(1e-16, 1e-12, 1e-9, 1e-6, 1e-3,  0.1),
+      limits = c(min_pval_plot, 1)
+    ) +
+    geom_vline(xintercept = 0.05, color = "black", alpha = 0.4, linetype = "dashed") +
+    labs(
+      x = NULL,  # Will be added to combined plot
+      y = y_label,
+      color = "Strategy"
+    ) +
+    base_theme +
+    theme(
+      axis.text.x = element_text(angle = 25, hjust = 1),
+      legend.position = "right"
+    ) +
+    scale_color_manual(values = strategy_colors)
+  
+  return(p_ecdf)
+}
+
+# ============================================================================
+# NEW FIGURE 2: Utility of diagnostic-based embedding selection
+#   - Exclude FAST and Freesurfer from candidate set
+#   - Compare Oracle vs Diagnostic-selected vs Fixed vs Random
+# ============================================================================
+cat("\n=== Creating Selection Utility Plots ===\n")
+
+set.seed(1)
+
+alpha <- 0.05
+exclude_candidates <- c("FAST", "Freesurfer")#c("FAST")
+candidate_embeddings <- setdiff(levels(cit_pvals_for_ranks$embedding), exclude_candidates)
+
+# Choose which DNCIT CIT to evaluate in Figure 2
+# Options present in your script: "PCM" and "RCoT"
+cit_for_selection <- "RCoT"  # <-- change to "RCoT" if desired
+
+# Choose which diagnostic drives the selection
+diag_metric_for_selection <- "rcot_split"  # <-- e.g. "ftest", "pcm", "r2_residual", ...
+
+stopifnot(diag_metric_for_selection %in% names(diagnostic_metrics))
+sel_info <- diagnostic_metrics[[diag_metric_for_selection]]
+sel_col  <- sel_info$col
+
+# Determine if using split metric and get base metric
+# For split metrics: use split column for trained embeddings (Scratch, MedicalNet-ft),
+# use non-split column for other embeddings (Freesurfer, cVAE, MedicalNet, FAST)
+is_split_metric <- grepl("_split$", diag_metric_for_selection)
+if (is_split_metric) {
+  base_metric_name <- .get_base_metric(diag_metric_for_selection)
+  base_info <- diagnostic_metrics[[base_metric_name]]
+  base_col <- base_info$col
+} else {
+  base_col <- sel_col
+}
+
+# Build diagnostic score: higher is better
+# Conditional column selection based on embedding type
+diag_sel <- plot_data_diag %>%
+  mutate(
+    metric_value = ifelse(
+      as.character(embedding) %in% varying_embeddings_disp,
+      !!sym(sel_col),
+      !!sym(base_col)
+    )
+  ) %>%
+  select(seed, n_sample, condition, embedding, metric_value) %>%
+  filter(!is.na(metric_value)) %>%
+  mutate(
+    metric_value = ifelse(isTRUE(sel_info$is_pvalue) & (metric_value < min_pval_plot | metric_value == 0),
+                          min_pval_plot, metric_value),
+    diag_score = if (isTRUE(sel_info$is_pvalue)) -log10(metric_value) else metric_value
+  ) %>%
+  filter(embedding %in% candidate_embeddings)
+
+# DNCIT p-values for the chosen CIT (PCM or RCoT) and candidates
+pvals_sel <- cit_pvals_for_ranks %>%
+  filter(cit_label == cit_for_selection) %>%
+  filter(embedding %in% candidate_embeddings) %>%
+  select(seed, n_sample, condition, embedding, p_value)
+
+cat("\n=== Selection Data Diagnostics ===\n")
+cat(sprintf("CIT: %s, Diagnostic metric: %s\n", cit_for_selection, diag_metric_for_selection))
+cat(sprintf("\nEmbeddings with CIT p-values: %s\n", 
+            paste(sort(unique(as.character(pvals_sel$embedding))), collapse = ", ")))
+cat(sprintf("Count by embedding:\n"))
+print(table(pvals_sel$embedding))
+
+cat(sprintf("\nEmbeddings with diagnostic scores: %s\n", 
+            paste(sort(unique(as.character(diag_sel$embedding))), collapse = ", ")))
+cat(sprintf("Count by embedding:\n"))
+print(table(diag_sel$embedding))
+
+cat(sprintf("\nRows in pvals_sel: %d\n", nrow(pvals_sel)))
+cat(sprintf("Rows in diag_sel: %d\n", nrow(diag_sel)))
+
+# Join CIT p-values with diagnostic scores
+# NOTE: This join requires diagnostic scores for all embeddings. If an embedding
+# (e.g., Scratch) has CIT p-values but no diagnostic scores, it will be EXCLUDED
+# from ALL selection strategies (Oracle, Diagnostic, Fixed, Random).
+# If diagnostic output shows missing embeddings, either:
+#   1. Compute diagnostics for those embeddings, OR
+#   2. Exclude them from candidate_embeddings
+sel_join <- pvals_sel %>%
+  left_join(diag_sel %>% select(seed, n_sample, condition, embedding, diag_score),
+            by = c("seed", "n_sample", "condition", "embedding")) %>%
+  filter(!is.na(diag_score), !is.na(p_value))
+
+cat(sprintf("\nRows after join and filter: %d\n", nrow(sel_join)))
+cat(sprintf("Embeddings in joined data: %s\n", 
+            paste(sort(unique(as.character(sel_join$embedding))), collapse = ", ")))
+if (nrow(sel_join) > 0) {
+  cat(sprintf("Count by embedding:\n"))
+  print(table(sel_join$embedding))
+}
+
+# Check for embeddings with p-values but no diagnostic scores
+missing_diag_embeddings <- setdiff(
+  unique(as.character(pvals_sel$embedding)),
+  unique(as.character(sel_join$embedding))
+)
+if (length(missing_diag_embeddings) > 0) {
+  cat(sprintf("\nWARNING: The following embeddings have CIT p-values but are MISSING diagnostic scores:\n"))
+  cat(sprintf("  %s\n", paste(missing_diag_embeddings, collapse = ", ")))
+  cat(sprintf("These embeddings are EXCLUDED from selection analysis (including Oracle).\n"))
+  cat(sprintf("To include them, compute diagnostic scores for these embeddings.\n"))
+}
+cat("===\n\n")
+
+if (nrow(sel_join) == 0) {
+  warning("Figure 2 selection join produced no rows (check metric choice / missing diagnostics).")
+} else {
+
+  # Define a fixed baseline (prefer cVAE, else MedicalNet, else first available)
+  fixed_baseline <- if ("RCoT" %in% cit_for_selection) "MedicalNet" else
+    if ("PCM" %in% cit_for_selection) "cVAE" else candidate_embeddings[1]
+
+  # Compute selected p-values per strategy for each (seed, n_sample, condition)
+  # Also track which embedding is selected by diagnostic strategy
+  selection_perf <- sel_join %>%
+    group_by(seed, n_sample, condition) %>%
+    summarise(
+      p_oracle = min(p_value, na.rm = TRUE),
+      p_diag = {
+        idx <- which.max(diag_score)
+        p_value[idx]
+      },
+      embedding_diag = {
+        idx <- which.max(diag_score)
+        as.character(embedding[idx])
+      },
+      p_fixed = p_value[which(embedding == fixed_baseline)[1]],
+      p_rand = {
+        # Fix: sample from actual embedding values in this group, not character conversion
+        avail_embeddings <- unique(as.character(embedding))
+        if (length(avail_embeddings) > 0) {
+          pick <- sample(avail_embeddings, 1)
+          p_value[which(as.character(embedding) == pick)[1]]
+        } else {
+          NA
+        }
+      },
+      .groups = "drop"
+    )
+  
+  # Count how often each embedding is selected by diagnostic strategy
+  diag_selection_counts <- selection_perf %>%
+    count(embedding_diag, n_sample, condition, name = "count") %>%
+    group_by(n_sample, condition) %>%
+    mutate(
+      total = sum(count),
+      proportion = count / total
+    ) %>%
+    ungroup() %>%
+    arrange(condition, n_sample, desc(count))
+  
+  cat("\n=== Diagnostic Embedding Selection Counts ===\n")
+  cat(sprintf("Diagnostic metric: %s\n", diag_metric_for_selection))
+  cat(sprintf("CIT: %s\n", cit_for_selection))
+  cat("\nSelection frequencies:\n")
+  print(diag_selection_counts)
+  
+  # Overall counts across all conditions and sample sizes
+  diag_selection_overall <- selection_perf %>%
+    count(embedding_diag, name = "count") %>%
+    mutate(
+      total = sum(count),
+      proportion = count / total
+    ) %>%
+    arrange(desc(count))
+  
+  cat("\nOverall selection frequencies (across all conditions and sample sizes):\n")
+  print(diag_selection_overall)
+  
+  # Save to CSV
+  output_file_selection <- file.path(figures_dir, sprintf("diagnostic_selection_counts_%s_by_%s_%d_%d.csv",
+                                                           cit_for_selection, diag_metric_for_selection, min(seeds), max(seeds)))
+  fwrite(diag_selection_counts, output_file_selection)
+  cat(sprintf("\nSaved selection counts to: %s\n", basename(output_file_selection)))
+  
+  # Analyze Power condition: when Freesurfer is not selected, how often was the selected embedding optimal?
+  power_analysis <- selection_perf %>%
+    filter(condition == "Power") %>%
+    # Join with sel_join to get all embeddings and their p-values for each (seed, n_sample)
+    left_join(
+      sel_join %>% 
+        filter(condition == "Power") %>%
+        group_by(seed, n_sample) %>%
+        summarise(
+          min_p_value = min(p_value, na.rm = TRUE),
+          embedding_with_min_p = embedding[which.min(p_value)][1],
+          .groups = "drop"
+        ),
+      by = c("seed", "n_sample")
+    ) %>%
+    mutate(
+      freesurfer_not_selected = (embedding_diag != "Freesurfer"),
+      selected_was_optimal = (embedding_diag == as.character(embedding_with_min_p))
+    )
+  
+  # Count how often Freesurfer is not selected
+  freesurfer_not_selected_count <- power_analysis %>%
+    summarise(
+      total_cases = n(),
+      freesurfer_not_selected = sum(freesurfer_not_selected, na.rm = TRUE),
+      freesurfer_not_selected_prop = mean(freesurfer_not_selected, na.rm = TRUE)
+    )
+  
+  # When Freesurfer is not selected, count how often the selected embedding had the minimum p-value
+  optimal_when_not_freesurfer <- power_analysis %>%
+    filter(freesurfer_not_selected) %>%
+    summarise(
+      total_when_not_freesurfer = n(),
+      selected_was_optimal_count = sum(selected_was_optimal, na.rm = TRUE),
+      selected_was_optimal_prop = mean(selected_was_optimal, na.rm = TRUE)
+    )
+  
+  cat("\n=== Power Condition Analysis: Freesurfer Non-Selection ===\n")
+  cat(sprintf("Total cases in Power condition: %d\n", freesurfer_not_selected_count$total_cases))
+  cat(sprintf("Freesurfer NOT selected: %d (%.2f%%)\n", 
+              freesurfer_not_selected_count$freesurfer_not_selected,
+              freesurfer_not_selected_count$freesurfer_not_selected_prop * 100))
+  cat(sprintf("\nWhen Freesurfer was NOT selected:\n"))
+  cat(sprintf("  Total cases: %d\n", optimal_when_not_freesurfer$total_when_not_freesurfer))
+  cat(sprintf("  Selected embedding had minimum p-value: %d (%.2f%%)\n",
+              optimal_when_not_freesurfer$selected_was_optimal_count,
+              optimal_when_not_freesurfer$selected_was_optimal_prop * 100))
+  
+  # Detailed breakdown by sample size
+  optimal_by_sample <- power_analysis %>%
+    filter(freesurfer_not_selected) %>%
+    group_by(n_sample) %>%
+    summarise(
+      total = n(),
+      selected_was_optimal = sum(selected_was_optimal, na.rm = TRUE),
+      prop_optimal = mean(selected_was_optimal, na.rm = TRUE),
+      .groups = "drop"
+    )
+  
+  cat("\nBreakdown by sample size (when Freesurfer not selected):\n")
+  print(optimal_by_sample)
+  
+  # Save detailed results
+  # Include the p-value of the selected embedding (p_diag is already in power_analysis)
+  power_analysis_detailed <- power_analysis %>%
+    select(seed, n_sample, embedding_diag, p_diag, min_p_value, embedding_with_min_p, 
+           freesurfer_not_selected, selected_was_optimal)
+  
+  output_file_power <- file.path(figures_dir, sprintf("power_freesurfer_analysis_%s_by_%s_%d_%d.csv",
+                                                       cit_for_selection, diag_metric_for_selection, min(seeds), max(seeds)))
+  fwrite(power_analysis_detailed, output_file_power)
+  cat(sprintf("\nSaved detailed Power analysis to: %s\n", basename(output_file_power)))
+  
+  # Summary of oracle p-values by sample size for Power condition (before filtering)
+  oracle_summary <- selection_perf %>%
+    filter(condition == "Power") %>%
+    group_by(n_sample) %>%
+    summarise(
+      oracle_min = min(p_oracle, na.rm = TRUE),
+      oracle_q25 = quantile(p_oracle, 0.25, na.rm = TRUE),
+      oracle_median = median(p_oracle, na.rm = TRUE),
+      oracle_q75 = quantile(p_oracle, 0.75, na.rm = TRUE),
+      oracle_max = max(p_oracle, na.rm = TRUE),
+      .groups = "drop"
+    )
+  
+  cat("\n=== Oracle P-value Summary (Power) ===\n")
+  print(oracle_summary)
+  cat("\n")
+  
+  # Filter to Power condition only
+  selection_perf <- selection_perf %>%
+    filter(condition == "Power")
+  
+  # Convert to long format
+  selection_perf <- selection_perf %>%
+    as.data.table() %>%
+    data.table::melt(
+      id.vars = c("seed", "n_sample", "condition"),
+      measure.vars = c("p_oracle", "p_diag", "p_fixed", "p_rand"),
+      variable.name = "strategy",
+      value.name = "p_sel"
+    ) %>%
+    as.data.frame() %>%
+    mutate(
+      strategy = recode(strategy,
+                        p_oracle = "Oracle",
+                        p_diag   = "Diagnostic-selected",
+                        p_fixed  = paste0("Fixed (", fixed_baseline, ")"),
+                        p_rand   = "Random"),
+      minuslog10p = -log10(pmax(p_sel, min_pval_plot)),
+      reject = as.integer(p_sel <= alpha)
+    )
+
+  # Boxplots: -log10(p) for Power condition
+  p_fig2 <- ggplot(selection_perf, aes(x = strategy, y = minuslog10p)) +
+    geom_boxplot(outlier.alpha = 0.15) +
+    facet_wrap(~ n_sample, nrow = 1) +
+    labs(
+      x = NULL,
+      y = "-log10(p-value)",
+      title = sprintf("Embedding selection utility - Power (%s CIT, %s diagnostic)", cit_for_selection, diag_metric_for_selection),
+      subtitle = sprintf("Candidates exclude %s", paste(exclude_candidates, collapse = " & "))
+    ) +
+    base_theme +
+    theme(
+      axis.text.x = element_text(angle = 25, hjust = 1),
+      legend.position = "none"
+    )
+  
+  # Add y-axis labels manually via annotation
+  # Extract the plot to add custom y-axis labels
+  # T1E panels should show "p-value" and Power panels should show "-log10(p)"
+  # This is handled by the subtitle, but we can also add it to strip labels
+
+  pdf_path2 <- file.path(figures_dir, sprintf("selection_utility_%s_by_%s_%d_%d_eps%.1f_exclude_%s.pdf",
+                                              cit_for_selection, diag_metric_for_selection, min(seeds), max(seeds), eps_sigmaY, paste(exclude_candidates, collapse = "_")))
+  png_path2 <- file.path(figures_dir, sprintf("selection_utility_%s_by_%s_%d_%d_eps%.1f_exclude_%s.png",
+                                              cit_for_selection, diag_metric_for_selection, min(seeds), max(seeds), eps_sigmaY, paste(exclude_candidates, collapse = "_")))
+
+  ggsave(pdf_path2, p_fig2, width = 14, height = 7, units = "in")
+  ggsave(png_path2, p_fig2, width = 14, height = 7, units = "in", dpi = 300)
+
+  message(sprintf("Saved selection utility plot: %s", basename(pdf_path2)))
+  
+  # ECDF version: Power condition only with log scale
+  # Floor p-values for log plotting
+  selection_perf_ecdf <- selection_perf %>%
+    mutate(
+      p_sel_plot = pmax(p_sel, min_pval_plot)
+    )
+  
+  # Get strategy colors from paletteer (using first 4 colors from Classic_10_Medium)
+  strategy_order <- c("Oracle", "Diagnostic-selected", paste0("Fixed (", fixed_baseline, ")"), "Random")
+  strategy_colors_vec <- paletteer::paletteer_d("ggthemes::Classic_10_Medium")[1:4]
+  strategy_colors <- setNames(strategy_colors_vec, strategy_order)
+  
+  p_fig2_ecdf <- ggplot(selection_perf_ecdf, aes(x = p_sel_plot, color = strategy)) +
+    stat_ecdf(geom = "step", linewidth = 0.9, alpha = 0.95) +
+    facet_wrap(~ n_sample, nrow = 1) +
+    scale_x_log10(
+    	  breaks = c(1e-16, 1e-12, 1e-9, 1e-6, 1e-3,  0.1),
+      limits = c(min_pval_plot, 1)
+    ) +
+    geom_vline(xintercept = 0.05, color = "black", alpha = 0.4, linetype = "dashed") +
+    labs(
+      x = "p-value",
+      y = "ECDF",
+      color = "Strategy",
+      title = sprintf("Embedding selection utility - Power (%s CIT, %s diagnostic)", cit_for_selection, diag_metric_for_selection),
+      subtitle = sprintf("Candidates exclude %s", paste(exclude_candidates, collapse = " & "))
+    ) +
+    base_theme +
+    theme(
+      axis.text.x = element_text(angle = 25, hjust = 1),
+      legend.position = "right"
+    ) +
+    scale_color_manual(values = strategy_colors)
+  
+  pdf_path2_ecdf <- file.path(figures_dir, sprintf("selection_utility_ecdf_%s_by_%s_%d_%d_eps%.1f_exclude_%s.pdf",
+                                              cit_for_selection, diag_metric_for_selection, min(seeds), max(seeds), eps_sigmaY, paste(exclude_candidates, collapse = "_")))
+  png_path2_ecdf <- file.path(figures_dir, sprintf("selection_utility_ecdf_%s_by_%s_%d_%d_eps%.1f_exclude_%s.png",
+                                              cit_for_selection, diag_metric_for_selection, min(seeds), max(seeds), eps_sigmaY, paste(exclude_candidates, collapse = "_")))
+
+  ggsave(pdf_path2_ecdf, p_fig2_ecdf, width = 14, height = 7, units = "in")
+  ggsave(png_path2_ecdf, p_fig2_ecdf, width = 14, height = 7, units = "in", dpi = 300)
+
+  message(sprintf("Saved selection utility ECDF plot: %s", basename(pdf_path2_ecdf)))
+}
+
+cat("\n=== Selection Utility Plots Complete ===\n")
+
+# ============================================================================
+# Generate Combined Selection Utility Plots (PCM + RCoT)
+# ============================================================================
+cat("\n=== Creating Combined Selection Utility Plots ===\n")
+
+set.seed(1)
+alpha <- 0.05
+exclude_candidates <- c("FAST")#c("FAST", "Freesurfer")
+candidate_embeddings <- setdiff(levels(cit_pvals_for_ranks$embedding), exclude_candidates)
+
+# Generate individual plots
+cat("\n--- Generating individual ECDF plots ---\n")
+plot_pcm_regular <- .generate_selection_utility_ecdf("PCM", "pcm", exclude_candidates, candidate_embeddings, 
+                                                      alpha = alpha, y_label = "ECDF (PCM)", verbose = TRUE)
+plot_rcot_regular <- .generate_selection_utility_ecdf("RCoT", "rcot", exclude_candidates, candidate_embeddings, 
+                                                       alpha = alpha, y_label = "ECDF (RCoT)", verbose = TRUE)
+plot_pcm_split <- .generate_selection_utility_ecdf("PCM", "pcm_split", exclude_candidates, candidate_embeddings, 
+                                                    alpha = alpha, y_label = "ECDF (PCM)", verbose = TRUE)
+plot_rcot_split <- .generate_selection_utility_ecdf("RCoT", "rcot_split", exclude_candidates, candidate_embeddings, 
+                                                     alpha = alpha, y_label = "ECDF (RCoT)", verbose = TRUE)
+
+# Combine plots using patchwork
+cat("\n--- Combining plots ---\n")
+
+# Figure 1: Regular metrics (PCM + RCoT)
+if (!is.null(plot_pcm_regular) && !is.null(plot_rcot_regular)) {
+  # Remove x-axis elements from top plot, add x-axis label to bottom plot
+  plot_pcm_regular_mod <- plot_pcm_regular + 
+    theme(axis.text.x = element_blank(),
+          axis.ticks.x = element_blank())
+  
+  plot_rcot_regular_mod <- plot_rcot_regular + 
+    labs(x = "p-value")
+  
+  combined_regular <- plot_pcm_regular_mod / plot_rcot_regular_mod +
+    plot_layout(guides = "collect", axes = "collect_x") &
+    theme(legend.position = "right")
+  
+  # Save combined regular
+  pdf_path_regular <- file.path(figures_dir, sprintf("selection_utility_ecdf_combined_regular_%d_%d_eps%.1f_exclude_%s.pdf",
+                                                      min(seeds), max(seeds), eps_sigmaY, paste(exclude_candidates, collapse = "_")))
+  png_path_regular <- file.path(figures_dir, sprintf("selection_utility_ecdf_combined_regular_%d_%d_eps%.1f_exclude_%s.png",
+                                                      min(seeds), max(seeds), eps_sigmaY, paste(exclude_candidates, collapse = "_")))
+  
+  ggsave(pdf_path_regular, combined_regular, width = 14, height = 12, units = "in")
+  ggsave(png_path_regular, combined_regular, width = 14, height = 12, units = "in", dpi = 300)
+  
+  cat(sprintf("Saved combined regular plot: %s\n", basename(pdf_path_regular)))
+}
+
+# Figure 2: Split metrics (PCM + RCoT)
+if (!is.null(plot_pcm_split) && !is.null(plot_rcot_split)) {
+  # Remove x-axis elements from top plot, add x-axis label to bottom plot
+  plot_pcm_split_mod <- plot_pcm_split + 
+    theme(axis.text.x = element_blank(),
+          axis.ticks.x = element_blank())
+  
+  plot_rcot_split_mod <- plot_rcot_split + 
+    labs(x = "p-value")
+  
+  combined_split <- plot_pcm_split_mod / plot_rcot_split_mod +
+    plot_layout(guides = "collect", axes = "collect_x") &
+    theme(legend.position = "right")
+  
+  # Save combined split
+  pdf_path_split <- file.path(figures_dir, sprintf("selection_utility_ecdf_combined_split_%d_%d_eps%.1f_exclude_%s.pdf",
+                                                    min(seeds), max(seeds), eps_sigmaY, paste(exclude_candidates, collapse = "_")))
+  png_path_split <- file.path(figures_dir, sprintf("selection_utility_ecdf_combined_split_%d_%d_eps%.1f_exclude_%s.png",
+                                                    min(seeds), max(seeds), eps_sigmaY, paste(exclude_candidates, collapse = "_")))
+  
+  ggsave(pdf_path_split, combined_split, width = 14, height = 12, units = "in")
+  ggsave(png_path_split, combined_split, width = 14, height = 12, units = "in", dpi = 300)
+  
+  cat(sprintf("Saved combined split plot: %s\n", basename(pdf_path_split)))
+}
+
+cat("\n=== Combined Selection Utility Plots Complete ===\n")
+
 cat("\n=== Complete ===\n")
+
+
 

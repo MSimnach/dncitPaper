@@ -8,10 +8,10 @@ library(DNCIT)
 load_all()  # Load the dncitPaper package
 
 # Configuration
-idx_samples <- 1:5
-n_sample = list(256, 460, 825, 1100, 5000)
+idx_samples <- 1:3
+n_sample = list( 460,  1100, 5000)
 xz_modes <- c('Sigma=I_p')
-seeds <- 2:6
+seeds <- c(14:26)# for eps_sigmaY=0.1 missing: c(4, 13, 27, 30, 53, 56)# for eps_sigmaY=0.5 missing: c(93, 26, 62, 71, 74) for CI c(63)# for eps_sigmaY=1 missing: c(22, 60, 63, 77)
 Y_age <- FALSE
 standardize_ridge_lasso <- TRUE
 
@@ -19,9 +19,9 @@ standardize_ridge_lasso <- TRUE
 # eps_sigmaY = 0.5: both CI and No_CI with scratch and medicalnet_ft
 # eps_sigmaY = 0.1, 1.0: No_CI only with scratch
 configs <- list(
-  list(ci_condition = '/CI/', eps_sigmaY = 0.5, embedding_obs = c('scratch', 'medicalnet_ft')),
-  #list(ci_condition = '/No_CI/', eps_sigmaY = 0.5, embedding_obs = c('scratch', 'medicalnet_ft')),
-  #list(ci_condition = '/No_CI/', eps_sigmaY = 0.1, embedding_obs = 'scratch'),
+  #list(ci_condition = '/CI/', eps_sigmaY = 0.5, embedding_obs = c('scratch', 'medicalnet_ft'))#,
+  #list(ci_condition = '/No_CI/', eps_sigmaY = 0.5, embedding_obs = c('scratch', 'medicalnet_ft'))#,
+  list(ci_condition = '/No_CI/', eps_sigmaY = 0.1, embedding_obs = 'scratch')#,
   #list(ci_condition = '/No_CI/', eps_sigmaY = 1.0, embedding_obs = 'scratch')
 )
 
@@ -49,6 +49,7 @@ for(config in configs){
                                    as.character(eps_sigmaY)),
             embedding_obs = embedding_obs,
             seed = seed,
+            extract_trained = FALSE,
             debug_Y = FALSE,
             lambda_choice = "1se",
             Y_age = Y_age,
@@ -64,6 +65,7 @@ for(config in configs){
                                    as.character(eps_sigmaY)),
             embedding_obs = embedding_obs,
             seed = seed,
+            extract_trained = FALSE,
             debug_Y = FALSE,
             baseline_results_cached = baseline_cache,
             lambda_choice = "1se",
