@@ -1421,7 +1421,7 @@ library(patchwork)
 .make_col_header <- function(txt) {
   ggplot() +
     theme_void() +
-    annotate("text", x = 0, y = 0, label = txt, hjust = 0.5, size = 6, fontface = "bold") +
+    annotate("text", x = 0, y = 0, label = txt, hjust = 0.5, size = 6) +
     coord_cartesian(clip = "off")
 }
 
@@ -1434,9 +1434,9 @@ library(patchwork)
     base_theme +
     theme(
       legend.position = if (show_legend) "right" else "none",
-      axis.text.x  = element_text(size = 12),
-      axis.title.x = element_text(size = 14),
-      axis.title.y = element_text(size = 14)
+      #axis.text.x  = element_text(size = 18),
+      axis.title.x = element_text(size = 18),
+      axis.title.y = element_text(size = 18)
     ) +
     scale_color_manual(values = color_palette) +
     scale_linetype_manual(values = lt_vals) +
@@ -1531,6 +1531,7 @@ lt_vals <- c("fixed" = "solid", linetype_map)
     p_zoom <- p_zoom +
       scale_x_log10(
         breaks = c(1e-16, 1e-12, 1e-9, 1e-6, 1e-3, 0.1),
+        labels = scales::trans_format("log10", scales::math_format(10^.x)),
         limits = c(min_pval_plot, zoom_max)
       )
   } else {
@@ -1579,8 +1580,8 @@ combined_pcm_rcot_zoom <- combined_pcm_rcot_zoom &
 # (simple approach: add label to the middle plot of rcot row via plot_annotation caption)
 combined_pcm_rcot_zoom <- combined_pcm_rcot_zoom +
   plot_annotation(
-    caption = "p-value",
-    theme = theme(plot.caption = element_text(size = 14, hjust = 0.5))
+    caption = "Heuristic's p-value on validation split",
+    theme = theme(plot.caption = element_text(size = 20, hjust = 0.5))
   )
 
 # Save
@@ -1705,7 +1706,7 @@ message(sprintf("Saved combined PCM+RCoT zoom plot: %s", basename(pdf_path)))
     mutate(
       strategy = recode(strategy,
                         p_oracle = "Oracle",
-                        p_diag   = "Diagnostic-selected",
+                        p_diag   = "Heuristic",
                         p_fixed  = paste0("Fixed (", fixed_baseline, ")"),
                         p_rand   = "Random"),
       minuslog10p = -log10(pmax(p_sel, min_pval_plot)),
@@ -1719,7 +1720,7 @@ message(sprintf("Saved combined PCM+RCoT zoom plot: %s", basename(pdf_path)))
     )
   
   # Get strategy colors
-  strategy_order <- c("Oracle", "Diagnostic-selected", paste0("Fixed (", fixed_baseline, ")"), "Random")
+  strategy_order <- c("Oracle", "Heuristic", paste0("Fixed (", fixed_baseline, ")"), "Random")
   strategy_colors_vec <- paletteer::paletteer_d("ggthemes::Classic_10_Medium")[1:4]
   strategy_colors <- setNames(strategy_colors_vec, strategy_order)
   
@@ -1729,6 +1730,7 @@ message(sprintf("Saved combined PCM+RCoT zoom plot: %s", basename(pdf_path)))
     facet_wrap(~ n_sample, nrow = 1) +
     scale_x_log10(
       breaks = c(1e-16, 1e-12, 1e-9, 1e-6, 1e-3,  0.1),
+      labels = scales::trans_format("log10", scales::math_format(10^.x)),
       limits = c(min_pval_plot, 1)
     ) +
     geom_vline(xintercept = 0.05, color = "black", alpha = 0.4, linetype = "dashed") +
@@ -2089,6 +2091,7 @@ if (nrow(sel_join) == 0) {
     facet_wrap(~ n_sample, nrow = 1) +
     scale_x_log10(
     	  breaks = c(1e-16, 1e-12, 1e-9, 1e-6, 1e-3,  0.1),
+      labels = scales::trans_format("log10", scales::math_format(10^.x)),
       limits = c(min_pval_plot, 1)
     ) +
     geom_vline(xintercept = 0.05, color = "black", alpha = 0.4, linetype = "dashed") +
@@ -2126,7 +2129,7 @@ cat("\n=== Creating Combined Selection Utility Plots ===\n")
 
 set.seed(1)
 alpha <- 0.05
-exclude_candidates <- c("FAST")#c("FAST", "Freesurfer")
+exclude_candidates <- c("FAST", "Freesurfer")
 candidate_embeddings <- setdiff(levels(cit_pvals_for_ranks$embedding), exclude_candidates)
 
 # Generate individual plots
@@ -2177,7 +2180,7 @@ if (!is.null(plot_pcm_split) && !is.null(plot_rcot_split)) {
           axis.ticks.x = element_blank())
   
   plot_rcot_split_mod <- plot_rcot_split + 
-    labs(x = "p-value")
+    labs(x = "DNCIT's p-value on test split")
   
   combined_split <- plot_pcm_split_mod / plot_rcot_split_mod +
     plot_layout(guides = "collect", axes = "collect_x") &
