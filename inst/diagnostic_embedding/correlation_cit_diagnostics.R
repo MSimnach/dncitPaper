@@ -13,7 +13,7 @@ library(paletteer)
 seeds <- c(1:100)
 n_samples <- c(256, 460, 825, 1100, 5000)#, 10000)
 conditions <- c("CI", "No_CI")
-eps_sigmaY <- 0.1
+eps_sigmaY <- 0.5
 
 # Helper functions
 extract_embedding_from_filename <- function(filename) {
@@ -1515,10 +1515,10 @@ lt_vals <- c("fixed" = "solid", linetype_map)
   show_leg_zoom  <- "zoom"  %in% show_legend_in
 
   p_t1e <- .build_ecdf_panel(dat_t1e, metric_info, lt_vals, show_legend = show_leg_t1e) +
-    labs(x = NULL, y = y_label) +
-    theme(
-      axis.title.y = element_text(size = 14)
-    )
+    labs(x = NULL, y = y_label) #+
+    #theme(
+    #  axis.title.y = element_text(size = 14)
+    #)
 
   p_power <- .build_ecdf_panel(dat_power, metric_info, lt_vals, show_legend = show_leg_power) +
     labs(x = NULL, y = NULL)
@@ -1580,7 +1580,7 @@ combined_pcm_rcot_zoom <- combined_pcm_rcot_zoom &
 # (simple approach: add label to the middle plot of rcot row via plot_annotation caption)
 combined_pcm_rcot_zoom <- combined_pcm_rcot_zoom +
   plot_annotation(
-    caption = "Heuristic's p-value on validation split",
+    caption = "Selection criterion's p-value on validation split",
     theme = theme(plot.caption = element_text(size = 20, hjust = 0.5))
   )
 
@@ -1706,7 +1706,7 @@ message(sprintf("Saved combined PCM+RCoT zoom plot: %s", basename(pdf_path)))
     mutate(
       strategy = recode(strategy,
                         p_oracle = "Oracle",
-                        p_diag   = "Heuristic",
+                        p_diag   = "Selection criterion",
                         p_fixed  = paste0("Fixed (", fixed_baseline, ")"),
                         p_rand   = "Random"),
       minuslog10p = -log10(pmax(p_sel, min_pval_plot)),
@@ -1720,7 +1720,7 @@ message(sprintf("Saved combined PCM+RCoT zoom plot: %s", basename(pdf_path)))
     )
   
   # Get strategy colors
-  strategy_order <- c("Oracle", "Heuristic", paste0("Fixed (", fixed_baseline, ")"), "Random")
+  strategy_order <- c("Oracle", "Selection criterion", paste0("Fixed (", fixed_baseline, ")"), "Random")
   strategy_colors_vec <- paletteer::paletteer_d("ggthemes::Classic_10_Medium")[1:4]
   strategy_colors <- setNames(strategy_colors_vec, strategy_order)
   
@@ -2129,7 +2129,7 @@ cat("\n=== Creating Combined Selection Utility Plots ===\n")
 
 set.seed(1)
 alpha <- 0.05
-exclude_candidates <- c("FAST", "Freesurfer")
+exclude_candidates <- c('FAST')#c("FAST", "Freesurfer")
 candidate_embeddings <- setdiff(levels(cit_pvals_for_ranks$embedding), exclude_candidates)
 
 # Generate individual plots
