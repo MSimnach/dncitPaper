@@ -450,7 +450,7 @@ p_conf_relation <- looplot::nested_loop_plot(resdf = design,
                                                                                      size = 15)
                                                )
                                              ))
-#ggplot2::ggsave(paste0(path_to_save_nested_loop_plots, '/all_dncits_nested_loop_conf_rel_power_T1E_app.png'), p_conf_relation, width = 16, height = 16, dpi = 300)
+#ggplot2::ggsave(paste0(path_to_save_nested_loop_plots, '/all_dncits_nested_loop_conf_rel_power_T1E_app.pdf'), p_conf_relation, width = 16, height = 16, dpi = 300)
 print(p_conf_relation)
 
 ## MAIN TEXT (3 columns)
@@ -713,7 +713,7 @@ p_conf_relation <- plot_grid(
   ncol = 1,  # Legend below, so keep 1 column
   rel_heights = c(1, 0.1)  # Adjust height ratios if needed
 )
-#ggplot2::ggsave(paste0(path_to_save_nested_loop_plots, '/all_dncits_nested_loop_conf_rel_power_T1E_app.png'), p_conf_relation, width = 16, height = 16, dpi = 300)
+#ggplot2::ggsave(paste0(path_to_save_nested_loop_plots, '/all_dncits_nested_loop_conf_rel_power_T1E_app.pdf'), p_conf_relation, width = 16, height = 16)
 print(p_conf_relation)
 
 
@@ -1018,7 +1018,7 @@ p_conf_dim = looplot::nested_loop_plot(resdf = design_main_text,
                                                                                size = 15)
                                          )
                                        ))
-#ggplot2::ggsave(paste0(path_to_save_nested_loop_plots, '/all_dncits_nested_loop_conf_dim_main_text.png'), p_conf_dim, width = 16, height = 10, dpi = 300)
+#ggplot2::ggsave(paste0(path_to_save_nested_loop_plots, '/all_dncits_nested_loop_conf_dim_main_text.pdf'), p_conf_dim, width = 16, height = 10, dpi = 300)
 print(p_conf_dim)
 
 ### Power and T1E separate
@@ -1193,7 +1193,7 @@ p_conf_dim <- plot_grid(
   ncol = 1,  # Legend below, so keep 1 column
   rel_heights = c(1, 0.15)  # Adjust height ratios if needed
 )
-#ggplot2::ggsave(paste0(path_to_save_nested_loop_plots, '/all_dncits_nested_loop_conf_dim.png'), p_conf_dim, width = 18, height = 15, dpi = 300)
+#ggplot2::ggsave(paste0(path_to_save_nested_loop_plots, '/all_dncits_nested_loop_conf_dim.pdf'), p_conf_dim, width = 18, height = 15)
 print(p_conf_dim)
 
 
@@ -1914,3 +1914,406 @@ library(xtable)
 rownames(design) <- NULL
 xtable(design[,-c(ncol(design))], align=c("lll|rrrrrrrrrrrrrrrrrr"))
 heatmap(as.matrix(design[,-c(1,2,ncol(design))]))
+
+
+##### Combined conf_rel + conf_dim main text plot (4 panels: 4 rows x 1 col)
+# Row 1: conf_rel T1E, Row 2: conf_dim T1E, Row 3: conf_rel Power, Row 4: conf_dim Power
+
+## 1) conf_rel data preparation
+design_rel <- rbind(design_conf_relation_ci, design_conf_relation_no_ci)
+design_rel$'Setting' <- rep(c('No', 'Yes'), each = 30)
+design_rel$confounder <- rep(rep(c(1, 2, 3), each = 10), 2)
+
+design_rel_mt <- design_rel %>%
+  mutate(across(contains("Fastsurfer-"),
+                ~ ifelse(Setting == "No", NA, .)))
+for (col in colnames(design_rel_mt)[3:(ncol(design_rel_mt) - 1)]) {
+  for (confounder_val in c(1, 2, 3)) {
+    if (grepl("CMIknn", col)) {
+      max_sample_size <- 1100
+    } else {
+      max_sample_size <- 10000
+    }
+    if (any(design_rel_mt$confounder == confounder_val & design_rel_mt$sample_sizes == max_sample_size & design_rel_mt[[col]] < 0.15 & design_rel_mt$Setting == "Yes", na.rm = TRUE)) {
+      design_rel_mt[which(design_rel_mt$confounder == confounder_val & design_rel_mt$Setting == "Yes"), col] <- NA
+    }
+    for (sample_size in c(145, 256, 350, 460, 825, 1100, 1475, 1964, 5000, 10000)) {
+      if (any(design_rel_mt$confounder == confounder_val & design_rel_mt$sample_sizes == sample_size & design_rel_mt[[col]] > 0.15 & design_rel_mt$Setting == "No", na.rm = TRUE)) {
+        design_rel_mt[which(design_rel_mt$confounder == confounder_val & design_rel_mt$sample_sizes == sample_size & design_rel_mt$Setting == "Yes"), col] <- NA
+      }
+    }
+  }
+}
+design_rel_mt <- design_rel_mt %>% select(-contains("Fastsurfer"))
+design_rel_mt <- design_rel_mt %>%
+  mutate(across(contains("cVAE-") | contains("MedicalNet-"),
+                ~ ifelse(Setting == "No", NA, .)))
+methods_comb <- colnames(design_rel_mt)[-c(1:2, ncol(design_rel_mt))]
+
+design_rel_t1e <- design_rel_mt[!(design_rel_mt$confounder == 2 | design_rel_mt$Setting == 'Yes'), ]
+design_rel_power <- design_rel_mt[!(design_rel_mt$confounder == 2 | design_rel_mt$Setting == 'No'), ]
+
+## 2) conf_dim data preparation
+design_dim <- rbind(design_conf_dim_ci, design_conf_dim_no_ci)
+design_dim$'Setting' <- rep(c('No', 'Yes'), each = 60)
+
+design_dim_mt <- design_dim %>%
+  mutate(across(contains("Fastsurfer-"),
+                ~ ifelse(Setting == "No", NA, .)))
+for (col in colnames(design_dim_mt)[3:(ncol(design_dim_mt) - 1)]) {
+  for (confounder_val in c(1, 2, 4, 6, 10, 15)) {
+    if (grepl("CMIknn", col)) {
+      max_sample_size <- 1100
+    } else {
+      max_sample_size <- 10000
+    }
+    if (any(design_dim_mt$confounder == confounder_val & design_dim_mt$sample_sizes == max_sample_size & design_dim_mt[[col]] < 0.15 & design_dim_mt$Setting == "Yes", na.rm = TRUE)) {
+      design_dim_mt[which(design_dim_mt$confounder == confounder_val & design_dim_mt$Setting == "Yes"), col] <- NA
+    }
+    for (sample_size in c(145, 256, 350, 460, 825, 1100, 1475, 1964, 5000, 10000)) {
+      if (any(design_dim_mt$confounder == confounder_val & design_dim_mt$sample_sizes == sample_size & design_dim_mt[[col]] > 0.15 & design_dim_mt$Setting == "No", na.rm = TRUE)) {
+        design_dim_mt[which(design_dim_mt$confounder == confounder_val & design_dim_mt$sample_sizes == sample_size & design_dim_mt$Setting == "Yes"), col] <- NA
+      }
+    }
+  }
+}
+design_dim_mt <- design_dim_mt %>% select(-contains("Fastsurfer-"))
+design_dim_mt <- design_dim_mt %>%
+  mutate(across(contains("cVAE-") | contains("MedicalNet-"),
+                ~ ifelse(Setting == "No", NA, .)))
+design_dim_mt <- design_dim_mt[design_dim_mt$confounder %in% c(1, 10), ]
+colnames(design_dim_mt)[2] <- "confounder dimension"
+
+design_dim_t1e <- design_dim_mt[design_dim_mt$Setting == 'No', ]
+design_dim_power <- design_dim_mt[design_dim_mt$Setting == 'Yes', ]
+
+## 3) Create 4 nested loop plots with consistent aesthetics
+p_comb_rel_t1e <- looplot::nested_loop_plot(resdf = design_rel_t1e,
+                                            x = "sample_sizes",
+                                            grid_rows = 'Setting',
+                                            steps = "confounder",
+                                            methods = methods_comb,
+                                            steps_y_base = -0.15*4/5, steps_y_height = 0.05 *4/5 ,
+                                            legend_breaks = methods_comb,
+                                            legend_labels = methods_comb,
+                                            x_name = "Sample size", y_name = "Rejection rate",
+                                            spu_x_shift = 1,
+                                            colors = palet_discrete[rep(c(1, 2, 7, 4, 3, 6), each = 3)],
+                                            line_linetypes = c(1, 2, 3),
+                                            point_size = 4,
+                                            line_size = 1.5,
+                                            point_shapes = c(19, 17, 15),
+                                            steps_values_annotate = TRUE, steps_annotation_size = 11,
+                                            steps_color = 'grey31', steps_annotation_color = 'grey31',
+                                            hline_intercept = c(0, 0.05),
+                                            hline_linetype = c(1),
+                                            hline_size = c(0.5),#, 1.5),
+                                            hline_colour = "black",
+                                            y_expand_add = c(0.1 , 0.15 ),
+                                            y_breaks = seq(0, 1, 0.2),
+                                            line_alpha = 0.6,
+                                            point_alpha = 0.8,
+                                            legend_name = "DNCIT",
+                                            base_size = 35,
+                                            replace_labels = list(
+                                              Setting = c('No' = 'T1E'),
+                                              confounder = c('1' = 'linear',
+                                                             '3' = 'complex')
+                                            ),
+                                            grid_labeller = labeller('No' = 'T1E'),
+                                            post_processing = list(
+                                              add_custom_theme = list(
+                                                axis.text.x = ggplot2::element_text(angle = -90, vjust = 0.5)
+                                              )
+                                            ))
+
+p_comb_dim_t1e <- looplot::nested_loop_plot(resdf = design_dim_t1e,
+                                            x = "sample_sizes",
+                                            grid_rows = 'Setting',
+                                            steps = "confounder dimension",
+                                            methods = methods_comb,
+                                            steps_y_base = -0.15 * 4 / 5, steps_y_height = 0.05 * 4 / 5,
+                                            legend_breaks = methods_comb,
+                                            legend_labels = methods_comb,
+                                            x_name = "Sample size", y_name = "Rejection rate",
+                                            spu_x_shift = 1,
+                                            colors = palet_discrete[rep(c(1, 2, 7, 4, 3, 6), each = 3)],
+                                            line_linetypes = c(1, 2, 3),
+                                            point_size = 4,
+                                            line_size = 1.5,
+                                            point_shapes = c(19, 17, 15),
+                                            steps_values_annotate = TRUE, steps_annotation_size = 11,
+                                            steps_color = 'grey31', steps_annotation_color = 'grey31',
+                                            hline_intercept = c(0, 0.05),
+                                            hline_linetype = c(1),
+                                            hline_size = c(0.5)#, 1.5),
+                                            hline_colour = "black",
+                                            y_expand_add = c(0.1 * 4 / 5, 0.15 * 4 / 5),
+                                            y_breaks = seq(0, 1, 0.2),
+                                            line_alpha = 0.6,
+                                            point_alpha = 0.8,
+                                            legend_name = "DNCIT",
+                                            base_size = 35,
+                                            replace_labels = list(
+                                              Setting = c('No' = 'T1E')
+                                            ),
+                                            grid_labeller = labeller('No' = 'T1E'),
+                                            post_processing = list(
+                                              add_custom_theme = list(
+                                                axis.text.x = ggplot2::element_text(angle = -90, vjust = 0.5)
+                                              )
+                                            ))
+
+p_comb_rel_power <- looplot::nested_loop_plot(resdf = design_rel_power,
+                                              x = "sample_sizes",
+                                              grid_rows = 'Setting',
+                                              steps = "confounder",
+                                              methods = methods_comb,
+                                              steps_y_base = -0.15, steps_y_height = 0.05,
+                                              legend_breaks = methods_comb,
+                                              legend_labels = methods_comb,
+                                              x_name = "Sample size", y_name = "Rejection rate",
+                                              spu_x_shift = 1,
+                                              colors = palet_discrete[rep(c(1, 2, 7, 4, 3, 6), each = 3)],
+                                              line_linetypes = c(1, 2, 3),
+                                              point_size = 4,
+                                              line_size = 1.5,
+                                              point_shapes = c(19, 17, 15),
+                                              steps_values_annotate = TRUE, steps_annotation_size = 11,
+                                              steps_color = 'grey31', steps_annotation_color = 'grey31',
+                                              hline_intercept = c(0),
+                                              hline_linetype = 1,
+                                              hline_size = c(0.5),
+                                              hline_colour = "black",
+                                              y_expand_add = c(0.1, 0.15),
+                                              y_breaks = seq(0, 1, 0.2),
+                                              line_alpha = 0.6,
+                                              point_alpha = 0.8,
+                                              legend_name = "DNCIT",
+                                              base_size = 35,
+                                              replace_labels = list(
+                                                Setting = c('Yes' = 'Power'),
+                                                confounder = c('1' = 'linear',
+                                                               '3' = 'complex')
+                                              ),
+                                              grid_labeller = labeller('Yes' = 'Power'),
+                                              post_processing = list(
+                                                add_custom_theme = list(
+                                                  axis.text.x = ggplot2::element_text(angle = -90, vjust = 0.5)
+                                                )
+                                              ))
+
+p_comb_dim_power <- looplot::nested_loop_plot(resdf = design_dim_power,
+                                              x = "sample_sizes",
+                                              grid_rows = 'Setting',
+                                              steps = "confounder dimension",
+                                              methods = methods_comb,
+                                              steps_y_base = -0.15, steps_y_height = 0.05,
+                                              legend_breaks = methods_comb,
+                                              legend_labels = methods_comb,
+                                              x_name = "Sample size", y_name = "Rejection rate",
+                                              spu_x_shift = 1,
+                                              colors = palet_discrete[rep(c(1, 2, 7, 4, 3, 6), each = 3)],
+                                              line_linetypes = c(1, 2, 3),
+                                              point_size = 4,
+                                              line_size = 1.5,
+                                              point_shapes = c(19, 17, 15),
+                                              steps_values_annotate = TRUE, steps_annotation_size = 11,
+                                              steps_color = 'grey31', steps_annotation_color = 'grey31',
+                                              hline_intercept = c(0),
+                                              hline_linetype = 1,
+                                              hline_size = c(0.5),
+                                              hline_colour = "black",
+                                              y_expand_add = c(0.1, 0.15),
+                                              y_breaks = seq(0, 1, 0.2),
+                                              line_alpha = 0.6,
+                                              point_alpha = 0.8,
+                                              legend_name = "DNCIT",
+                                              base_size = 35,
+                                              replace_labels = list(
+                                                Setting = c('Yes' = 'Power')
+                                              ),
+                                              grid_labeller = labeller('Yes' = 'Power'),
+                                              post_processing = list(
+                                                add_custom_theme = list(
+                                                  axis.text.x = ggplot2::element_text(angle = -90, vjust = 0.5)
+                                                )
+                                              ))
+
+## 4) Modify plots for stacking
+p_comb_rel_t1e_mod <- p_comb_rel_t1e +
+  theme(legend.position = "none",
+        axis.title.y = element_blank(),
+        axis.title.x = element_blank(),
+        axis.text.x = element_blank(),
+        axis.ticks.x = element_blank())
+
+p_comb_dim_t1e_mod <- p_comb_dim_t1e +
+  theme(legend.position = "none",
+        axis.title.y = element_blank(),
+        axis.title.x = element_blank(),
+        axis.text.x = element_blank(),
+        axis.ticks.x = element_blank())
+
+p_comb_rel_power_mod <- p_comb_rel_power +
+  theme(legend.position = "none",
+        axis.title.y = element_blank(),
+        axis.title.x = element_blank(),
+        axis.text.x = element_blank(),
+        axis.ticks.x = element_blank())
+
+p_comb_dim_power_mod <- p_comb_dim_power +
+  theme(legend.position = "none",
+        axis.title.y = element_blank())
+
+## 5) Stack 4 plots
+combined_4panel <- plot_grid(
+  p_comb_rel_t1e_mod,
+  p_comb_dim_t1e_mod,
+  p_comb_rel_power_mod,
+  p_comb_dim_power_mod,
+  ncol = 1,
+  align = "v",
+  rel_heights = c(1, 1, 1, 1.2)
+)
+
+## 6) Add shared y-axis label
+y_axis_label_4p <- ggdraw() +
+  draw_label("Rejection Rate", x = 0.5, y = 0.5, angle = 90, vjust = 0.5, size = 24) +
+  theme(panel.background = element_rect(fill = "white", colour = NA),
+        plot.background = element_rect(fill = "white", colour = NA))
+combined_4panel <- plot_grid(
+  y_axis_label_4p,
+  combined_4panel,
+  ncol = 2,
+  rel_widths = c(0.05, 1)
+)
+
+## 7) Create legend plot and extract legend
+design_legend_comb <- design_rel
+design_legend_comb <- design_legend_comb %>%
+  mutate(across(contains("Fastsurfer-"),
+                ~ ifelse(Setting == "No", NA, .)))
+design_legend_comb <- design_legend_comb %>% select(-contains("Fastsurfer"))
+methods_legend_comb <- colnames(design_legend_comb)[-c(1:2, ncol(design_legend_comb))]
+p_legend_comb <- looplot::nested_loop_plot(resdf = design_legend_comb,
+                                           x = "sample_sizes",
+                                           grid_rows = 'Setting',
+                                           steps = "confounder",
+                                           methods = methods_legend_comb,
+                                           steps_y_base = -0.1, steps_y_height = 0.05,
+                                           legend_breaks = methods_legend_comb,
+                                           legend_labels = methods_legend_comb,
+                                           x_name = "Sample size", y_name = "Rejection rate",
+                                           spu_x_shift = 1,
+                                           colors = palet_discrete[rep(c(1, 2, 7, 4, 3, 6), each = 3)],
+                                           line_linetypes = c(1, 2, 3),
+                                           point_size = 4,
+                                           line_size = 1.5,
+                                           point_shapes = c(19, 17, 15),
+                                           steps_values_annotate = TRUE, steps_annotation_size = 8,
+                                           hline_intercept = c(0, 0.05),
+                                           y_expand_add = c(0.1, 0.15 / 2),
+                                           y_breaks = seq(0, 1, 0.2),
+                                           line_alpha = 0.6,
+                                           point_alpha = 0.8,
+                                           legend_name = "DNCIT",
+                                           base_size = 28,
+                                           replace_labels = list(
+                                             Setting = c('Yes' = 'Power'),
+                                             confounder = c('1' = 'linear',
+                                                            '3' = 'complex')
+                                           ),
+                                           grid_labeller = labeller('Yes' = 'Power'),
+                                           post_processing = list(
+                                             add_custom_theme = list(
+                                               axis.text.x = ggplot2::element_text(angle = -90, vjust = 0.5)
+                                             )
+                                           ))
+p_legend_styled <- p_legend_comb +
+  guides(colour = guide_legend(nrow = 3, keywidth = 1.5, keyheight = 1.2, override.aes = list(size = 4))) +
+  theme(legend.text = element_text(size = 19),
+        legend.title = element_text(size = 20))
+legend_comb <- get_legend(p_legend_styled)
+
+## 8) Final combination with legend
+combined_4panel_final <- plot_grid(
+  combined_4panel,
+  legend_comb,
+  ncol = 1,
+  rel_heights = c(1, 0.08)
+)
+
+## 9) Save as PDF
+ggplot2::ggsave(paste0(path_to_save_nested_loop_plots, '/combined_conf_rel_conf_dim_main_text.pdf'),
+                combined_4panel_final, width = 18, height = 30)
+print(combined_4panel_final)
+
+
+##### Combined 2x2 layout (rows: T1E / Power, columns: conf_rel / conf_dim)
+
+## Top-left: conf_rel T1E — no x-axis, keep y-axis text
+p_2x2_rel_t1e <- p_comb_rel_t1e +
+  theme(legend.position = "none",
+        axis.title.y = element_blank(),
+        axis.title.x = element_blank(),
+        axis.text.x = element_blank(),
+        axis.ticks.x = element_blank())
+
+## Top-right: conf_dim T1E — no x-axis, no y-axis text
+p_2x2_dim_t1e <- p_comb_dim_t1e +
+  theme(legend.position = "none",
+        axis.title.y = element_blank(),
+        axis.title.x = element_blank(),
+        axis.text.x = element_blank(),
+        axis.ticks.x = element_blank(),
+        axis.text.y = element_blank(),
+        axis.ticks.y = element_blank())
+
+## Bottom-left: conf_rel Power — keep x-axis, keep y-axis text
+p_2x2_rel_power <- p_comb_rel_power +
+  theme(legend.position = "none",
+        axis.title.y = element_blank())
+
+## Bottom-right: conf_dim Power — keep x-axis, no y-axis text
+p_2x2_dim_power <- p_comb_dim_power +
+  theme(legend.position = "none",
+        axis.title.y = element_blank(),
+        axis.text.y = element_blank(),
+        axis.ticks.y = element_blank())
+
+## Arrange in 2x2 grid using ggdraw + draw_plot for precise positioning
+# Tune these parameters to adjust spacing between panels:
+top_y   <- 0.54   # y-start of top row (lower = rows closer; try 0.42-0.50)
+top_h   <- 0.45   # height of top-row panels (>0.5 to overlap into gap)
+bot_h   <- 0.53   # height of bottom-row panels
+left_w  <- 0.46   # left column width (wider for y-axis labels)
+right_x <- 0.52   # x-start of right column
+right_w <- 0.46   # right column width
+
+grid_2x2 <- ggdraw() +
+  draw_plot(p_2x2_rel_t1e,   x = 0.05,       y = top_y, width = left_w,  height = top_h) +
+  draw_plot(p_2x2_dim_t1e,   x = right_x, y = top_y, width = right_w, height = top_h) +
+  draw_plot(p_2x2_rel_power, x = 0.05,       y = 0.005,     width = left_w,  height = bot_h) +
+  draw_plot(p_2x2_dim_power, x = right_x, y = 0.005,     width = right_w, height = bot_h) +
+  draw_label("Rejection Rate", x = 0.02, y = 0.5, angle = 90, vjust = 0.5, size = 35)
+
+
+p_legend_styled <- p_legend_comb +
+  guides(colour = guide_legend(nrow = 3, keywidth = 7, keyheight = 1.2, override.aes = list(size = 4))) +
+  theme(legend.text = element_text(size = 25),
+        legend.title = element_text(size = 25))
+legend_comb <- get_legend(p_legend_styled)
+
+## Add shared legend (reuse legend_comb from 4-panel section)
+combined_2x2_final <- plot_grid(
+  grid_2x2,
+  legend_comb,
+  ncol = 1,
+  rel_heights = c(1, 0.11)
+)
+
+## Save as PDF
+ggplot2::ggsave(paste0(path_to_save_nested_loop_plots, '/combined_2x2_conf_rel_conf_dim_main_text.pdf'),
+                combined_2x2_final, width = 30, height = 18)
+print(combined_2x2_final)
