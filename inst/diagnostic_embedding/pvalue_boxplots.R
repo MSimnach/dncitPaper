@@ -730,6 +730,101 @@ if (cit_pcm %in% available_cits && cit_rcot %in% available_cits && !is.null(comb
 }
 
 # ============================================================================
+# Create Standalone Rejection Rate Plot for Power
+# ============================================================================
+
+cat("\n\n=== Creating Standalone Rejection Rate Plot (Power) ===\n")
+
+if (cit_pcm %in% available_cits && cit_rcot %in% available_cits && !is.null(combined_rr)) {
+  
+  rr_power_data <- plot_data_rr %>%
+    filter(condition == "Power") %>%
+    mutate(cit = factor(cit, 
+                        levels = levels(plot_data_rr$cit),
+                        labels = ifelse(levels(plot_data_rr$cit) == cit_pcm, "PCM",
+                                        ifelse(levels(plot_data_rr$cit) == cit_rcot, "RCoT",
+                                               as.character(levels(plot_data_rr$cit))))))
+  
+  pos_label_map_power <- rr_power_data %>%
+    select(n_sample_pos, n_sample) %>%
+    distinct() %>%
+    arrange(n_sample_pos)
+  
+  cit_labels_power <- unique(rr_power_data$cit)
+  cit_shapes_power <- setNames(
+    c(16, 17, 15, 18, 8, 4)[1:length(cit_labels_power)],
+    cit_labels_power
+  )
+  cit_linetypes_power <- setNames(
+    c("solid", "dashed", "dotted", "dotdash", "longdash", "twodash")[1:length(cit_labels_power)],
+    cit_labels_power
+  )
+  
+  p_rr_power <- rr_power_data %>%
+    ggplot(aes(x = n_sample_pos, y = rejection_rate,
+               color = embedding, shape = cit, linetype = cit,
+               group = interaction(cit, embedding))) +
+    geom_line(linewidth = 1.5, alpha = 0.6) +
+    geom_point(size = 4, alpha = 0.8) +
+    labs(
+      x = "Sample size",
+      y = "Rejection rate",
+      color = "Embedding",
+      shape = "CIT",
+      linetype = "CIT"
+    ) +
+    theme_bw(base_size = 35) +
+    theme(
+      legend.position = "right",
+      panel.grid.minor = element_blank(),
+      axis.text.x = element_text(angle = -90, vjust = 0.5)
+    ) +
+    scale_color_manual(values = embedding_colors) +
+    scale_shape_manual(values = cit_shapes_power) +
+    scale_linetype_manual(values = cit_linetypes_power) +
+    guides(
+      shape = guide_legend(keywidth = 5),
+      linetype = guide_legend(keywidth = 5)
+    ) +
+    scale_x_continuous(breaks = pos_label_map_power$n_sample_pos,
+                       labels = pos_label_map_power$n_sample) +
+    scale_y_continuous(limits = c(0, 1.05), breaks = seq(0, 1, 0.2),
+                       expand = expansion(mult = c(0, 0)))
+  
+  cat("Saving standalone rejection rate plot (Power):\n")
+  
+  png_path_rr_power <- file.path(output_dir,
+                                  sprintf("rejection_rate_power_%d_%d_eps_sigmaY_%s.png",
+                                          min(seeds), max(seeds), eps_sigmaY))
+  ggsave(
+    png_path_rr_power,
+    plot = p_rr_power,
+    width = 20,
+    height = 10,
+    units = "in",
+    dpi = 300
+  )
+  cat("  Saved PNG:", png_path_rr_power, "\n")
+  
+  pdf_path_rr_power <- file.path(output_dir,
+                                  sprintf("rejection_rate_power_%d_%d_eps_sigmaY_%s.pdf",
+                                          min(seeds), max(seeds), eps_sigmaY))
+  ggsave(
+    pdf_path_rr_power,
+    plot = p_rr_power,
+    width = 23,
+    height = 10,
+    units = "in"
+  )
+  cat("  Saved PDF:", pdf_path_rr_power, "\n")
+  
+  cat("\n=== Standalone Rejection Rate Plot (Power) Complete ===\n")
+  
+} else {
+  warning("Cannot create standalone rejection rate plot: PCM and/or RCOT not found in data, or rejection rate data missing.")
+}
+
+# ============================================================================
 # Create QQ Plots for eps_sigmaY = 0.5
 # ============================================================================
 
