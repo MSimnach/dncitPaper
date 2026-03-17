@@ -246,7 +246,7 @@ print(p_conf_dim)
 #palet_discrete <- paletteer::paletteer_d("colorBlindness::Blue2Orange10Steps")
 palet_discrete <- paletteer::paletteer_d("ggthemes::Classic_10_Medium")
 #palet_discrete <- palet_discrete[seq(1,15, length.out=12)]
-path_to_save_nested_loop_plots <- "/sc/home/marco.simnacher/dncitPaper/inst/plots/test"
+path_to_save_nested_loop_plots <- "/sc/home/marco.simnacher/dncitPaper/inst/plots/260317_paper"
 
 #### split into CI and No CI
 folder_path <- "/sc/home/marco.simnacher/dncitPaper/Results/No_CI/rejection_rates/seeds_1_200"
@@ -1993,7 +1993,7 @@ p_comb_rel_t1e <- looplot::nested_loop_plot(resdf = design_rel_t1e,
                                             grid_rows = 'Setting',
                                             steps = "confounder",
                                             methods = methods_comb,
-                                            steps_y_base = -0.15*4/5, steps_y_height = 0.05 *4/5 ,
+                                            steps_y_base = -0.15, steps_y_height = 0.06,
                                             legend_breaks = methods_comb,
                                             legend_labels = methods_comb,
                                             x_name = "Sample size", y_name = "Rejection rate",
@@ -2003,13 +2003,13 @@ p_comb_rel_t1e <- looplot::nested_loop_plot(resdf = design_rel_t1e,
                                             point_size = 4,
                                             line_size = 1.5,
                                             point_shapes = c(19, 17, 15),
-                                            steps_values_annotate = TRUE, steps_annotation_size = 11,
+                                            steps_values_annotate = TRUE, steps_annotation_size = 10,
                                             steps_color = 'grey31', steps_annotation_color = 'grey31',
                                             hline_intercept = c(0, 0.05),
                                             hline_linetype = c(1),
                                             hline_size = c(0.5),#, 1.5),
                                             hline_colour = "black",
-                                            y_expand_add = c(0.1 , 0.15 ),
+                                            y_expand_add = c(0.1, 0.17),
                                             y_breaks = seq(0, 1, 0.2),
                                             line_alpha = 0.6,
                                             point_alpha = 0.8,
@@ -2032,7 +2032,7 @@ p_comb_dim_t1e <- looplot::nested_loop_plot(resdf = design_dim_t1e,
                                             grid_rows = 'Setting',
                                             steps = "confounder dimension",
                                             methods = methods_comb,
-                                            steps_y_base = -0.15 * 4 / 5, steps_y_height = 0.05 * 4 / 5,
+                                            steps_y_base = -0.15, steps_y_height = 0.06,
                                             legend_breaks = methods_comb,
                                             legend_labels = methods_comb,
                                             x_name = "Sample size", y_name = "Rejection rate",
@@ -2042,13 +2042,13 @@ p_comb_dim_t1e <- looplot::nested_loop_plot(resdf = design_dim_t1e,
                                             point_size = 4,
                                             line_size = 1.5,
                                             point_shapes = c(19, 17, 15),
-                                            steps_values_annotate = TRUE, steps_annotation_size = 11,
+                                            steps_values_annotate = TRUE, steps_annotation_size = 10,
                                             steps_color = 'grey31', steps_annotation_color = 'grey31',
                                             hline_intercept = c(0, 0.05),
                                             hline_linetype = c(1),
-                                            hline_size = c(0.5)#, 1.5),
+                                            hline_size = c(0.5),#, 1.5),
                                             hline_colour = "black",
-                                            y_expand_add = c(0.1 * 4 / 5, 0.15 * 4 / 5),
+                                            y_expand_add = c(0.1, 0.17),
                                             y_breaks = seq(0, 1, 0.2),
                                             line_alpha = 0.6,
                                             point_alpha = 0.8,
@@ -2069,7 +2069,7 @@ p_comb_rel_power <- looplot::nested_loop_plot(resdf = design_rel_power,
                                               grid_rows = 'Setting',
                                               steps = "confounder",
                                               methods = methods_comb,
-                                              steps_y_base = -0.15, steps_y_height = 0.05,
+                                              steps_y_base = -0.15, steps_y_height = 0.06,
                                               legend_breaks = methods_comb,
                                               legend_labels = methods_comb,
                                               x_name = "Sample size", y_name = "Rejection rate",
@@ -2079,14 +2079,14 @@ p_comb_rel_power <- looplot::nested_loop_plot(resdf = design_rel_power,
                                               point_size = 4,
                                               line_size = 1.5,
                                               point_shapes = c(19, 17, 15),
-                                              steps_values_annotate = TRUE, steps_annotation_size = 11,
+                                              steps_values_annotate = TRUE, steps_annotation_size = 10,
                                               steps_color = 'grey31', steps_annotation_color = 'grey31',
                                               hline_intercept = c(0),
                                               hline_linetype = 1,
                                               hline_size = c(0.5),
                                               hline_colour = "black",
                                               y_expand_add = c(0.1, 0.15),
-                                              y_breaks = seq(0, 1, 0.2),
+                                            y_breaks = seq(0, 1, 0.2),
                                               line_alpha = 0.6,
                                               point_alpha = 0.8,
                                               legend_name = "DNCIT",
@@ -2108,7 +2108,7 @@ p_comb_dim_power <- looplot::nested_loop_plot(resdf = design_dim_power,
                                               grid_rows = 'Setting',
                                               steps = "confounder dimension",
                                               methods = methods_comb,
-                                              steps_y_base = -0.15, steps_y_height = 0.05,
+                                              steps_y_base = -0.15, steps_y_height = 0.06,
                                               legend_breaks = methods_comb,
                                               legend_labels = methods_comb,
                                               x_name = "Sample size", y_name = "Rejection rate",
@@ -2118,14 +2118,14 @@ p_comb_dim_power <- looplot::nested_loop_plot(resdf = design_dim_power,
                                               point_size = 4,
                                               line_size = 1.5,
                                               point_shapes = c(19, 17, 15),
-                                              steps_values_annotate = TRUE, steps_annotation_size = 11,
+                                              steps_values_annotate = TRUE, steps_annotation_size = 10,
                                               steps_color = 'grey31', steps_annotation_color = 'grey31',
                                               hline_intercept = c(0),
                                               hline_linetype = 1,
                                               hline_size = c(0.5),
                                               hline_colour = "black",
                                               y_expand_add = c(0.1, 0.15),
-                                              y_breaks = seq(0, 1, 0.2),
+                                            y_breaks = seq(0, 1, 0.2),
                                               line_alpha = 0.6,
                                               point_alpha = 0.8,
                                               legend_name = "DNCIT",
@@ -2231,9 +2231,9 @@ p_legend_comb <- looplot::nested_loop_plot(resdf = design_legend_comb,
                                              )
                                            ))
 p_legend_styled <- p_legend_comb +
-  guides(colour = guide_legend(nrow = 3, keywidth = 1.5, keyheight = 1.2, override.aes = list(size = 4))) +
-  theme(legend.text = element_text(size = 19),
-        legend.title = element_text(size = 20))
+  guides(colour = guide_legend(nrow = 3, keywidth = 1.5, keyheight = 1.2, override.aes = list(size = 3))) +
+  theme(legend.text = element_text(size = 26),
+        legend.title = element_text(size = 28))
 legend_comb <- get_legend(p_legend_styled)
 
 ## 8) Final combination with legend
@@ -2287,22 +2287,23 @@ p_2x2_dim_power <- p_comb_dim_power +
 top_y   <- 0.54   # y-start of top row (lower = rows closer; try 0.42-0.50)
 top_h   <- 0.45   # height of top-row panels (>0.5 to overlap into gap)
 bot_h   <- 0.53   # height of bottom-row panels
-left_w  <- 0.46   # left column width (wider for y-axis labels)
-right_x <- 0.52   # x-start of right column
-right_w <- 0.46   # right column width
+left_w  <- 0.49   # left column width (wider for y-axis labels)
+right_x <- 0.51   # x-start of right column
+right_w <- 0.49   # right column width
+left_x <- 0.025
 
 grid_2x2 <- ggdraw() +
-  draw_plot(p_2x2_rel_t1e,   x = 0.05,       y = top_y, width = left_w,  height = top_h) +
+  draw_plot(p_2x2_rel_t1e,   x = left_x,       y = top_y, width = left_w,  height = top_h) +
   draw_plot(p_2x2_dim_t1e,   x = right_x, y = top_y, width = right_w, height = top_h) +
-  draw_plot(p_2x2_rel_power, x = 0.05,       y = 0.005,     width = left_w,  height = bot_h) +
+  draw_plot(p_2x2_rel_power, x = left_x,       y = 0.005,     width = left_w,  height = bot_h) +
   draw_plot(p_2x2_dim_power, x = right_x, y = 0.005,     width = right_w, height = bot_h) +
-  draw_label("Rejection Rate", x = 0.02, y = 0.5, angle = 90, vjust = 0.5, size = 35)
+  draw_label("Rejection Rate", x = 0.015, y = 0.5, angle = 90, vjust = 0.5, size = 35)
 
 
 p_legend_styled <- p_legend_comb +
-  guides(colour = guide_legend(nrow = 3, keywidth = 7, keyheight = 1.2, override.aes = list(size = 4))) +
-  theme(legend.text = element_text(size = 25),
-        legend.title = element_text(size = 25))
+  guides(colour = guide_legend(nrow = 3, keywidth = 5, keyheight = 1.2, override.aes = list(size = 4))) +
+  theme(legend.text = element_text(size = 29),
+        legend.title = element_text(size = 29))
 legend_comb <- get_legend(p_legend_styled)
 
 ## Add shared legend (reuse legend_comb from 4-panel section)

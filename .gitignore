@@ -47,3 +47,4 @@ inst/simulation_study/sim_ukb_brainmri_*.R
 inst/plots/*.png
 inst/plots/*.pdf
 inst/plots/test
+inst/plots/260317_paper
